@@ -8,6 +8,17 @@
         "displayName": true,
         "preprocess": false
       }
+    ],
+    [
+      "module-resolver",
+      {
+        "root": ["."],
+        "alias": {
+          "components": "./components",
+          "db": "./db",
+          "services": "./services"
+        }
+      }
     ]
   ]
 }

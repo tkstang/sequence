@@ -13,24 +13,8 @@ const config = {
   measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
-// Protect against multiple instances of firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(config);
-}
+const clientFirebase = !firebase.apps.length ? firebase.initializeApp(config) : firebase.app();
 
-/**
- * Firebase API
- *
- * @class Firebase
- * @namespace Firebase
- */
-class Firebase {
-  constructor() {
-    this.firebase = firebase;
-    this.firestore = firebase.firestore;
-    this.db = this.firestore();
-    this.gameCollectionPath = 'games';
-  }
-}
+const db = clientFirebase.firestore();
 
-export default Firebase;
+export default db;

@@ -29,6 +29,9 @@
   "settings": {
     "react": {
       "version": "detect"
+    },
+    "import/resolver": {
+      "babel-module": {}
     }
   },
   "plugins": [],
@@ -46,6 +49,16 @@
     "no-underscore-dangle": "off",
     "camelcase": "off",
     "no-plusplus": "off",
-    "jsx-quotes": ["error", "prefer-double"]
+    "jsx-quotes": ["error", "prefer-double"],
+    "jsx-a11y/label-has-for": [
+      2,
+      {
+        "components": ["Label"],
+        "required": {
+          "some": ["nesting", "id"]
+        },
+        "allowChildren": false
+      }
+    ]
   }
 }
