@@ -11,6 +11,13 @@ const App = ({ Component, pageProps }) => {
           rel="stylesheet"
         />
       </Head>
+      <style jsx global>
+        {`
+          body {
+            margin: 0;
+          }
+        `}
+      </style>
       <Component {...pageProps} />
     </>
   );

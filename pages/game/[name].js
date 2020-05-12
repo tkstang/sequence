@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { subscribe } from 'services/GameService';
-import { Loading } from 'components';
+import { Loading, Board } from 'components';
 
 const Game = ({ gameName }) => {
   console.log({ gameName });
@@ -16,13 +16,13 @@ const Game = ({ gameName }) => {
       console.log(`Unsubscribing from ${gameName}`);
       unsubscribe();
     };
-  }, [gameName]);
+  }, []);
 
-  return loading ? (
+  return loading || !board ? (
     <Loading color="#000" size={100} />
   ) : (
     <>
-      <div>Hi.</div>
+      <Board board={board} />
     </>
   );
 };

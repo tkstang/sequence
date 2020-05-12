@@ -36,7 +36,7 @@ const generateNewGame = (players = 2, teams = 2) => {
     });
   });
 
-  console.log({ board });
+  // console.log({ board });
 
   return {
     numberPlayers: players,
@@ -49,11 +49,11 @@ const mapBoardDataToArray = (boardObject) => {
   const flatBoard = boardMap.flat();
 
   flatBoard.forEach((position, i) => {
-    console.log({ position, key: boardObject[position] });
-    flatBoard[i] = { position, key: boardObject[position] };
+    // console.log({ position, key: boardObject[position] });
+    flatBoard[i] = { position, value: boardObject[position] };
   });
 
-  console.log({ flatBoard });
+  // console.log({ flatBoard });
   const board = unflattenBoard(flatBoard);
 
   return board;
