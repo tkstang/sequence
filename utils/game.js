@@ -39,6 +39,7 @@ const generateNewGame = (players = 2, teams = 2) => {
   // console.log({ board });
 
   return {
+    playerTurn: 1,
     numberPlayers: players,
     numberTeams: teams,
     board,

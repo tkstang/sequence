@@ -27,10 +27,31 @@ const BoardPosition = styled.div`
   background: url(${({ card }) => `/cards/${card}.svg`});
 `;
 
+const CardContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  transform: rotate(90deg);
+  position: relative;
+`;
+
 const Card = styled.img`
   width: 100%;
   height: 100%;
   transform: rotate(90deg);
 `;
 
-export { BoardContainer, BoardGrid, BoardPosition, Card };
+const Chip = styled.div`
+  z-index: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70%;
+  height: 70%;
+  margin-left: -35%;
+  margin-top: -35%;
+  /* padding: 20px; */
+  background-color: red;
+  border-radius: 50%;
+`;
+
+export { BoardContainer, BoardGrid, BoardPosition, CardContainer, Card, Chip };
