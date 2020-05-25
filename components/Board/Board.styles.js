@@ -49,7 +49,18 @@ const Chip = styled.div`
   margin-left: -35%;
   margin-top: -35%;
   /* padding: 20px; */
-  background-color: red;
+  background-color: ${({ team }) => {
+    switch (team) {
+      case 'team1':
+        return 'blue';
+      case 'team2':
+        return 'green';
+      case 'team3':
+        return 'red';
+      default:
+        return 'black';
+    }
+  }};
   border-radius: 50%;
 `;
 

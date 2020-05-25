@@ -2,7 +2,6 @@ import db from 'db/firebase-server';
 import { generateNewGame } from 'utils/game';
 
 export default async (req, res) => {
-  console.log(req.body);
   const gameName = req.body;
 
   console.log(`Creating game with name ${gameName}`);
