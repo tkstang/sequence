@@ -3,9 +3,9 @@ import db from 'db/firebase-server';
 export default async (req, res) => {
   const { gameName, position, playerTurn, teams, board } = JSON.parse(req.body);
 
-  console.log(
-    `Playing in position ${position} with value ${playerTurn} for team ${teams[playerTurn]}`
-  );
+  const teamTurn = teams[playerTurn];
+
+  console.log(`Playing in position ${position} with value ${playerTurn} for team ${teamTurn}`);
   const { numberPlayers } = teams;
 
   const nextPlayer = playerTurn < numberPlayers ? playerTurn + 1 : 1;
@@ -17,7 +17,7 @@ export default async (req, res) => {
     // Will need to add some way to lock positions once a sequence has been made
 
     await gameRef.update({
-      [`board.${position}`]: playerTurn,
+      [`board.${position}`]: teamTurn,
       playerTurn: nextPlayer,
     });
 

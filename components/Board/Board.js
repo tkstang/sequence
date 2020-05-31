@@ -7,19 +7,31 @@ import {
   Chip,
 } from './Board.styles';
 
-const Board = ({ board, teams, handleTurn }) => {
+const Board = ({ board, teams, handleTurn, handleProtectPosition, protectablePositions }) => {
   return (
     <BoardContainer>
       <BoardGrid>
-        {board.map((row) =>
-          row.map(({ position, value }) => {
+        {board.map((row, rowIndex) =>
+          row.map(({ position, value }, columnIndex) => {
+            if (protectablePositions) {
+              value = protectablePositions[position] ?? value;
+            }
+
             const card = position.slice(1);
 
             return (
-              <CardContainer key={position} onClick={() => handleTurn(position, value)}>
+              <CardContainer
+                key={position}
+                onClick={() =>
+                  protectablePositions
+                    ? handleProtectPosition(position)
+                    : // May not need position as it can be derived from board[rowIndex][columnIndex].position
+                      handleTurn(position, value, rowIndex, columnIndex)
+                }
+              >
                 <Card width="auto" height="auto" value={position} src={`/cards/${card}.svg`} />
-                {/* Add chip if value is not null and pass team as prop to determing color -- Also this means I think the value of a given position should be something like P#T* so both player number and team can be derived */}
-                {value && <Chip team={`team${teams[value]}`} />}
+                {/* Add chip if value is not null (or if value is a protectable position) and pass team as prop to determing color */}
+                {value && <Chip team={`team${value}`} />}
               </CardContainer>
             );
           })

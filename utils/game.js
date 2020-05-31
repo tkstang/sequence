@@ -27,7 +27,7 @@ const unflattenBoard = (flatBoard) => {
   return board;
 };
 
-const generateNewGame = (players = 2, teams = 2) => {
+const generateNewGame = (numberPlayers = 2, numberTeams = 2) => {
   const board = {};
 
   boardMap.forEach((row) => {
@@ -36,16 +36,24 @@ const generateNewGame = (players = 2, teams = 2) => {
     });
   });
 
+  const teams = {
+    numberPlayers,
+    numberTeams,
+    1: 1,
+    // FIXME: On init there will only be one player - this is for testing
+    2: 2,
+  };
+
+  Array(numberTeams)
+    .fill()
+    .forEach((_, i) => {
+      teams[`team${++i}Score`] = 0;
+    });
+
   return {
     playerTurn: 1,
     board,
-    teams: {
-      numberPlayers: players,
-      numberTeams: teams,
-      1: 1,
-      // FIXME: On init there will only be one player - this is for testing
-      2: 2,
-    },
+    teams,
   };
 };
 
@@ -61,4 +69,61 @@ const mapBoardDataToArray = (boardObject) => {
   return board;
 };
 
-export { generateNewGame, mapBoardDataToArray };
+const checkRow = (team, row, index) => {
+  const positions = { [row[index].position]: team };
+  let sequence = 1;
+
+  // Move forward in row checking if position is held by team
+  for (let i = index + 1; i < 10; i++) {
+    if (row[i].value === team) {
+      positions[row[i].position] = team;
+      sequence++;
+    } else {
+      break;
+    }
+  }
+
+  // Move backward in row checking if position is held by team
+  for (let i = index - 1; i >= 0; i--) {
+    if (row[i].value === team) {
+      positions[row[i].position] = team;
+      sequence++;
+    } else {
+      break;
+    }
+  }
+
+  const rowSequenceFound = sequence >= 5;
+  const rowPositions = rowSequenceFound ? positions : {};
+
+  return { rowPositions, rowSequenceFound };
+};
+
+const checkForSequence = (team, board, rowIndex, columnIndex) => {
+  let isSequence = false;
+  // Once protectable positions is no longer null, add to object numberProtected: 0
+  // Set value of protectable position key to teamTurn
+  let protectablePositions = null;
+  console.log({ board, rowIndex, columnIndex });
+  // Will need to actually check all angles for sequence in case there is a sequence at more than one angle to give player opportunity to pick which sequence to protect
+  const { rowSequenceFound, rowPositions } = checkRow(team, board[rowIndex], columnIndex);
+
+  // isSequence = rowSequenceFound || columnSequenceFound || diagonalForwardSequenceFound || diagonalBackwardSequenceFound;
+  // If more than one sequence is found we need to return positions from all sequences as protectablePositions
+  // If only one sequence is found but it has a sequence length greater than 5 we need to return those positions as protectable
+  // If a sequence is found with only a length of five we need to return those positions to submit as protected but there is no need to update protectablePositions in state as the protected positions cannot be chosen
+
+  return {
+    isSequence,
+    protectablePositions,
+  };
+};
+
+// This checks if the player is able to play in that position based on their hand
+const checkPlayEligibility = (board, hand, position) => {
+  // Check if player has a valid card to play in the position, if not notify player this is not an eligible play based ontheir hand
+};
+
+// TODO: Maybe split all of these utils into GameService and BoardService
+
+export { generateNewGame, mapBoardDataToArray, checkPlayEligibility, checkForSequence };
