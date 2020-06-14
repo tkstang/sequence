@@ -37,6 +37,10 @@ const Card = styled.img`
   width: 100%;
   height: 100%;
   transform: rotate(90deg);
+
+  &:hover {
+    cursor: pointer;
+  }
 `;
 
 const Chip = styled.div`

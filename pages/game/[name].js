@@ -28,7 +28,11 @@ const Game = ({ gameName }) => {
     // Check if key exists for position in protectable positions, if it doesn't show error message
     // If it does, set value of protectable position to true, increase protectablePositions.numberProtected count
 
-    if (protectablePositions.numberProtected + 1 === 5) {
+    if (protectablePositions.numberProtected > 0) {
+      // Once the user has chosen a second position to protect a direction of the sequence has been protected. If the number to protect is 5 remove positions that are no longer eligible for protection based on the selection from protectablePositions. If they have 2 or more sequences to protect I should do something so that they can only focus on protecting one sequence at a time.
+    }
+
+    if (protectablePositions.numberProtected + 1 === protectablePositions.numberToProtect) {
       // fetch play turn url with protect data to update all of those positions with team data and protected
     } else {
       setProtectablePositions({
@@ -39,12 +43,12 @@ const Game = ({ gameName }) => {
   };
 
   // Move me to game service
-  const handleTurn = async (position, currentValue, rowIndex, columnIndex) => {
+  const handleTurn = async (rowIndex, columnIndex) => {
     if (playingTurn) {
       // Prevent multiple requests
       return;
     }
-    console.log({ position, currentValue });
+    const { position } = board[rowIndex][columnIndex];
     // Call checkPlayEligibility here
 
     const { isSequence, protectablePositions } = checkForSequence(

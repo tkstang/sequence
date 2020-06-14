@@ -12,7 +12,11 @@ const Board = ({ board, teams, handleTurn, handleProtectPosition, protectablePos
     <BoardContainer>
       <BoardGrid>
         {board.map((row, rowIndex) =>
-          row.map(({ position, value }, columnIndex) => {
+          row.map(({ position, positionData }, columnIndex) => {
+            let value = positionData.team;
+            // TODO: Add some sort of indicator that position is protected
+            const { isProtected } = positionData;
+
             if (protectablePositions) {
               value = protectablePositions[position] ?? value;
             }
@@ -25,8 +29,7 @@ const Board = ({ board, teams, handleTurn, handleProtectPosition, protectablePos
                 onClick={() =>
                   protectablePositions
                     ? handleProtectPosition(position)
-                    : // May not need position as it can be derived from board[rowIndex][columnIndex].position
-                      handleTurn(position, value, rowIndex, columnIndex)
+                    : handleTurn(rowIndex, columnIndex)
                 }
               >
                 <Card width="auto" height="auto" value={position} src={`/cards/${card}.svg`} />

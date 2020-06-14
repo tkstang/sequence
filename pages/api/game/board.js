@@ -8,16 +8,16 @@ export default async (req, res) => {
   console.log(`Playing in position ${position} with value ${playerTurn} for team ${teamTurn}`);
   const { numberPlayers } = teams;
 
-  const nextPlayer = playerTurn < numberPlayers ? playerTurn + 1 : 1;
+  const nextPlayer = 1; // Temporary for dev;
+  // const nextPlayer = playerTurn < numberPlayers ? playerTurn + 1 : 1;
 
   try {
     const gameRef = await db.collection('games').doc(gameName);
 
-    // Pass board and position into game service function to check for a sequence
-    // Will need to add some way to lock positions once a sequence has been made
+    // If protection data is passed in the body of this request we will instead be updating the data for all protected positions
 
     await gameRef.update({
-      [`board.${position}`]: teamTurn,
+      [`board.${position}`]: { team: teamTurn, protected: false },
       playerTurn: nextPlayer,
     });
 

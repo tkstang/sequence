@@ -32,7 +32,7 @@ const generateNewGame = (numberPlayers = 2, numberTeams = 2) => {
 
   boardMap.forEach((row) => {
     row.forEach((position) => {
-      board[position] = null;
+      board[position] = { team: null, isProtected: false };
     });
   });
 
@@ -61,7 +61,7 @@ const mapBoardDataToArray = (boardObject) => {
   const flatBoard = boardMap.flat();
 
   flatBoard.forEach((position, i) => {
-    flatBoard[i] = { position, value: boardObject[position] };
+    flatBoard[i] = { position, positionData: boardObject[position] };
   });
 
   const board = unflattenBoard(flatBoard);
@@ -75,7 +75,7 @@ const checkRow = (team, row, index) => {
 
   // Move forward in row checking if position is held by team
   for (let i = index + 1; i < 10; i++) {
-    if (row[i].value === team) {
+    if (row[i].positionData.team === team) {
       positions[row[i].position] = team;
       sequence++;
     } else {
@@ -85,7 +85,7 @@ const checkRow = (team, row, index) => {
 
   // Move backward in row checking if position is held by team
   for (let i = index - 1; i >= 0; i--) {
-    if (row[i].value === team) {
+    if (row[i].positionData.team === team) {
       positions[row[i].position] = team;
       sequence++;
     } else {
@@ -99,16 +99,151 @@ const checkRow = (team, row, index) => {
   return { rowPositions, rowSequenceFound };
 };
 
+const checkColumn = (team, column, index) => {
+  const positions = { [column[index].position]: team };
+  let sequence = 1;
+
+  // Move down in column checking if position is held by team
+  for (let i = index + 1; i < 10; i++) {
+    if (column[i].positionData.team === team) {
+      positions[column[i].position] = team;
+      sequence++;
+    } else {
+      break;
+    }
+  }
+
+  // Move up in column checking if position is held by team
+  for (let i = index - 1; i >= 0; i--) {
+    if (column[i].positionData.team === team) {
+      positions[column[i].position] = team;
+      sequence++;
+    } else {
+      break;
+    }
+  }
+
+  const columnSequenceFound = sequence >= 5;
+  const columnPositions = columnSequenceFound ? positions : {};
+
+  return { columnPositions, columnSequenceFound };
+};
+
+const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
+  const getPosition = (r, c) => board[r][c].position;
+  const getTeam = (r, c) => board[r][c].positionData.team;
+  const getProtected = (r, c) => board[r][c].positionData.isProtected;
+
+  const positions = { [getPosition(rowIndex, columnIndex)]: team };
+  let sequence = 1;
+  let sequenceFound;
+  let diagonalPositions;
+  let c;
+
+  if (direction === 'forward') {
+    // Check diagonally down left
+    c = columnIndex - 1;
+    for (let r = rowIndex + 1; r < 10 && c >= 0; r++) {
+      if (getTeam(r, c) === team) {
+        positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
+        sequence++;
+        c--;
+      } else {
+        break;
+      }
+    }
+
+    // Check diagonally up right
+    c = columnIndex + 1;
+    for (let r = rowIndex - 1; r >= 10 && c < 10; r--) {
+      if (getTeam(r, c) === team) {
+        positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
+        sequence++;
+        c++;
+      } else {
+        break;
+      }
+    }
+
+    sequenceFound = sequence >= 5;
+    diagonalPositions = sequenceFound ? positions : {};
+  } else {
+    // Check diagonally down right
+    c = columnIndex + 1;
+    for (let r = rowIndex + 1; r < 10 && c < 10; r++) {
+      if (getTeam(r, c) === team) {
+        positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
+        sequence++;
+        c++;
+      } else {
+        break;
+      }
+    }
+
+    // Check diagonally up left
+    c = columnIndex - 1;
+    for (let r = rowIndex - 1; r >= 0 && c >= 0; r--) {
+      if (getTeam(r, c) === team) {
+        positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
+        sequence++;
+        c--;
+      } else {
+        break;
+      }
+    }
+
+    sequenceFound = sequence >= 5;
+    diagonalPositions = sequenceFound ? positions : {};
+  }
+
+  return {
+    [`${direction}DiagonalPositions`]: diagonalPositions,
+    [`${direction}DiagonalSequenceFound`]: sequenceFound,
+  };
+};
+
 const checkForSequence = (team, board, rowIndex, columnIndex) => {
+  const sequenceData = {};
   let isSequence = false;
+  let numberOfSequences = 0;
+  let positionsToProtect = null;
   // Once protectable positions is no longer null, add to object numberProtected: 0
   // Set value of protectable position key to teamTurn
-  let protectablePositions = null;
-  console.log({ board, rowIndex, columnIndex });
-  // Will need to actually check all angles for sequence in case there is a sequence at more than one angle to give player opportunity to pick which sequence to protect
-  const { rowSequenceFound, rowPositions } = checkRow(team, board[rowIndex], columnIndex);
+  let protectablePositions = {};
 
-  // isSequence = rowSequenceFound || columnSequenceFound || diagonalForwardSequenceFound || diagonalBackwardSequenceFound;
+  // Check all angles for sequence in case there is a sequence at more than one angle to give player opportunity to pick which sequence to protect
+  const column = board.map((row) => row[columnIndex]);
+
+  sequenceData.column = checkColumn(team, column, rowIndex);
+  sequenceData.row = checkRow(team, board[rowIndex], columnIndex);
+  sequenceData.forwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'forward');
+  sequenceData.backwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'backward');
+
+  Object.entries(sequenceData).forEach((key, data) => {
+    if (data[`${key}SequenceFound`]) {
+      isSequence = true;
+      numberOfSequences++;
+
+      protectablePositions = { ...protectablePositions, ...data[`${key}Positions`] };
+    }
+    console.log(data[`${key}Positions`]);
+  });
+
+  if (isSequence) {
+    // There are exactly 5 positions in the sequence, these positions are automatically protected
+    if (Object.keys(protectablePositions).length === 5) {
+      positionsToProtect = protectablePositions;
+      protectablePositions = null;
+    } else {
+      // This count will be used to determine when user has completed selection of positions to protect
+      protectablePositions.numberProtected = 0;
+      // If the user got more than one sequence with this play we allow them to choose positions to protect for each
+      protectablePositions.numberToProtect = numberOfSequences * 5;
+    }
+  } else {
+    protectablePositions = null;
+  }
+
   // If more than one sequence is found we need to return positions from all sequences as protectablePositions
   // If only one sequence is found but it has a sequence length greater than 5 we need to return those positions as protectable
   // If a sequence is found with only a length of five we need to return those positions to submit as protected but there is no need to update protectablePositions in state as the protected positions cannot be chosen
@@ -116,6 +251,7 @@ const checkForSequence = (team, board, rowIndex, columnIndex) => {
   return {
     isSequence,
     protectablePositions,
+    positionsToProtect,
   };
 };
 
