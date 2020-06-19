@@ -3,6 +3,7 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./*"],
+      "page-styles/*": ["./pages/page-styles/*"],
       "components/*": ["./components/*"],
       "styles/*": ["./styles/*"],
       "utils/*": ["./utils/*"],

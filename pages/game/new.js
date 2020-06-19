@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import Router from 'next/router';
+import { Button } from 'components';
+import { NewContainer, FormContainer } from 'page-styles/New.styles';
 
 const NewGame = () => {
   const [gameName, setGameName] = useState('');
@@ -25,20 +27,22 @@ const NewGame = () => {
   };
 
   return (
-    <>
-      <label htmlFor="game-name">
-        Give the game a name so others can join:
-        <input
-          type="text"
-          id="game-name"
-          name="name"
-          onChange={(e) => setGameName(e.target.value)}
-        />
-      </label>
-      <button onClick={handleSubmit} onKeyPress={handleSubmit} type="submit">
+    <NewContainer>
+      <FormContainer>
+        <label htmlFor="game-name">
+          Give the game a name so others can join:
+          <input
+            type="text"
+            id="game-name"
+            name="name"
+            onChange={(e) => setGameName(e.target.value)}
+          />
+        </label>
+      </FormContainer>
+      <Button onKeyPress={handleSubmit} onClick={handleSubmit}>
         Get Started!
-      </button>
-    </>
+      </Button>
+    </NewContainer>
   );
 };
 

@@ -1,12 +1,10 @@
-import Link from 'next/link';
+import { Button } from 'components';
 import { HomeContainer } from './page-styles/Home.styles';
 
 const Home = () => {
   return (
     <HomeContainer>
-      <Link href="/game/new">
-        <button type="submit">Start a New Game</button>
-      </Link>
+      <Button href="/game/new">Start a New Game</Button>
     </HomeContainer>
   );
 };
