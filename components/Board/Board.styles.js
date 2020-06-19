@@ -65,7 +65,15 @@ const Chip = styled.div`
         return 'black';
     }
   }};
+  opacity: ${({ isProtectable, isProtected }) => {
+    if (!isProtectable) return 0.8;
+    return isProtected ? 1 : 0.4;
+  }};
   border-radius: 50%;
+
+  &:hover {
+    cursor: pointer;
+  }
 `;
 
 export { BoardContainer, BoardGrid, BoardPosition, CardContainer, Card, Chip };

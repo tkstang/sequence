@@ -25,8 +25,12 @@ const Game = ({ gameName }) => {
   }, [gameName]);
 
   const handleProtectPosition = (position) => {
+    console.log('Protect position: ', position);
     // Check if key exists for position in protectable positions, if it doesn't show error message
     // If it does, set value of protectable position to true, increase protectablePositions.numberProtected count
+    if (protectablePositions[position]) {
+      protectablePositions[position].isProtected = true;
+    }
 
     if (protectablePositions.numberProtected > 0) {
       // Once the user has chosen a second position to protect a direction of the sequence has been protected. If the number to protect is 5 remove positions that are no longer eligible for protection based on the selection from protectablePositions. If they have 2 or more sequences to protect I should do something so that they can only focus on protecting one sequence at a time.
@@ -91,7 +95,7 @@ const Game = ({ gameName }) => {
         board={board}
         teams={teams}
         protectablePositions={protectablePositions}
-        handleProtectPositions={handleProtectPosition}
+        handleProtectPosition={handleProtectPosition}
         handleTurn={handleTurn}
       />
     </>
