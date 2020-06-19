@@ -139,11 +139,12 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
   let sequenceFound;
   let diagonalPositions;
   let c;
+  let r;
 
   if (direction === 'forward') {
     // Check diagonally down left
     c = columnIndex - 1;
-    for (let r = rowIndex + 1; r < 10 && c >= 0; r++) {
+    for (r = rowIndex + 1; r < 10 && c >= 0; r++) {
       if (getTeam(r, c) === team) {
         positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
         sequence++;
@@ -155,7 +156,7 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
 
     // Check diagonally up right
     c = columnIndex + 1;
-    for (let r = rowIndex - 1; r >= 10 && c < 10; r--) {
+    for (r = rowIndex - 1; r >= 0 && c < 10; r--) {
       if (getTeam(r, c) === team) {
         positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
         sequence++;
@@ -170,7 +171,7 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
   } else {
     // Check diagonally down right
     c = columnIndex + 1;
-    for (let r = rowIndex + 1; r < 10 && c < 10; r++) {
+    for (r = rowIndex + 1; r < 10 && c < 10; r++) {
       if (getTeam(r, c) === team) {
         positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
         sequence++;
@@ -182,7 +183,7 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
 
     // Check diagonally up left
     c = columnIndex - 1;
-    for (let r = rowIndex - 1; r >= 0 && c >= 0; r--) {
+    for (r = rowIndex - 1; r >= 0 && c >= 0; r--) {
       if (getTeam(r, c) === team) {
         positions[getPosition(r, c)] = { team, isProtected: getProtected(r, c) };
         sequence++;
@@ -219,17 +220,18 @@ const checkForSequence = (team, board, rowIndex, columnIndex) => {
   sequenceData.forwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'forward');
   sequenceData.backwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'backward');
 
-  Object.entries(sequenceData).forEach((key, data) => {
-    if (data[`${key}SequenceFound`]) {
+  Object.entries(sequenceData).forEach(([key, value]) => {
+    if (value[`${key}SequenceFound`]) {
       isSequence = true;
       numberOfSequences++;
 
-      protectablePositions = { ...protectablePositions, ...data[`${key}Positions`] };
+      protectablePositions = { ...protectablePositions, ...value[`${key}Positions`] };
     }
-    console.log(data[`${key}Positions`]);
+    console.log({ key, value, positions: value[`${key}Positions`] });
   });
 
   if (isSequence) {
+    console.log('Sequence!');
     // There are exactly 5 positions in the sequence, these positions are automatically protected
     if (Object.keys(protectablePositions).length === 5) {
       positionsToProtect = protectablePositions;
