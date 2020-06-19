@@ -17,7 +17,7 @@ export default async (req, res) => {
     // If protection data is passed in the body of this request we will instead be updating the data for all protected positions
 
     await gameRef.update({
-      [`board.${position}`]: { team: teamTurn, protected: false },
+      [`board.${position}`]: { team: teamTurn, isProtected: false },
       playerTurn: nextPlayer,
     });
 

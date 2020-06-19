@@ -2,9 +2,9 @@ const boardMap = [
   ['1WW', '1AC', '1KC', '1QC', '1TC', '19C', '18C', '17C', '16C', '2WW'],
   ['1AD', '17S', '18S', '19S', '1TS', '1QS', '1KS', '1AS', '15C', '12S'],
   ['1KD', '16S', '2TC', '29C', '28C', '27C', '26C', '12D', '14C', '13S'],
-  ['1QD', '15S', '2QC', '18H', '17H', '16H', '15C', '13D', '13C', '14S'],
-  ['1TD', '14S', '2KC', '19H', '12H', '15H', '24C', '14D', '12C', '25S'],
-  ['19D', '23S', '2AC', '1TD', '13H', '14H', '23C', '15D', '1AH', '26S'],
+  ['1QD', '15S', '2QC', '18H', '17H', '16H', '25C', '13D', '13C', '14S'],
+  ['1TD', '24S', '2KC', '19H', '12H', '15H', '24C', '14D', '12C', '25S'],
+  ['19D', '23S', '2AC', '2TD', '13H', '14H', '23C', '15D', '1AH', '26S'],
   ['18D', '22S', '2AD', '1QH', '1KH', '2AH', '22C', '16D', '2KH', '27S'],
   ['17D', '22H', '2KD', '2QD', '2TD', '29D', '28D', '27D', '2QH', '28S'],
   ['26D', '23H', '24H', '25H', '26H', '27H', '28H', '29H', '2TH', '29S'],
@@ -70,13 +70,19 @@ const mapBoardDataToArray = (boardObject) => {
 };
 
 const checkRow = (team, row, index) => {
-  const positions = { [row[index].position]: team };
+  const getPosition = (i) => row[i].position;
+  const getTeam = (i) => row[i].positionData.team;
+  const getProtected = (i) => row[i].positionData.isProtected;
+
+  const positions = {
+    [getPosition(index)]: { team, isProtected: getProtected(index) },
+  };
   let sequence = 1;
 
   // Move forward in row checking if position is held by team
   for (let i = index + 1; i < 10; i++) {
-    if (row[i].positionData.team === team) {
-      positions[row[i].position] = team;
+    if (getTeam(i) === team) {
+      positions[getPosition(i)] = { team, isProtected: getProtected(i) };
       sequence++;
     } else {
       break;
@@ -85,8 +91,8 @@ const checkRow = (team, row, index) => {
 
   // Move backward in row checking if position is held by team
   for (let i = index - 1; i >= 0; i--) {
-    if (row[i].positionData.team === team) {
-      positions[row[i].position] = team;
+    if (getTeam(i) === team) {
+      positions[getPosition(i)] = { team, isProtected: getProtected(i) };
       sequence++;
     } else {
       break;
@@ -100,13 +106,19 @@ const checkRow = (team, row, index) => {
 };
 
 const checkColumn = (team, column, index) => {
-  const positions = { [column[index].position]: team };
+  const getPosition = (i) => column[i].position;
+  const getTeam = (i) => column[i].positionData.team;
+  const getProtected = (i) => column[i].positionData.isProtected;
+
+  const positions = {
+    [getPosition(index)]: { team, isProtected: getProtected(index) },
+  };
   let sequence = 1;
 
   // Move down in column checking if position is held by team
   for (let i = index + 1; i < 10; i++) {
-    if (column[i].positionData.team === team) {
-      positions[column[i].position] = team;
+    if (getTeam(i) === team) {
+      positions[getPosition(i)] = { team, isProtected: getProtected(i) };
       sequence++;
     } else {
       break;
@@ -115,8 +127,8 @@ const checkColumn = (team, column, index) => {
 
   // Move up in column checking if position is held by team
   for (let i = index - 1; i >= 0; i--) {
-    if (column[i].positionData.team === team) {
-      positions[column[i].position] = team;
+    if (getTeam(i) === team) {
+      positions[getPosition(i)] = { team, isProtected: getProtected(i) };
       sequence++;
     } else {
       break;
@@ -134,7 +146,12 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
   const getTeam = (r, c) => board[r][c].positionData.team;
   const getProtected = (r, c) => board[r][c].positionData.isProtected;
 
-  const positions = { [getPosition(rowIndex, columnIndex)]: team };
+  const positions = {
+    [getPosition(rowIndex, columnIndex)]: {
+      team,
+      isProtected: getProtected(rowIndex, columnIndex),
+    },
+  };
   let sequence = 1;
   let sequenceFound;
   let diagonalPositions;
@@ -249,7 +266,7 @@ const checkForSequence = (team, board, rowIndex, columnIndex) => {
   // If more than one sequence is found we need to return positions from all sequences as protectablePositions
   // If only one sequence is found but it has a sequence length greater than 5 we need to return those positions as protectable
   // If a sequence is found with only a length of five we need to return those positions to submit as protected but there is no need to update protectablePositions in state as the protected positions cannot be chosen
-
+  console.log({ isSequence, protectablePositions, positionsToProtect });
   return {
     isSequence,
     protectablePositions,
