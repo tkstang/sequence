@@ -4,7 +4,7 @@ const boardMap = [
   ['1KD', '16S', '2TC', '29C', '28C', '27C', '26C', '12D', '14C', '13S'],
   ['1QD', '15S', '2QC', '18H', '17H', '16H', '25C', '13D', '13C', '14S'],
   ['1TD', '24S', '2KC', '19H', '12H', '15H', '24C', '14D', '12C', '25S'],
-  ['19D', '23S', '2AC', '2TD', '13H', '14H', '23C', '15D', '1AH', '26S'],
+  ['19D', '23S', '2AC', '1TH', '13H', '14H', '23C', '15D', '1AH', '26S'],
   ['18D', '22S', '2AD', '1QH', '1KH', '2AH', '22C', '16D', '2KH', '27S'],
   ['17D', '22H', '2KD', '2QD', '2TD', '29D', '28D', '27D', '2QH', '28S'],
   ['26D', '23H', '24H', '25H', '26H', '27H', '28H', '29H', '2TH', '29S'],
@@ -27,7 +27,7 @@ const unflattenBoard = (flatBoard) => {
   return board;
 };
 
-const generateNewGame = (numberPlayers = 2, numberTeams = 2) => {
+const generateEmptyBoard = () => {
   const board = {};
 
   boardMap.forEach((row) => {
@@ -35,6 +35,12 @@ const generateNewGame = (numberPlayers = 2, numberTeams = 2) => {
       board[position] = { team: null, isProtected: false };
     });
   });
+
+  return board;
+};
+
+const generateNewGame = (numberPlayers = 2, numberTeams = 2) => {
+  const board = generateEmptyBoard();
 
   const teams = {
     numberPlayers,
@@ -67,6 +73,10 @@ const mapBoardDataToArray = (boardObject) => {
   const board = unflattenBoard(flatBoard);
 
   return board;
+};
+
+const generateProtectSelectionBoard = () => {
+  return mapBoardDataToArray(generateEmptyBoard());
 };
 
 const checkRow = (team, row, index) => {
@@ -109,6 +119,7 @@ const checkColumn = (team, column, index) => {
   const getPosition = (i) => column[i].position;
   const getTeam = (i) => column[i].positionData.team;
   const getProtected = (i) => column[i].positionData.isProtected;
+  console.log({ team, column, index });
 
   const positions = {
     [getPosition(index)]: { team, isProtected: getProtected(index) },
@@ -220,14 +231,8 @@ const checkDiagonal = (team, board, rowIndex, columnIndex, direction) => {
   };
 };
 
-const checkForSequence = (team, board, rowIndex, columnIndex) => {
+const generateSequenceData = (team, board, rowIndex, columnIndex) => {
   const sequenceData = {};
-  let isSequence = false;
-  let numberOfSequences = 0;
-  let positionsToProtect = null;
-  // Once protectable positions is no longer null, add to object numberProtected: 0
-  // Set value of protectable position key to teamTurn
-  let protectablePositions = {};
 
   // Check all angles for sequence in case there is a sequence at more than one angle to give player opportunity to pick which sequence to protect
   const column = board.map((row) => row[columnIndex]);
@@ -236,6 +241,32 @@ const checkForSequence = (team, board, rowIndex, columnIndex) => {
   sequenceData.row = checkRow(team, board[rowIndex], columnIndex);
   sequenceData.forwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'forward');
   sequenceData.backwardDiagonal = checkDiagonal(team, board, rowIndex, columnIndex, 'backward');
+
+  return sequenceData;
+};
+
+const checkSequenceProtection = (team, board, rowIndex, columnIndex) => {
+  console.log({ team, board, rowIndex, columnIndex });
+  const sequenceData = generateSequenceData(team, board, rowIndex, columnIndex);
+  let isSequence = false;
+
+  Object.entries(sequenceData).forEach(([key, value]) => {
+    if (value[`${key}SequenceFound`]) {
+      isSequence = true;
+    }
+  });
+
+  return isSequence;
+};
+
+const checkForSequence = (team, board, rowIndex, columnIndex) => {
+  let isSequence = false;
+  let numberOfSequences = 0;
+  let positionsToProtect = null;
+  // Once protectable positions is no longer null, add to object numberProtected: 0
+  // Set value of protectable position key to teamTurn
+  let protectablePositions = {};
+  const sequenceData = generateSequenceData(team, board, rowIndex, columnIndex);
 
   Object.entries(sequenceData).forEach(([key, value]) => {
     if (value[`${key}SequenceFound`]) {
@@ -254,10 +285,15 @@ const checkForSequence = (team, board, rowIndex, columnIndex) => {
       positionsToProtect = protectablePositions;
       protectablePositions = null;
     } else {
+      // Provide a data set to reset to in case user protection selection is erroneous
+      protectablePositions.resetData = { ...protectablePositions };
       // This count will be used to determine when user has completed selection of positions to protect
-      protectablePositions.numberProtected = 0;
+      protectablePositions.positionsProtected = 0;
+      protectablePositions.sequencesProtected = 0;
       // If the user got more than one sequence with this play we allow them to choose positions to protect for each
-      protectablePositions.numberToProtect = numberOfSequences * 5;
+      protectablePositions.positionsToProtect = numberOfSequences * 5;
+      protectablePositions.sequencesToProtect = numberOfSequences;
+      protectablePositions.selectionBoard = generateProtectSelectionBoard();
     }
   } else {
     protectablePositions = null;
@@ -281,4 +317,11 @@ const checkPlayEligibility = (board, hand, position) => {
 
 // TODO: Maybe split all of these utils into GameService and BoardService
 
-export { generateNewGame, mapBoardDataToArray, checkPlayEligibility, checkForSequence };
+export {
+  generateNewGame,
+  mapBoardDataToArray,
+  checkPlayEligibility,
+  checkForSequence,
+  checkSequenceProtection,
+  generateProtectSelectionBoard,
+};

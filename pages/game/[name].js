@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { subscribe } from 'services/GameService';
 import { Loading, Board } from 'components';
-import { checkPlayEligibility, checkForSequence } from 'utils/game';
+import {
+  checkPlayEligibility,
+  checkForSequence,
+  checkSequenceProtection,
+  generateProtectSelectionBoard,
+} from 'utils/game';
 
 const Game = ({ gameName }) => {
   const [board, setBoard] = useState(null);
@@ -24,24 +29,54 @@ const Game = ({ gameName }) => {
     };
   }, [gameName]);
 
-  const handleProtectPosition = (position) => {
+  const handleProtectPosition = (rowIndex, columnIndex) => {
+    const { position } = board[rowIndex][columnIndex];
+    let protectableData = { ...protectablePositions };
     console.log('Protect position: ', position);
     // Check if key exists for position in protectable positions, if it doesn't show error message
-    // If it does, set value of protectable position to true, increase protectablePositions.numberProtected count
-    if (protectablePositions[position]) {
-      protectablePositions[position].isProtected = true;
+    // If it does, set value of protectable position to true, increase protectablePositions.positionsProtected count
+    if (protectableData[position]) {
+      protectableData[position].isProtected = true;
+      protectableData.positionsProtected++;
+      protectableData.selectionBoard[rowIndex][columnIndex].positionData = {
+        team: teams[playerTurn],
+        isProtected: true,
+      };
     }
 
-    if (protectablePositions.numberProtected > 0) {
-      // Once the user has chosen a second position to protect a direction of the sequence has been protected. If the number to protect is 5 remove positions that are no longer eligible for protection based on the selection from protectablePositions. If they have 2 or more sequences to protect I should do something so that they can only focus on protecting one sequence at a time.
+    if (protectableData.positionsProtected % 5 === 0) {
+      const selectionIsSequence = checkSequenceProtection(
+        teams[playerTurn],
+        protectableData.selectionBoard,
+        rowIndex,
+        columnIndex
+      );
+
+      if (selectionIsSequence) {
+        protectableData.sequencesProtected++;
+      } else {
+        // User has made an error in selecting protected positions, they must restart the process
+        // TODO: Add error notification
+        protectableData = {
+          ...protectableData,
+          ...protectableData.resetData,
+          positionsProtected: 0,
+          sequencesProtected: 0,
+        };
+      }
+      // Clear selection board for verifying sequence of next selections
+      protectableData.selectionBoarad = generateProtectSelectionBoard();
     }
 
-    if (protectablePositions.numberProtected + 1 === protectablePositions.numberToProtect) {
+    if (
+      protectableData.positionsProtected === protectableData.positionsToProtect &&
+      protectableData.sequencesProtected === protectableData.sequencesToProtect
+    ) {
+      // FIXME: Set protection data here next!
       // fetch play turn url with protect data to update all of those positions with team data and protected
     } else {
       setProtectablePositions({
-        ...protectablePositions,
-        numberProtected: protectablePositions.numberProtected + 1,
+        ...protectableData,
       });
     }
   };

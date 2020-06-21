@@ -30,7 +30,7 @@ const Board = ({ board, teams, handleTurn, handleProtectPosition, protectablePos
                 key={position}
                 onClick={() =>
                   protectablePositions
-                    ? handleProtectPosition(position)
+                    ? handleProtectPosition(rowIndex, columnIndex)
                     : handleTurn(rowIndex, columnIndex)
                 }
               >
