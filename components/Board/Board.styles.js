@@ -34,9 +34,11 @@ const CardContainer = styled.div`
 `;
 
 const Card = styled.img`
-  width: 100%;
-  height: 100%;
+  width: ${({ dimensions }) => `${dimensions.height}px`};
+  height: ${({ dimensions }) => `${dimensions.width}px`};
   transform: rotate(90deg);
+  transform-origin: 0 0;
+  margin-left: 100%;
 
   &:hover {
     cursor: pointer;
