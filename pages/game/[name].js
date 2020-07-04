@@ -14,7 +14,7 @@ const Game = ({ gameName }) => {
   const [teams, setTeams] = useState(null);
   const [loading, setLoading] = useState(false);
   const [playingTurn, setPlayingTurn] = useState(false);
-  const [protectablePositions, setProtectablePositions] = useState(false);
+  const [protectablePositions, setProtectablePositions] = useState(null);
 
   const playTurnUrl = `${location.protocol}//${location.host}/api/game/board`;
 
@@ -74,6 +74,7 @@ const Game = ({ gameName }) => {
     ) {
       // FIXME: Set protection data here next!
       // fetch play turn url with protect data to update all of those positions with team data and protected
+      setProtectablePositions(null);
     } else {
       setProtectablePositions({
         ...protectableData,
