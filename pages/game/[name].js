@@ -65,7 +65,7 @@ const Game = ({ gameName }) => {
         };
       }
       // Clear selection board for verifying sequence of next selections
-      protectableData.selectionBoarad = generateProtectSelectionBoard();
+      protectableData.selectionBoard = generateProtectSelectionBoard();
     }
 
     if (

@@ -35,3 +35,6 @@ next.config.js
 # firebase credentials
 firebase-service-key-sequence-staging.json
 firebase-service-key-sequence-production.json
+
+# panda css output
+styled-system
