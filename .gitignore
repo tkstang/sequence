@@ -38,3 +38,19 @@ firebase-service-key-sequence-production.json
 
 # panda css output
 styled-system
+
+# OAT core
+.oat/config.local.json
+.oat/state.md
+.oat/projects/local/**
+.oat/projects/archived/**
+!.oat/projects/local/.gitkeep
+!.oat/projects/archived/.gitkeep
+# END OAT core
+
+# OAT local paths
+.oat/**/pr/
+.oat/**/reviews/archived/
+.oat/projects/**/pr/
+.oat/projects/**/reviews/archived/
+# END OAT local paths

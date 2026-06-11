@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "projects": {
+    "root": ".oat/projects/shared"
+  },
+  "git": {
+    "defaultBranch": "master"
+  },
+  "tools": {
+    "core": true,
+    "ideas": true,
+    "docs": true,
+    "workflows": true,
+    "utility": true,
+    "project-management": true,
+    "research": true,
+    "brainstorm": true
+  },
+  "localPaths": [
+    ".oat/**/pr",
+    ".oat/**/reviews/archived",
+    ".oat/projects/**/pr",
+    ".oat/projects/**/reviews/archived"
+  ]
+}
