@@ -17,7 +17,6 @@
 import type {
   Board,
   Card,
-  GameEvent,
   GameSettings,
   GameState,
   PendingChoice,
@@ -250,11 +249,22 @@ export async function persistGameState(
 // Events
 // ---------------------------------------------------------------------------
 
+/**
+ * The minimal shape the event log requires: a discriminator `type` and an
+ * optional `seat` (stamped into `actor_seat`). Both the rules-engine
+ * `GameEvent` and the API `LobbyEvent` satisfy this, so they share one log and
+ * one subscription (design §Event stream contract).
+ */
+export interface LoggableEvent {
+  readonly type: string;
+  readonly seat?: number;
+}
+
 /** A persisted event row, as returned by {@link appendEvents}. */
 export interface AppendedEvent {
   seq: number;
   type: string;
-  payload: GameEvent;
+  payload: LoggableEvent;
   actorSeat: number | null;
 }
 
@@ -263,10 +273,10 @@ export interface AppendedEvent {
  * current max seq under the transaction, then inserts sequentially. The
  * `actor_seat` column is stamped from the event's own `seat` when present.
  */
-export async function appendEvents(
+export async function appendEvents<E extends LoggableEvent>(
   tx: Tx,
   gameId: string,
-  events: readonly GameEvent[],
+  events: readonly E[],
 ): Promise<AppendedEvent[]> {
   if (events.length === 0) return [];
 
@@ -275,10 +285,10 @@ export async function appendEvents(
     .from(gameEvents)
     .where(eq(gameEvents.gameId, gameId));
 
-  let seq = (currentMax ?? 0) + 0;
+  let seq = currentMax ?? 0;
   const rows = events.map((event) => {
     seq += 1;
-    const actorSeat = 'seat' in event ? (event.seat as number) : null;
+    const actorSeat = event.seat ?? null;
     return {
       gameId,
       seq,
@@ -290,10 +300,10 @@ export async function appendEvents(
 
   await tx.insert(gameEvents).values(rows);
 
-  return rows.map((r) => ({
+  return rows.map((r, i) => ({
     seq: r.seq,
     type: r.type,
-    payload: r.payload as unknown as GameEvent,
+    payload: events[i]!,
     actorSeat: r.actorSeat,
   }));
 }

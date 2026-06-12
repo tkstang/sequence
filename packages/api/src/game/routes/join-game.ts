@@ -1,3 +1,4 @@
+import type { Team } from '@sequence/game-logic';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -7,6 +8,7 @@ import { games } from '../../db/schema/games.ts';
 import type { RateLimiter } from '../../shared/rate-limit-middleware.ts';
 import { GUEST_COOKIE_NAME, publicProcedure } from '../../trpc.ts';
 import { hashToken, issueGuestToken } from '../../user/guest-tokens.ts';
+import { appendEvents } from '../state-mapping.ts';
 
 /** Result of a join: the seat the caller now occupies + whether they're a guest. */
 export interface JoinResult {
@@ -97,6 +99,15 @@ export function buildJoinRoute(limiter: RateLimiter) {
             team,
             userId: ctx.user.id,
           });
+          await appendEvents(tx, game.id, [
+            {
+              type: 'PlayerJoined',
+              seat,
+              team: team as Team,
+              name: ctx.user.name,
+              isGuest: false,
+            },
+          ]);
           return { gameId: game.id, seat, team, isGuest: false };
         }
 
@@ -116,6 +127,15 @@ export function buildJoinRoute(limiter: RateLimiter) {
           guestName: input.guestName,
           guestTokenHash: hashToken(token),
         });
+        await appendEvents(tx, game.id, [
+          {
+            type: 'PlayerJoined',
+            seat,
+            team: team as Team,
+            name: input.guestName,
+            isGuest: true,
+          },
+        ]);
 
         // httpOnly, game-scoped cookie. SameSite/secure are finalized at deploy
         // (p07); same-site for local/test. The raw token lives only here.
