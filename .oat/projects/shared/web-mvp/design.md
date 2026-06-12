@@ -428,8 +428,8 @@ No database or data migrations — greenfield; legacy Firestore data is abandone
 
 ## Open Questions
 
-- **Wireframes:** screen layouts for the 9 screens + handoff interstitial — being resolved in a design-supplement session (visual companion) before/alongside planning; outputs land in `wireframes/` under this project.
-- **Hard-mode gesture details:** dead-card turn-in gesture and misdrop feedback — to be settled in the wireframe session; the wire contract is unaffected either way.
+- ~~**Wireframes**~~ — **resolved 2026-06-12**: visual session decisions + mockups in `wireframes/` (mobile game screen: peeking hand; FR16 handoff: hand veil; lobby: stacked team rows; dashboard approved). See `wireframes/README.md`.
+- **Hard-mode gesture details:** dead-card turn-in gesture and misdrop feedback — settled during Phase 6 implementation; the wire contract is unaffected either way.
 
 ## Implementation Phases
 

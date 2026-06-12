@@ -1,0 +1,113 @@
+<h2>Lobby A refined — stacked team rows</h2>
+<p class="subtitle">Same "teams as places" idea, but each team is a full-width row instead of a narrow column. Left: 6-player 3-team. Right: 4-player 2v2 (rows get roomier as teams shrink).</p>
+
+<style>
+  .phone { width: 270px; height: 540px; border: 3px solid #444; border-radius: 24px; margin: 0 auto; background: #f6f3ee; display: flex; flex-direction: column; overflow: hidden; }
+  .lhead { background: #2d3142; color: #fff; padding: 12px; text-align: center; }
+  .code { font-size: 18px; letter-spacing: 3px; font-weight: 700; }
+  .copy { font-size: 9px; color: #9fb0ff; margin-top: 3px; }
+  .settings { font-size: 9px; color: #aab; margin-top: 5px; }
+  .teamrow { border-radius: 10px; padding: 8px 10px; margin: 0 10px 8px; }
+  .tblue { background: #e3ecf7; border: 2px solid #3a6ea5; }
+  .tgreen { background: #e2f3e8; border: 2px solid #2e9e5b; }
+  .tred { background: #f9e4e2; border: 2px solid #c0453c; }
+  .trhead { display: flex; align-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .slots { display: flex; gap: 6px; }
+  .slot { flex: 1; background: #fff; border-radius: 7px; padding: 8px; font-size: 11px; display: flex; align-items: center; gap: 4px; border: 1px solid #ddd; }
+  .slot.empty { border: 1.5px dashed #aaa; color: #999; background: rgba(255,255,255,.5); justify-content: center; }
+  .kick { margin-left: auto; color: #c66; font-size: 10px; }
+  .startbtn { margin: 8px 12px 14px; background: #2e9e5b; color: #fff; text-align: center; border-radius: 10px; padding: 11px; font-size: 13px; font-weight: 600; }
+  .startbtn.dis { background: #b9c2bb; }
+  .rand { text-align: center; font-size: 10px; color: #667; }
+  .order { font-size: 9px; color: #667; text-align: center; padding: 5px 10px; }
+</style>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">6 players · 3 teams of 2</div>
+    <div class="mockup-body" style="padding:12px">
+      <div class="phone">
+        <div class="lhead">
+          <div style="font-size:9px; color:#aab">INVITE CODE</div>
+          <div class="code">KQ7-PM2N</div>
+          <div class="copy">⧉ copy link</div>
+          <div class="settings">6 players · 3 teams · tap mode · 2:00 timer</div>
+        </div>
+        <div style="flex:1; padding-top:10px">
+          <div class="teamrow tblue">
+            <div class="trhead" style="color:#3a6ea5">● Blue</div>
+            <div class="slots">
+              <div class="slot">Tom 👑</div>
+              <div class="slot">Maya <span class="kick">✕</span></div>
+            </div>
+          </div>
+          <div class="teamrow tgreen">
+            <div class="trhead" style="color:#2e9e5b">● Green</div>
+            <div class="slots">
+              <div class="slot">Sarah <span class="kick">✕</span></div>
+              <div class="slot empty">tap to join</div>
+            </div>
+          </div>
+          <div class="teamrow tred">
+            <div class="trhead" style="color:#c0453c">● Red</div>
+            <div class="slots">
+              <div class="slot">Ben <span class="kick">✕</span></div>
+              <div class="slot empty">tap to join</div>
+            </div>
+          </div>
+        </div>
+        <div class="order">Turn order: Tom → Sarah → Ben → Maya → (…) → (…)</div>
+        <div class="rand">🎲 randomize teams</div>
+        <div class="startbtn dis">Waiting for 2 more players…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">4 players · 2v2</div>
+    <div class="mockup-body" style="padding:12px">
+      <div class="phone">
+        <div class="lhead">
+          <div style="font-size:9px; color:#aab">INVITE CODE</div>
+          <div class="code">XR4-T8WC</div>
+          <div class="copy">⧉ copy link</div>
+          <div class="settings">4 players · 2v2 · tap mode · no timer</div>
+        </div>
+        <div style="flex:1; padding-top:10px">
+          <div class="teamrow tblue">
+            <div class="trhead" style="color:#3a6ea5">● Blue</div>
+            <div class="slots">
+              <div class="slot">Tom 👑</div>
+              <div class="slot">Maya <span class="kick">✕</span></div>
+            </div>
+          </div>
+          <div class="teamrow tgreen">
+            <div class="trhead" style="color:#2e9e5b">● Green</div>
+            <div class="slots">
+              <div class="slot">Sarah <span class="kick">✕</span></div>
+              <div class="slot empty">tap to join</div>
+            </div>
+          </div>
+        </div>
+        <div class="order">Turn order: Tom → Sarah → Maya → (…)</div>
+        <div class="rand">🎲 randomize teams</div>
+        <div class="startbtn dis">Waiting for 1 more player…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:18px">
+  <div class="option" data-choice="a2-stacked-rows" onclick="toggleSelect(this)">
+    <div class="letter">A2</div>
+    <div class="content"><h3>Lock stacked team rows</h3><p>Teams as full-width places; slots breathe at every player count; tap an empty slot to join that team.</p></div>
+  </div>
+  <div class="option" data-choice="back-to-columns" onclick="toggleSelect(this)">
+    <div class="letter">A1</div>
+    <div class="content"><h3>Keep the original columns</h3><p>Prefer the side-by-side spatial split despite the squeeze at three teams.</p></div>
+  </div>
+  <div class="option" data-choice="b-roster" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Roster + pills after all</h3></div>
+  </div>
+</div>
