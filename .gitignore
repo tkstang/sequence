@@ -54,3 +54,6 @@ styled-system
 .oat/projects/**/pr/
 .oat/projects/**/reviews/archived/
 # END OAT local paths
+
+# OAT visual-companion session scratch
+.oat/brainstorm/
