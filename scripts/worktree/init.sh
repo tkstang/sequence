@@ -101,6 +101,8 @@ copy_directory_tree ".oat/projects/archived"
 
 if [[ "${SKIP_S3_ARCHIVE_SYNC:-}" == "1" ]]; then
   echo "skip S3 archived-project sync: SKIP_S3_ARCHIVE_SYNC=1"
+elif [[ ! -f "${current_root}/scripts/sync-archived-projects-from-s3.sh" ]]; then
+  echo "skip S3 archived-project sync: scripts/sync-archived-projects-from-s3.sh not present in this repo"
 else
   echo "syncing archived projects from S3 (cross-machine archives)"
   bash "${current_root}/scripts/sync-archived-projects-from-s3.sh" --warn-only
