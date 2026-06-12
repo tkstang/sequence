@@ -270,6 +270,7 @@ State of record lives in Postgres (Neon); the server is the single writer. Clien
 - Firestore real-time model (legacy) — rejected: no server authority, rules unenforceable, vendor coupling.
 - SSE transport for subscriptions — rejected for this use case: no server-side disconnect detection (needed for timer pause), weaker Fastify/RN fit.
 - Separate Vite SPA for the game — rejected for MVP: one web app, one deploy; escape hatch remains.
+- Neon Auth (managed Better Auth, evaluated 2026-06-12) — rejected: auth server is Neon-hosted, so session cookies live on Neon's origin (breaks same-cookie-jar WS upgrade auth), no Expo support, plugins/server-side config blocked. Self-hosted Better Auth on Fastify keeps all three. Side benefit: Neon building on Better Auth strengthens the sustainability signal for the library.
 
 _Design-related open questions are tracked in the [Open Questions](#open-questions) section below._
 
