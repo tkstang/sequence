@@ -45,3 +45,6 @@ yarn-error.log*
 
 # OAT visual-companion session scratch
 .oat/brainstorm/
+
+# local worktrees root
+.worktrees/
