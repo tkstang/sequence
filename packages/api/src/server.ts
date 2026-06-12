@@ -1,4 +1,5 @@
 import cors from '@fastify/cors';
+import fastifyWebsocket from '@fastify/websocket';
 import {
   fastifyTRPCPlugin,
   type FastifyTRPCPluginOptions,
@@ -56,6 +57,12 @@ export async function buildServer(
     credentials: true,
   });
 
+  // WebSocket support for tRPC subscriptions. Registered before the tRPC
+  // plugin so `useWSS: true` can attach to the same HTTP server. The upgrade
+  // request carries the Better Auth session cookie (and, for guests, the
+  // game-scoped cookie), so WS authenticates from the same cookie jar as HTTP.
+  await app.register(fastifyWebsocket);
+
   // Decorate so downstream plugins (tRPC context, WS upgrade) reuse one auth/db.
   app.decorate('auth', auth);
   app.decorate('db', db);
@@ -81,15 +88,26 @@ export async function buildServer(
     return reply.send(body);
   });
 
-  // tRPC over HTTP (queries + mutations). The WS transport for subscriptions
-  // is added in p03-t06.
+  // tRPC over HTTP (queries + mutations) and WS (subscriptions) on one prefix.
+  // `useWSS: true` reuses the @fastify/websocket server. A ~20s keepAlive ping
+  // both satisfies tRPC liveness and neutralizes Railway's WS idle drops; the
+  // disconnect/heartbeat → freeze lifecycle is layered on in p04.
+  // The fastify adapter reads `trpcOptions.keepAlive` at runtime but its public
+  // type does not yet surface the field, so we extend the typed options.
+  const trpcOptions: FastifyTRPCPluginOptions<AppRouter>['trpcOptions'] & {
+    keepAlive: { enabled: boolean; pingMs: number; pongWaitMs: number };
+  } = {
+    router: appRouter,
+    createContext: createContextFactory({ db, auth }),
+    // ~20s ping satisfies tRPC liveness and neutralizes Railway WS idle drops.
+    keepAlive: { enabled: true, pingMs: 20_000, pongWaitMs: 5_000 },
+  };
+
   await app.register(fastifyTRPCPlugin, {
     prefix: '/trpc',
-    trpcOptions: {
-      router: appRouter,
-      createContext: createContextFactory({ db, auth }),
-    } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
-  });
+    useWSS: true,
+    trpcOptions,
+  } satisfies FastifyTRPCPluginOptions<AppRouter>);
 
   return app;
 }

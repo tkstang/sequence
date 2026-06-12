@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@fastify/websocket": "^11.2.0",
     "@sequence/game-logic": "workspace:*",
     "@trpc/server": "^11.17.0",
     "better-auth": "^1.6.18",
