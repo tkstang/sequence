@@ -204,13 +204,13 @@ export type RuleViolation =
   | { readonly code: 'card-not-in-hand' }
   | { readonly code: 'space-occupied' }
   | { readonly code: 'wrong-card-for-space' }
-  | { readonly code: 'not-a-wild-card' }
   | { readonly code: 'not-a-one-eyed-jack' }
   | { readonly code: 'chip-locked' }
   | { readonly code: 'own-chip' }
   | { readonly code: 'empty-cell' }
-  | { readonly code: 'no-chip-to-remove' }
-  | { readonly code: 'freed-cell-same-turn' }
+  // `freed-cell-same-turn` is intentionally absent: a one-eyed removal ends the
+  // turn (applyRemove advances immediately), so a freed cell can never be
+  // replayed in the same turn — the rule is enforced structurally, not by a code.
   | { readonly code: 'not-a-dead-card' }
   | { readonly code: 'pending-choice-unresolved' }
   | { readonly code: 'no-pending-choice' }

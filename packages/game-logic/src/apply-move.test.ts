@@ -528,6 +528,38 @@ describe('resolveSequenceChoice — reuse rule (C1 regression)', () => {
   });
 });
 
+describe('advanceTurn event order (m2 regression)', () => {
+  it('emits TurnAdvanced before the incoming player’s auto-swap', () => {
+    // Tap mode: seat 1 holds a dead card so the turn advance auto-swaps it. The
+    // DeadCardSwapped (attributed to seat 1's now-started turn) must follow the
+    // TurnAdvanced that announces that turn.
+    const deadForSeat1: Card = { rank: '5', suit: 'D' };
+    const board = makeBoard(
+      boardCellsFor('5', 'D').map((p) => [p, { chip: 2 } as BoardCell]),
+    );
+    const state = baseState({
+      board,
+      hands: [[ACE_CLUBS], [deadForSeat1]],
+      deck: [
+        { rank: '6', suit: 'C' },
+        { rank: '7', suit: 'C' },
+      ],
+    });
+    const r = applyMove(
+      state,
+      place(ACE_CLUBS_POS, ACE_CLUBS),
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const turnIdx = r.events.findIndex((e) => e.type === 'TurnAdvanced');
+    const swapIdx = r.events.findIndex((e) => e.type === 'DeadCardSwapped');
+    expect(turnIdx).toBeGreaterThanOrEqual(0);
+    expect(swapIdx).toBeGreaterThanOrEqual(0);
+    expect(turnIdx).toBeLessThan(swapIdx);
+  });
+});
+
 describe('actor-seat enforcement (I4 regression)', () => {
   it('resolveSequenceChoice rejects a non-placer actor with not-your-turn', () => {
     const existing: Position[] = [];

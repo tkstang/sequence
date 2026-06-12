@@ -309,14 +309,21 @@ export function turnInDeadCard(
     return fail('not-a-dead-card');
   }
 
-  const handWithout = removeFromHand(hand, card);
   const draw = drawCard(state.deck, state.played, random);
-  const newHand = draw.card ? [...handWithout, draw.card] : handWithout;
+  // No replacement drawable → leave the dead card in hand (m3): never shrink the
+  // hand silently. The turn-in budget is untouched so the player may retry once
+  // cards are available.
+  if (!draw.card) {
+    return { ok: true, nextState: state, events: [] };
+  }
+
+  const handWithout = removeFromHand(hand, card);
+  const newHand = [...handWithout, draw.card];
   const hands = state.hands.map((h, i) => (i === seat ? newHand : h));
 
-  const events: GameEvent[] = draw.card
-    ? [{ type: 'DeadCardSwapped', seat, discarded: card, drawn: draw.card }]
-    : [];
+  const events: GameEvent[] = [
+    { type: 'DeadCardSwapped', seat, discarded: card, drawn: draw.card },
+  ];
 
   const next: GameState = {
     ...state,
@@ -521,6 +528,12 @@ export function advanceTurn(
     deadCardTurnedIn: false,
   };
 
+  // Announce the new turn first (m2): the incoming player's start-of-turn
+  // auto-swap belongs *inside* their turn, so TurnAdvanced must precede any
+  // DeadCardSwapped attributed to them — event-stream consumers reconstruct
+  // per-turn state in order.
+  events.push({ type: 'TurnAdvanced', seat: nextSeat, round });
+
   // Default mode: auto-swap at most one dead card for the incoming player.
   if (state.settings.mode === 'tap') {
     const swap = autoSwapDeadCard(next, nextSeat, rng);
@@ -528,6 +541,5 @@ export function advanceTurn(
     events.push(...swap.events);
   }
 
-  events.push({ type: 'TurnAdvanced', seat: nextSeat, round });
   return next;
 }
