@@ -24,6 +24,16 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6
 
+  packages/api:
+    dependencies:
+      '@sequence/game-logic':
+        specifier: workspace:*
+        version: link:../game-logic
+    devDependencies:
+      vitest:
+        specifier: ^3.2.6
+        version: 3.2.6
+
   packages/game-logic:
     dependencies:
       zod:
