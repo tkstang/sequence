@@ -10,10 +10,16 @@
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "dev": "node --env-file=.env --watch src/server.ts",
+    "start": "node src/server.ts"
   },
   "dependencies": {
-    "@sequence/game-logic": "workspace:*"
+    "@fastify/cors": "^11.2.0",
+    "@sequence/game-logic": "workspace:*",
+    "fastify": "^5.8.5",
+    "pino": "^10.3.1",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "vitest": "^3.2.6"
