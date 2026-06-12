@@ -1,0 +1,20 @@
+meta {
+  name: session
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/auth/get-session
+  body: none
+  auth: none
+}
+
+headers {
+  origin: {{webOrigin}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.user.email: eq {{email}}
+}

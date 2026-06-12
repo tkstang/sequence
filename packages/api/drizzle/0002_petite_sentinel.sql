@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD CONSTRAINT "games_rematch_of_games_id_fk" FOREIGN KEY ("rematch_of") REFERENCES "public"."games"("id") ON DELETE set null ON UPDATE no action;

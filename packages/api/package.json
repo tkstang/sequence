@@ -10,12 +10,26 @@
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "dev": "node --env-file=.env --watch src/server.ts",
+    "start": "node src/server.ts"
   },
   "dependencies": {
-    "@sequence/game-logic": "workspace:*"
+    "@fastify/cors": "^11.2.0",
+    "@fastify/rate-limit": "^11.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "@sequence/game-logic": "workspace:*",
+    "@trpc/server": "^11.17.0",
+    "better-auth": "^1.6.18",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
+    "pino": "^10.3.1",
+    "postgres": "^3.4.9",
+    "zod": "4.4.3"
   },
   "devDependencies": {
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "vitest": "^3.2.6"
   }
 }

@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-12
-oat_current_task_id: p02-t01
+oat_current_task_id: p04-t01
 oat_generated: false
 ---
 
@@ -27,14 +27,14 @@ oat_generated: false
 | Phase                            | Status      | Tasks | Completed |
 | -------------------------------- | ----------- | ----- | --------- |
 | Phase 1: Foundation & Salvage    | completed (review passed) | 11 | 11/11 |
-| Phase 2: game-logic rules engine | pending     | 11    | 0/11      |
-| Phase 3: API foundation          | pending     | 10    | 0/10      |
+| Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
+| Phase 3: API foundation          | completed (pre-review) | 10 | 10/10 |
 | Phase 4: Game domain             | pending     | 14    | 0/14      |
 | Phase 5: Web shell               | pending     | 9     | 0/9       |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 11/73 tasks completed
+**Total:** 32/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -113,25 +113,38 @@ zod (from p01) untouched; root `pnpm-lock.yaml` unchanged. Root gates green.
 
 ## Phase 3: API foundation (p03)
 
-**Status:** pending
-**Started:** -
+**Status:** completed (pre-review)
+**Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+**Outcome (what changed):**
 
-| Task    | Name                                       | Status  | Commit |
-| ------- | ------------------------------------------ | ------- | ------ |
-| p03-t01 | Fastify bootstrap + env validation         | pending | -      |
-| p03-t02 | Drizzle + db client                        | pending | -      |
-| p03-t03 | Game schema + initial migration            | pending | -      |
-| p03-t04 | Better Auth mounted                        | pending | -      |
-| p03-t05 | tRPC init + context + HTTP plugin          | pending | -      |
-| p03-t06 | WebSocket transport + heartbeat            | pending | -      |
-| p03-t07 | Guest tokens (TDD)                         | pending | -      |
-| p03-t08 | Integration harness + gamePlayerProcedure  | pending | -      |
-| p03-t09 | Auth integration tests + rate limiting     | pending | -      |
-| p03-t10 | Bruno scaffold                             | pending | -      |
+- Fastify 5 host with zod-validated env, pino logging, credentialed CORS, `/health`.
+- Drizzle ORM over postgres.js (fixed pool ≤10); full game schema (`games`, `game_players`, `game_events`) + Better Auth tables, two migrations applied to the Neon test branch with all 4 required indexes + cascade FKs.
+- Better Auth self-hosted at `/api/auth/*` (email+password, env-gated social, drizzle adapter, httpOnly+secure cookies) via a Web-Request bridge.
+- tRPC 11 over HTTP + WS (`useWSS`, ~20s keepAlive heartbeat); context resolves Better Auth session → `{ user | null }`; `publicProcedure` / `authedProcedure` / `gamePlayerProcedure` (seat resolution: user / local-creator / guest cookie).
+- Signed, game-scoped guest tokens (HMAC, hash-stored, no JWT). Reusable tRPC rate-limit middleware + `@fastify/rate-limit` on auth routes.
+- Integration harness on the Neon test branch (drizzle push + truncate + advisory-lock serialization); Bruno auth collection green against a booted server.
+
+**Key files:** `packages/api/src/{server,env,trpc,app-router}.ts`, `db/{client,schema/*}.ts`, `user/{auth,guest-tokens}.ts`, `shared/rate-limit-middleware.ts`, `test/{harness,global-setup,db-lock}.ts`, `bruno/`.
+
+**Verification:** api unit + integration suites (28 api tests) green vs the test branch; root gates green (typecheck/lint/format:check/test = 35 tests) on a clean tree; Bruno `auth` 6/6 vs a local server. Integration tests env-gate (skip cleanly without `DATABASE_URL_TEST`).
+
+**Notes / Decisions:** 4 recorded deltas (see Deviations table) — text-column user refs (FK ordering), Web-Request auth mount + CLI version, lazy guest resolution, advisory-lock test isolation. None are advisory concerns; all behaviors verified.
+
+| Task    | Name                                       | Status    | Commit    |
+| ------- | ------------------------------------------ | --------- | --------- |
+| p03-t01 | Fastify bootstrap + env validation         | completed | `b67caad` |
+| p03-t02 | Drizzle + db client                        | completed | `cf58235` |
+| p03-t03 | Game schema + initial migration            | completed | `f8f6a80` |
+| p03-t04 | Better Auth mounted                        | completed | `5587895` |
+| p03-t05 | tRPC init + context + HTTP plugin          | completed | `e804900` |
+| p03-t06 | WebSocket transport + heartbeat            | completed | `88936ec` |
+| p03-t07 | Guest tokens (TDD)                         | completed | `57490dc` (+`743323a` fix) |
+| p03-t08 | Integration harness + gamePlayerProcedure  | completed | `6c6e69b` (+`a677671` fix) |
+| p03-t09 | Auth integration tests + rate limiting     | completed | `20e9020` |
+| p03-t10 | Bruno scaffold                             | completed | `b9b3a8f` |
 
 ---
 
@@ -309,6 +322,12 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p02 review M1 | plan.md p02-t06 / rules-and-flows (≤1 turn-in per turn) | `turnInDeadCard` unguarded | Added game-active / no-pending-choice / current-seat guards and a one-per-turn cap via new `GameState.deadCardTurnedIn` flag (set on turn-in, cleared in `advanceTurn`). | Review M1: unguarded turn-in allowed mid-opponent-turn swaps and unlimited turn-ins. | implementation (shipped) | none |
 | p02 review M2 | design.md §Component Design (`validPlacements(hand, board)`) | `validPlacements(hand, board, team=1)` | `team` is now **required** (no default) | Review M2: a team=1 default mislabeled other teams' own chips as one-eyed targets, breaking the agrees-with-reducer property. | implementation (shipped) | p06 callers pass the seat's team (always known) |
 | p02 review m1 | types.ts `RuleViolation` union | Included `not-a-wild-card`, `no-chip-to-remove`, `freed-cell-same-turn` | Removed the two never-produced codes; replaced `freed-cell-same-turn` with a comment (removal ends the turn → structurally enforced). `not-your-turn` is now produced (I4). | Review m1: dead union members implied enforced rules that weren't. | implementation (shipped) | none |
+| p03-t03 | design.md §Data Models ("Our FKs point at `user.id`") | `games.created_by` / `game_players.user_id` as DB-level FKs to Better Auth's `user.id` | Stored as plain `text` columns matching Better Auth's default text id, with **no DB-level FK constraint** to `user` in migration `0000` | Better Auth owns and generates the `user` table in p03-t04 (later task); a hard FK in t03's migration would forward-reference a table that does not yet exist, breaking migration ordering. Referential integrity to `user` is enforced at the application layer (route handlers only accept the caller's authenticated `user.id`). The `game_id` FKs (within api-owned tables) ARE enforced at the DB with `ON DELETE CASCADE`. | implementation (shipped) | Optional follow-up: add a `user` FK in a later additive migration once auth tables exist, if DB-level integrity is desired. Not blocking. |
+| p03-t04 | plan.md p03-t04 ("mount `/api/auth/*` catch-all per Better Auth Fastify guide"; "`auth.ts` … generated via Better Auth CLI") | `toNodeHandler` raw-stream catch-all; schema via `better-auth` package CLI | Mounted via a **Web `Request`→`Response` bridge** (`auth.handler(request)`) instead of `toNodeHandler` raw-stream hijack; auth schema generated with `@better-auth/cli@1.4.21` (the `better-auth` 1.6 package ships no bin) | The raw-stream `toNodeHandler` approach left Fastify's already-parsed body unconsumed → Better Auth saw an undefined body (400 VALIDATION_ERROR). The Web-Request bridge is body-parser-agnostic and coexists cleanly with the tRPC HTTP plugin on the same instance. CLI version skew is harmless: the generated tables match Better Auth 1.6's expected shape (`user.id` is `text`, validating the t03 column-type choice). | implementation (shipped) | none — round-trips verified (signup/login/logout/session) against the Neon test branch and via Bruno |
+| p03-t05/t08 | design.md §API ("context resolves … `{ user \| null, guest \| null }`") | Guest resolved into `ctx.guest` at context-build time | Guest identity is resolved **lazily in `gamePlayerProcedure`** (which knows the target `gameId`), not at context build; `ctx.guest` stays null in p03 | A guest token is game-scoped, so it can only be verified once the target game is known — that is the per-procedure `gameId` input, not the bare request. `gamePlayerProcedure` reads the `sequence_guest` cookie, verifies the token for the requested game, and matches the stored hash. `guestSecret` is threaded through context for testability. | implementation (shipped) | none — matches the game-scoped guest model; integration-tested |
+| p03-t08/t09 | plan.md p03-t08 ("reset via `drizzle-kit push` + truncate") | Per-run push + per-test truncate is sufficient for isolation | Added a **Postgres session advisory lock** held per integration test file, serializing the two integration files against the one shared test branch | The vitest **workspace** runner (root `pnpm test`) runs the API's integration files in parallel workers; both `TRUNCATE` shared Better Auth tables, so an unguarded interleave caused a nondeterministic FK failure (`linkAccount` 500) when run together. The per-project `fileParallelism:false` is not honored under the workspace; the advisory lock makes correctness independent of scheduling. | implementation (shipped) | none — root `pnpm test` is green and stable across repeated runs |
+| p03 review (M2) | implementation.md p03-t03 deviation row (covered only `user`-ref columns) | `games.rematch_of` left without a DB-level FK | Added a real self-FK `rematch_of REFERENCES games(id) ON DELETE SET NULL` (migration `0002_petite_sentinel.sql`) | `rematch_of` references the api-owned `games` table, so the Better-Auth migration-ordering rationale that justifies plain-text user refs does not apply; the p04-t12 expiry sweep could otherwise leave dangling pointers. Applied to the test branch (verified, no drift). | implementation (shipped) | none — supersedes the gap noted against the p03-t03 row |
+| p03 review (I1) | review p03 finding I1 (`SameSite=Lax` cross-site cookies) | — | **Deliberately deferred to p07** | The cross-site cookie strategy (SameSite=None;Secure vs shared registrable domain) depends on the deploy domains decided in p07-t02/t03; local/p03/p04 testing is same-site and unaffected. A code comment at `user/auth.ts` cookie config flags the p07 obligation. | review finding (open) | Address in p07-t02/t03 with a cross-origin credentialed smoke assertion |
 
 ## Test Results
 
@@ -318,7 +337,7 @@ Track test execution during implementation.
 | ----- | --------- | ------ | ------ | -------- |
 | p01   | 7 (game-logic smoke + 6 board-map) | 7 | 0 | n/a |
 | p02   | 132 (13 files; post-review fixes) | 132 | 0 | n/a |
-| p03   | -         | -      | -      | -        |
+| p03   | 34 api after review fixes (9 env + 7 guest + 7 rate-limit unit + 11 integration [4 auth + 7 middleware]; +7 game-logic salvage = 41 root) | 34 api / 41 root | 0 | n/a |
 | p04   | -         | -      | -      | -        |
 | p05   | -         | -      | -      | -        |
 | p06   | -         | -      | -      | -        |
