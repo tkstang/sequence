@@ -12,8 +12,11 @@ export const envSchema = z.object({
   // Neon test-branch connection string. Optional in prod; required by the
   // integration harness (which skips cleanly when it is absent).
   DATABASE_URL_TEST: z.string().min(1).optional(),
-  // Better Auth signing secret. Required.
-  BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
+  // Better Auth signing secret. Required. Also signs game-scoped guest tokens,
+  // so a >=32-char floor fails fast on a weak/placeholder secret.
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(32, 'BETTER_AUTH_SECRET must be at least 32 characters'),
   // Public base URL Better Auth issues cookies/links against.
   BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),
   // Allowed CORS origin (the web app), credentialed.

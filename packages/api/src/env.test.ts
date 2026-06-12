@@ -4,7 +4,7 @@ import { parseEnv } from './env.ts';
 
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
-  BETTER_AUTH_SECRET: 'a-very-secret-value',
+  BETTER_AUTH_SECRET: 'a-very-secret-value-at-least-32-chars',
 };
 
 describe('parseEnv', () => {
@@ -18,6 +18,12 @@ describe('parseEnv', () => {
     expect(() => parseEnv(rest as NodeJS.ProcessEnv)).toThrow(
       /BETTER_AUTH_SECRET/,
     );
+  });
+
+  it('rejects a too-short BETTER_AUTH_SECRET', () => {
+    expect(() =>
+      parseEnv({ ...base, BETTER_AUTH_SECRET: 'short' } as NodeJS.ProcessEnv),
+    ).toThrow(/BETTER_AUTH_SECRET/);
   });
 
   it('defaults PORT to 3001 when unset', () => {
