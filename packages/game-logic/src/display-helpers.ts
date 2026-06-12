@@ -19,13 +19,14 @@ import type { Board, Card, Position, Team } from './types.ts';
  * The legal target cells for each card in `hand`, given the current board and
  * the acting `team`. Cards with no legal target (and dead cards) are omitted.
  *
- * `team` is required to resolve one-eyed jack targets; it defaults to team 1 for
- * the natural / two-eyed cases where it is irrelevant.
+ * `team` is required: one-eyed jack targets are team-dependent (opponent chips
+ * only), so a default would mislabel another team's own chips as removable and
+ * disagree with the reducer. Callers always know their seat's team.
  */
 export function validPlacements(
   hand: readonly Card[],
   board: Board,
-  team: Team = 1,
+  team: Team,
 ): Map<Card, Position[]> {
   const result = new Map<Card, Position[]>();
 

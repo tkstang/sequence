@@ -24,20 +24,24 @@ function board(entries: Array<[Position, BoardCell]>): Board {
 
 describe('validPlacements', () => {
   it('maps a natural card to its open board cells', () => {
-    const map = validPlacements([ACE_CLUBS], board([]));
+    const map = validPlacements([ACE_CLUBS], board([]), 1);
     const cells = map.get(ACE_CLUBS)!;
     expect(new Set(cells)).toEqual(new Set(boardCellsFor('A', 'C')));
   });
 
   it('excludes occupied cells for a natural card', () => {
     const [first, second] = boardCellsFor('A', 'C');
-    const map = validPlacements([ACE_CLUBS], board([[first!, { chip: 1 }]]));
+    const map = validPlacements([ACE_CLUBS], board([[first!, { chip: 1 }]]), 1);
     expect(map.get(ACE_CLUBS)).toEqual([second]);
   });
 
   it('maps a two-eyed jack to every open cell', () => {
     const occupied = positionAt(4, 4)!;
-    const map = validPlacements([TWO_EYED], board([[occupied, { chip: 1 }]]));
+    const map = validPlacements(
+      [TWO_EYED],
+      board([[occupied, { chip: 1 }]]),
+      1,
+    );
     const cells = map.get(TWO_EYED)!;
     expect(cells).not.toContain(occupied);
     // No corners (never placeable) and no occupied cell.
@@ -57,11 +61,25 @@ describe('validPlacements', () => {
     expect(map.get(ONE_EYED)).toEqual([opp]);
   });
 
+  it('resolves one-eyed targets relative to the caller’s team (M2)', () => {
+    // The same board, viewed by team 2, must list team-1 chips as removable —
+    // not team 2's own. A hardcoded team-1 default would list the caller's own
+    // chips and the reducer would then reject every suggestion (own-chip).
+    const teamOne = positionAt(4, 4)!;
+    const teamTwo = positionAt(6, 6)!;
+    const b = board([
+      [teamOne, { chip: 1 }],
+      [teamTwo, { chip: 2 }],
+    ]);
+    const forTeamTwo = validPlacements([ONE_EYED], b, 2);
+    expect(forTeamTwo.get(ONE_EYED)).toEqual([teamOne]);
+  });
+
   it('excludes dead cards', () => {
     const dead = board(
       boardCellsFor('A', 'C').map((p) => [p, { chip: 1 } as BoardCell]),
     );
-    const map = validPlacements([ACE_CLUBS, KING_HEARTS], dead);
+    const map = validPlacements([ACE_CLUBS, KING_HEARTS], dead, 1);
     expect(map.has(ACE_CLUBS)).toBe(false);
     expect(map.has(KING_HEARTS)).toBe(true);
   });
