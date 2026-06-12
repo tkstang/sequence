@@ -147,7 +147,32 @@ export function resolveClientIp(req: {
   );
 }
 
-const t = initTRPC.context<Context>().create();
+/**
+ * A typed rule violation a route may attach to a BAD_REQUEST so clients render
+ * feedback from codes (design §Error contract), never string matching. The move
+ * engine throws `RuleViolationError` whose `.violation` lands here via the
+ * error formatter below.
+ */
+interface RuleViolationCarrier {
+  violation?: { code?: string };
+}
+
+const t = initTRPC.context<Context>().create({
+  errorFormatter({ shape, error }) {
+    // Surface a game-logic rule violation in `error.data.ruleViolation` so the
+    // client error contract is code-based. The cause is the engine's
+    // RuleViolationError (structural check — no import cycle into the engine).
+    const cause = error.cause as RuleViolationCarrier | undefined;
+    const violation = cause?.violation;
+    if (violation && typeof violation.code === 'string') {
+      return {
+        ...shape,
+        data: { ...shape.data, ruleViolation: violation },
+      };
+    }
+    return shape;
+  },
+});
 
 export const router = t.router;
 export const mergeRouters = t.mergeRouters;

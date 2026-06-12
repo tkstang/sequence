@@ -3,6 +3,7 @@ import { router } from '../trpc.ts';
 import { createGameRoute } from './routes/create-game.ts';
 import { buildJoinRoute } from './routes/join-game.ts';
 import { kickPlayerRoute } from './routes/kick-player.ts';
+import { makeMoveRoute } from './routes/make-move.ts';
 import { onGameEventRoute } from './routes/on-game-event.ts';
 import { buildPreviewRoute } from './routes/preview.ts';
 import { randomizeTeamsRoute } from './routes/randomize-teams.ts';
@@ -29,5 +30,6 @@ export const gameRouter = router({
   kick: kickPlayerRoute,
   randomizeTeams: randomizeTeamsRoute,
   start: startGameRoute,
+  makeMove: makeMoveRoute,
   onGameEvent: onGameEventRoute,
 });
