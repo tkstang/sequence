@@ -1,5 +1,6 @@
 import { createRateLimiter } from '../shared/rate-limit-middleware.ts';
 import { router } from '../trpc.ts';
+import { chooseSequenceCellsRoute } from './routes/choose-sequence-cells.ts';
 import { createGameRoute } from './routes/create-game.ts';
 import { buildJoinRoute } from './routes/join-game.ts';
 import { kickPlayerRoute } from './routes/kick-player.ts';
@@ -9,6 +10,7 @@ import { buildPreviewRoute } from './routes/preview.ts';
 import { randomizeTeamsRoute } from './routes/randomize-teams.ts';
 import { setTeamRoute } from './routes/set-team.ts';
 import { startGameRoute } from './routes/start-game.ts';
+import { turnInDeadCardRoute } from './routes/turn-in-dead-card.ts';
 
 /**
  * The `game` router — lifecycle, lobby, moves, and the live subscription.
@@ -31,5 +33,7 @@ export const gameRouter = router({
   randomizeTeams: randomizeTeamsRoute,
   start: startGameRoute,
   makeMove: makeMoveRoute,
+  chooseSequenceCells: chooseSequenceCellsRoute,
+  turnInDeadCard: turnInDeadCardRoute,
   onGameEvent: onGameEventRoute,
 });
