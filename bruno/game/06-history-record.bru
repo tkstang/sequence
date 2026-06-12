@@ -1,0 +1,20 @@
+meta {
+  name: history-record
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/trpc/history.myRecord
+  body: none
+  auth: none
+}
+
+headers {
+  origin: {{webOrigin}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.data.total: gte 0
+}

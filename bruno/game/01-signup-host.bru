@@ -1,0 +1,34 @@
+meta {
+  name: signup-host
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sign-up/email
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  origin: {{webOrigin}}
+}
+
+body:json {
+  {
+    "email": "{{hostEmail}}",
+    "password": "supersecret123",
+    "name": "Bruno Host"
+  }
+}
+
+script:pre-request {
+  // Unique host email per run so the game collection is idempotent.
+  bru.setVar("hostEmail", `bruno-host+${Date.now()}@example.com`);
+}
+
+assert {
+  res.status: eq 200
+  res.body.user.email: eq {{hostEmail}}
+}

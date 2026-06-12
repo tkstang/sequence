@@ -1,0 +1,29 @@
+meta {
+  name: preview
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/trpc/game.preview?input={{previewInput}}
+  body: none
+  auth: none
+}
+
+headers {
+  origin: {{webOrigin}}
+}
+
+script:pre-request {
+  // tRPC GET query input is a URL-encoded JSON object.
+  bru.setVar(
+    "previewInput",
+    encodeURIComponent(JSON.stringify({ inviteCode: bru.getVar("inviteCode") })),
+  );
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.data.status: eq lobby
+  res.body.result.data.playerCount: eq 2
+}

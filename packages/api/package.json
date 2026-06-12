@@ -11,8 +11,8 @@
   "scripts": {
     "typecheck": "tsgo --noEmit",
     "test": "vitest run --passWithNoTests",
-    "dev": "node --env-file=.env --watch src/server.ts",
-    "start": "node src/server.ts"
+    "dev": "node --experimental-transform-types --env-file=.env --watch src/server.ts",
+    "start": "node --experimental-transform-types src/server.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
