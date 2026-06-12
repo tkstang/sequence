@@ -9,14 +9,16 @@
   },
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
-    "format:check": "pnpm -r format:check",
+    "lint": "oxlint --no-error-on-unmatched-pattern apps packages scripts tools",
+    "format": "oxfmt --no-error-on-unmatched-pattern apps packages scripts tools",
+    "format:check": "oxfmt --check --no-error-on-unmatched-pattern apps packages scripts tools",
     "test": "pnpm -r test",
     "build": "pnpm -r build"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260612.1",
+    "oxfmt": "^0.54.0",
+    "oxlint": "^1.69.0",
     "typescript": "^6.0.3"
   }
 }
