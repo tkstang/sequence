@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createDb, type Database } from '../db/client.ts';
 import { type Env, parseEnv } from '../env.ts';
 import { buildServer } from '../server.ts';
+import { acquireDbLock, type DbLock } from '../test/db-lock.ts';
 import { createAuth } from './auth.ts';
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
@@ -26,6 +27,7 @@ describeIntegration('auth integration', () => {
   let client: ReturnType<typeof createDb>['sql'];
   let env: Env;
   let baseUrl: string;
+  let lock: DbLock;
 
   beforeAll(async () => {
     const base = parseEnv();
@@ -34,6 +36,8 @@ describeIntegration('auth integration', () => {
       DATABASE_URL: base.DATABASE_URL_TEST,
       NODE_ENV: 'test',
     } as NodeJS.ProcessEnv);
+    // Serialize against the sibling integration file sharing this branch.
+    lock = await acquireDbLock(env.DATABASE_URL);
     ({ db, sql: client } = createDb(env.DATABASE_URL));
     const auth = createAuth(db, env);
     // Low burst ceiling so the rate-limit test runs fast.
@@ -53,6 +57,7 @@ describeIntegration('auth integration', () => {
   afterAll(async () => {
     await app.close();
     await client.end();
+    await lock.release();
   });
 
   beforeEach(async () => {

@@ -11,6 +11,7 @@ import {
   router,
 } from '../trpc.ts';
 import { createAuth } from '../user/auth.ts';
+import { acquireDbLock } from './db-lock.ts';
 
 /**
  * Integration-test harness.
@@ -76,6 +77,8 @@ export function testEnv(): Env {
 
 export async function createHarness(): Promise<Harness> {
   const env = testEnv();
+  // Serialize against sibling integration files sharing this branch.
+  const lock = await acquireDbLock(env.DATABASE_URL);
   const { db, sql: client } = createDb(env.DATABASE_URL);
   const auth = createAuth(db, env);
 
@@ -177,6 +180,7 @@ export async function createHarness(): Promise<Harness> {
     async close() {
       await app.close();
       await client.end();
+      await lock.release();
     },
   };
 
