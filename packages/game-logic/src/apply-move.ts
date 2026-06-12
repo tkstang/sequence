@@ -69,6 +69,12 @@ export function applyMove(state: GameState, move: Move, rng?: Rng): MoveResult {
   if (state.pendingChoice) {
     return fail('pending-choice-unresolved');
   }
+  // Engine-owned turn ownership: a move authored by a non-current seat is
+  // rejected here regardless of client behavior (NFR1). Seat is optional on the
+  // wire for backward compatibility; the API host always provides it.
+  if (move.seat !== undefined && move.seat !== state.currentSeat) {
+    return fail('not-your-turn');
+  }
 
   switch (move.type) {
     case 'place':
@@ -141,10 +147,17 @@ export function resolveSequenceChoice(
   state: GameState,
   cells: readonly Position[],
   rng?: Rng,
+  actorSeat?: Seat,
 ): MoveResult {
   const random = rng ?? defaultRng(state);
   const pending = state.pendingChoice;
   if (!pending) return fail('no-pending-choice');
+
+  // Only the placer may resolve their own pending choice (p04-t08). Optional for
+  // backward compatibility; the API host supplies the authenticated seat.
+  if (actorSeat !== undefined && actorSeat !== pending.seat) {
+    return fail('not-your-turn');
+  }
 
   if (!isValidChoice(cells, pending.cells, pending.placed)) {
     return fail('invalid-sequence-choice');
@@ -279,6 +292,15 @@ export function turnInDeadCard(
   rng?: Rng,
 ): MoveResult {
   const random = rng ?? defaultRng(state);
+  // Same preamble as applyMove: game active, no frozen choice, acting seat owns
+  // the turn (M1, I4). Without these the engine would swap mid-opponent-turn or
+  // during a pending choice.
+  if (state.status !== 'active') return fail('game-not-active');
+  if (state.pendingChoice) return fail('pending-choice-unresolved');
+  if (seat !== state.currentSeat) return fail('not-your-turn');
+  // At most one manual turn-in per turn (official rule / default-mode analogue).
+  if (state.deadCardTurnedIn) return fail('not-a-dead-card');
+
   const hand = state.hands[seat] ?? [];
   if (!hand.some((c) => sameCard(c, card))) {
     return fail('card-not-in-hand');
@@ -301,6 +323,7 @@ export function turnInDeadCard(
     hands,
     deck: draw.deck,
     played: [...draw.played, card],
+    deadCardTurnedIn: true,
   };
 
   return { ok: true, nextState: next, events };
@@ -490,7 +513,13 @@ export function advanceTurn(
   const nextSeat = (state.currentSeat + 1) % count;
   const round = nextSeat === 0 ? state.round + 1 : state.round;
 
-  let next: GameState = { ...state, currentSeat: nextSeat, round };
+  // New turn → the per-turn dead-card turn-in budget resets.
+  let next: GameState = {
+    ...state,
+    currentSeat: nextSeat,
+    round,
+    deadCardTurnedIn: false,
+  };
 
   // Default mode: auto-swap at most one dead card for the incoming player.
   if (state.settings.mode === 'tap') {

@@ -145,6 +145,11 @@ export interface GameState {
   readonly nextSequenceId: number;
   /** Present only while a >5-run choice is unresolved (turn frozen). */
   readonly pendingChoice?: PendingChoice;
+  /**
+   * True once the current seat has manually turned in a dead card this turn
+   * (hard mode). Caps turn-ins at one per turn; cleared on turn advance.
+   */
+  readonly deadCardTurnedIn?: boolean;
   /** Set once the game is won. */
   readonly winner?: Team;
 }
@@ -164,6 +169,13 @@ export interface PlaceMove {
   readonly type: 'place';
   readonly position: Position;
   readonly card?: Card;
+  /**
+   * The acting seat. When present, `applyMove` rejects the move with
+   * `not-your-turn` unless it equals `state.currentSeat` — the engine owns turn
+   * ownership (NFR1). Optional for backward compatibility; the API host always
+   * sets it from the authenticated seat.
+   */
+  readonly seat?: Seat;
 }
 
 /** Remove an opponent's unlocked chip (consumes a one-eyed jack). */
@@ -171,6 +183,8 @@ export interface RemoveChipMove {
   readonly type: 'removeChip';
   readonly position: Position;
   readonly card?: Card;
+  /** The acting seat — see {@link PlaceMove.seat}. */
+  readonly seat?: Seat;
 }
 
 export type Move = PlaceMove | RemoveChipMove;

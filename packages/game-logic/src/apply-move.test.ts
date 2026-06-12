@@ -24,7 +24,6 @@ const TWO_EYED: Card = { rank: 'J', suit: 'D' };
 const FIVE_DIAMONDS: Card = { rank: '5', suit: 'D' };
 
 const ACE_CLUBS_POS = boardCellsFor('A', 'C')[0]!;
-const KING_HEARTS_POS = boardCellsFor('K', 'H')[0]!;
 
 interface Overrides {
   hands?: Card[][];
@@ -58,19 +57,30 @@ function place(position: string, card?: Card): Move {
 }
 
 describe('applyMove — rejections', () => {
-  it('rejects out-of-turn', () => {
+  it('rejects out-of-turn when the move carries a non-current actor seat', () => {
+    // It's seat 0's turn. A move authored by seat 1 is rejected by the engine
+    // itself with not-your-turn — turn ownership is engine-enforced (NFR1),
+    // independent of whether the named card is in any hand.
     const state = baseState({ currentSeat: 0 });
-    // Seat 1's card, but it's seat 0's turn — move authored for the wrong seat
-    // is rejected because the played card is not in the current seat's hand.
-    const r = applyMove(state, place(KING_HEARTS_POS, KING_HEARTS));
-    // King-of-hearts IS in seat 0's hand here, so use a seat-1-only card:
-    const r2 = applyMove(
-      state,
-      place(boardCellsFor('5', 'D')[0]!, FIVE_DIAMONDS),
-    );
-    expect(r.ok).toBe(true); // sanity: in-hand card succeeds
-    expect(r2.ok).toBe(false);
-    if (!r2.ok) expect(r2.error.code).toBe('card-not-in-hand');
+    const r = applyMove(state, {
+      type: 'place',
+      position: ACE_CLUBS_POS,
+      card: ACE_CLUBS,
+      seat: 1,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('not-your-turn');
+  });
+
+  it('accepts a move whose actor seat matches the current seat', () => {
+    const state = baseState({ currentSeat: 0 });
+    const r = applyMove(state, {
+      type: 'place',
+      position: ACE_CLUBS_POS,
+      card: ACE_CLUBS,
+      seat: 0,
+    });
+    expect(r.ok).toBe(true);
   });
 
   it('rejects a card not in hand', () => {
@@ -518,6 +528,59 @@ describe('resolveSequenceChoice — reuse rule (C1 regression)', () => {
   });
 });
 
+describe('actor-seat enforcement (I4 regression)', () => {
+  it('resolveSequenceChoice rejects a non-placer actor with not-your-turn', () => {
+    const existing: Position[] = [];
+    for (let c = 0; c < 6; c++) existing.push(positionAt(4, c)!);
+    const placed = positionAt(4, 5)!;
+    const entries: Array<[Position, BoardCell]> = existing
+      .slice(0, 5)
+      .map((p) => [p, { chip: 1 } as BoardCell]);
+    const state = baseState({
+      board: makeBoard(entries),
+      hands: [[TWO_EYED], []],
+    });
+    const placement = applyMove(
+      state,
+      { type: 'place', position: placed, card: TWO_EYED, seat: 0 },
+      createSeededRng(1),
+    );
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+    const chosen = existing.slice(1, 6);
+    // Seat 1 tries to resolve seat 0's pending choice → rejected.
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      chosen,
+      createSeededRng(1),
+      1,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('not-your-turn');
+  });
+
+  it('turnInDeadCard rejects an actor that is not the current seat', () => {
+    const deadCard: Card = { rank: 'A', suit: 'C' };
+    const board = makeBoard(
+      boardCellsFor('A', 'C').map((p) => [p, { chip: 1 } as BoardCell]),
+    );
+    const state: GameState = {
+      ...baseState({ board, hands: [[deadCard], [deadCard]] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+      currentSeat: 0,
+    };
+    // Seat 1 tries to turn in during seat 0's turn.
+    const r = turnInDeadCard(state, 1, deadCard, createSeededRng(1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('not-your-turn');
+  });
+});
+
 describe('forfeitTurn', () => {
   it('advances the turn without play or draw', () => {
     const state = baseState();
@@ -557,6 +620,89 @@ describe('turnInDeadCard (hard mode)', () => {
     ).toBe(false);
     expect(r.nextState.currentSeat).toBe(0);
     expect(r.events.some((e) => e.type === 'DeadCardSwapped')).toBe(true);
+  });
+
+  it('rejects a turn-in when the game is not active (M1)', () => {
+    const deadCard: Card = { rank: 'A', suit: 'C' };
+    const board = makeBoard(
+      boardCellsFor('A', 'C').map((p) => [p, { chip: 1 } as BoardCell]),
+    );
+    const state: GameState = {
+      ...baseState({ board, hands: [[deadCard], []] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+      status: 'frozen',
+    };
+    const r = turnInDeadCard(state, 0, deadCard, createSeededRng(1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('game-not-active');
+  });
+
+  it('rejects a turn-in while a sequence choice is pending (M1)', () => {
+    const deadCard: Card = { rank: 'A', suit: 'C' };
+    const board = makeBoard(
+      boardCellsFor('A', 'C').map((p) => [p, { chip: 1 } as BoardCell]),
+    );
+    const state: GameState = {
+      ...baseState({ board, hands: [[deadCard], []] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+      pendingChoice: {
+        seat: 0,
+        team: 1,
+        placed: positionAt(0, 1)!,
+        cells: [positionAt(0, 1)!],
+      },
+    };
+    const r = turnInDeadCard(state, 0, deadCard, createSeededRng(1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('pending-choice-unresolved');
+  });
+
+  it('caps dead-card turn-ins at one per turn (M1)', () => {
+    const deadA: Card = { rank: 'A', suit: 'C' };
+    const deadK: Card = { rank: 'K', suit: 'H' };
+    const board = makeBoard([
+      ...boardCellsFor('A', 'C').map(
+        (p) => [p, { chip: 1 } as BoardCell] as [Position, BoardCell],
+      ),
+      ...boardCellsFor('K', 'H').map(
+        (p) => [p, { chip: 1 } as BoardCell] as [Position, BoardCell],
+      ),
+    ]);
+    const state: GameState = {
+      ...baseState({ board, hands: [[deadA, deadK], []] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+      // Replacement draws so the swap actually happens.
+      deck: [
+        { rank: '2', suit: 'S' },
+        { rank: '3', suit: 'S' },
+      ],
+    };
+    const first = turnInDeadCard(state, 0, deadA, createSeededRng(1));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    // A second turn-in in the same turn is rejected.
+    const second = turnInDeadCard(
+      first.nextState,
+      0,
+      deadK,
+      createSeededRng(1),
+    );
+    expect(second.ok).toBe(false);
   });
 
   it('rejects turning in a card that is not actually dead', () => {
