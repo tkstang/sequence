@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { notifyTurnStart } from '../move-engine.ts';
 import { createServerRng } from '../server-rng.ts';
 import { appendEvents, persistGameState } from '../state-mapping.ts';
 import { callerIsCreator } from './set-team.ts';
@@ -77,11 +78,24 @@ export const startGameRoute = gamePlayerProcedure
         });
       }
 
-      await persistGameState(tx, input.gameId, state, game.version);
+      const newVersion = await persistGameState(
+        tx,
+        input.gameId,
+        state,
+        game.version,
+      );
 
       await appendEvents(tx, input.gameId, [
         { type: 'GameStarted', currentSeat: state.currentSeat },
       ]);
+
+      // Arm the first turn's timer (no-op for untimed games / in tests with no
+      // timer hook wired). The hook is module-level on the move engine.
+      notifyTurnStart({
+        gameId: input.gameId,
+        timerSeconds: game.timerSeconds,
+        version: newVersion,
+      });
 
       return { status: 'active' as const, currentSeat: state.currentSeat };
     });

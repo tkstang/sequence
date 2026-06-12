@@ -20,6 +20,7 @@
 import {
   applyMove,
   type Card,
+  forfeitTurn,
   type GameEvent,
   type GameState,
   type Move,
@@ -57,6 +58,48 @@ export class RuleViolationError extends Error {
     super(`rule violation: ${violation.code}`);
     this.name = 'RuleViolationError';
   }
+}
+
+/**
+ * Turn-start timer hook (p04-t09). After every committed reduction the engine
+ * calls this with the post-commit state + version so the {@link TimerService}
+ * can (re)arm or clear the turn timer. Left unset in tests that don't exercise
+ * timers; `server.ts` wires the real service on boot.
+ */
+export interface TimerHook {
+  onTurnCommitted(args: {
+    gameId: string;
+    timerSeconds: number | null;
+    version: number;
+    pendingChoice: boolean;
+    finished: boolean;
+  }): void;
+}
+
+let timerHook: TimerHook | null = null;
+
+/** Wire the turn-start timer hook (called once on boot). */
+export function setTimerHook(hook: TimerHook | null): void {
+  timerHook = hook;
+}
+
+/**
+ * Notify the timer hook that a turn started outside a reduction (game start in
+ * p04-t05, presence resume in p04-t10) so the first turn's timer is armed too.
+ */
+export function notifyTurnStart(args: {
+  gameId: string;
+  timerSeconds: number | null;
+  version: number;
+  pendingChoice?: boolean;
+}): void {
+  timerHook?.onTurnCommitted({
+    gameId: args.gameId,
+    timerSeconds: args.timerSeconds,
+    version: args.version,
+    pendingChoice: args.pendingChoice ?? false,
+    finished: false,
+  });
 }
 
 /**
@@ -105,7 +148,7 @@ export async function runReduction(
         expectedVersion,
       );
       const appended = await appendEvents(tx, gameId, reduced.events);
-      return { newVersion, appended };
+      return { newVersion, appended, nextState: reduced.nextState };
     });
   } catch (err) {
     // A lost optimistic-concurrency race surfaces as CONFLICT, not a 500.
@@ -115,7 +158,7 @@ export async function runReduction(
     throw err;
   }
 
-  const { newVersion, appended } = result;
+  const { newVersion, appended, nextState } = result;
 
   // Broadcast AFTER the commit so subscribers never see an event the DB rolled
   // back. Redaction happens per-recipient in the subscription generator.
@@ -126,6 +169,16 @@ export async function runReduction(
       payload: ev.payload as unknown as Record<string, unknown>,
     });
   }
+
+  // (Re)arm the turn timer for the new state: a fresh deadline when the turn is
+  // live and timed, cleared while a choice freezes the turn or the game ends.
+  timerHook?.onTurnCommitted({
+    gameId,
+    timerSeconds: nextState.settings.timerSeconds,
+    version: newVersion,
+    pendingChoice: nextState.pendingChoice !== undefined,
+    finished: nextState.status === 'finished',
+  });
 
   return {
     version: newVersion,
@@ -161,6 +214,22 @@ export async function executeChoice(
 ): Promise<{ version: number; events: readonly GameEvent[] }> {
   return runReduction(db, gameId, version, (state, rng) =>
     resolveSequenceChoice(state, cells, rng, seat),
+  );
+}
+
+/**
+ * Forfeit the current turn (timer expiry): advance without play or draw. Guarded
+ * on `version` like every other reduction, so a forfeit that races a real move
+ * loses cleanly as CONFLICT (first commit wins). Authored by the engine itself,
+ * not a seat — there is no caller seat to stamp.
+ */
+export async function executeForfeit(
+  db: Database,
+  gameId: string,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  return runReduction(db, gameId, version, (state, rng) =>
+    forfeitTurn(state, rng),
   );
 }
 

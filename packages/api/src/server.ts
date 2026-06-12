@@ -14,6 +14,8 @@ import Fastify, {
 import { type AppRouter, appRouter } from './app-router.ts';
 import { createDb, type Database } from './db/client.ts';
 import { type Env, getEnv } from './env.ts';
+import { setTimerHook } from './game/move-engine.ts';
+import { TimerService } from './game/TimerService.ts';
 import { createContextFactory } from './trpc.ts';
 import { type Auth, createAuth } from './user/auth.ts';
 
@@ -21,6 +23,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     auth: Auth;
     db: Database;
+    timers: TimerService;
   }
 }
 
@@ -144,6 +147,33 @@ export async function buildServer(
     useWSS: true,
     trpcOptions,
   } satisfies FastifyTRPCPluginOptions<AppRouter>);
+
+  // Turn timers (FR8): wire the engine's turn-start hook to the TimerService and
+  // rehydrate any live deadlines from the DB so a redeploy can't strand a timed
+  // game. The service is decorated so presence (p04-t10) can pause/resume it.
+  const timers = new TimerService(db);
+  setTimerHook({
+    onTurnCommitted({
+      gameId,
+      timerSeconds,
+      version,
+      pendingChoice,
+      finished,
+    }) {
+      if (finished) {
+        timers.clear(gameId);
+        return;
+      }
+      void timers.scheduleTurn(gameId, timerSeconds, version, {
+        pendingChoice,
+      });
+    },
+  });
+  app.decorate('timers', timers);
+  await timers.rehydrate();
+  app.addHook('onClose', async () => {
+    timers.clearAll();
+  });
 
   return app;
 }
