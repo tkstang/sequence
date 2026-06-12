@@ -6,6 +6,7 @@ import { kickPlayerRoute } from './routes/kick-player.ts';
 import { buildPreviewRoute } from './routes/preview.ts';
 import { randomizeTeamsRoute } from './routes/randomize-teams.ts';
 import { setTeamRoute } from './routes/set-team.ts';
+import { startGameRoute } from './routes/start-game.ts';
 
 /**
  * The `game` router — lifecycle, lobby, moves, and the live subscription.
@@ -26,4 +27,5 @@ export const gameRouter = router({
   setTeam: setTeamRoute,
   kick: kickPlayerRoute,
   randomizeTeams: randomizeTeamsRoute,
+  start: startGameRoute,
 });
