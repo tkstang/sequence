@@ -12,13 +12,14 @@
     "lint": "oxlint --no-error-on-unmatched-pattern apps packages scripts tools",
     "format": "oxfmt --no-error-on-unmatched-pattern apps packages scripts tools",
     "format:check": "oxfmt --check --no-error-on-unmatched-pattern apps packages scripts tools",
-    "test": "pnpm -r test",
+    "test": "node scripts/run-tests.mjs",
     "build": "pnpm -r build"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260612.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.6"
   }
 }
