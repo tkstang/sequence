@@ -25,6 +25,12 @@ const DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
   [1, -1], // diagonal ↙
 ];
 
+/** An eligible >5 run the placer must pick a 5-window from. */
+export interface ChoiceRun {
+  readonly runLength: number;
+  readonly cells: readonly Position[];
+}
+
 export type DetectionResult =
   | { readonly kind: 'none' }
   | { readonly kind: 'autoLock'; readonly sequences: readonly Position[][] }
@@ -32,6 +38,18 @@ export type DetectionResult =
       readonly kind: 'choiceRequired';
       readonly runLength: number;
       readonly cells: readonly Position[];
+      /**
+       * Exactly-5 sequences in other directions completed by the same
+       * placement — locked outright, independent of the pending choice. Empty
+       * when the placement only produced the choice run(s).
+       */
+      readonly autoLock: readonly Position[][];
+      /**
+       * Further >5 runs in other directions (beyond the surfaced one). Resolved
+       * sequentially: each becomes the next pending choice after the prior one
+       * locks. Empty in the common single-choice case.
+       */
+      readonly additionalChoices: readonly ChoiceRun[];
     };
 
 /** True if `pos` counts toward `team`'s line: a corner (wild) or a team chip. */
@@ -87,13 +105,33 @@ function lockedCount(board: Board, window: readonly Position[]): number {
   return count;
 }
 
+/**
+ * Does the >5 `run` contain at least one contiguous 5-window that includes the
+ * `placed` cell and reuses at most one already-locked cell? If not, the run
+ * cannot form any fresh sequence — the placement is legal but completes nothing,
+ * so it must not freeze a choice.
+ */
+function hasLegalWindow(
+  board: Board,
+  run: readonly Position[],
+  placed: Position,
+): boolean {
+  const placedIdx = run.indexOf(placed);
+  for (let start = 0; start + 5 <= run.length; start++) {
+    if (placedIdx < start || placedIdx >= start + 5) continue;
+    const window = run.slice(start, start + 5);
+    if (lockedCount(board, window) <= 1) return true;
+  }
+  return false;
+}
+
 export function detectSequences(
   board: Board,
   placed: Position,
   team: Team,
 ): DetectionResult {
   const autoLock: Position[][] = [];
-  let longest: { runLength: number; cells: Position[] } | undefined;
+  const choices: ChoiceRun[] = [];
 
   for (const [dr, dc] of DIRECTIONS) {
     const run = runThrough(board, placed, team, dr, dc);
@@ -108,18 +146,24 @@ export function detectSequences(
       continue;
     }
 
-    // Run longer than five: the placer chooses which 5 cells lock. We surface
-    // the whole eligible run and remember the longest across directions.
-    if (!longest || run.length > longest.runLength) {
-      longest = { runLength: run.length, cells: run };
+    // Run longer than five: the placer chooses which 5 cells lock — but only if
+    // some legal window exists (one reusing ≤1 already-locked cell). A run that
+    // merely extends through a fully-locked own sequence yields no new sequence.
+    if (hasLegalWindow(board, run, placed)) {
+      choices.push({ runLength: run.length, cells: run });
     }
   }
 
-  if (longest) {
+  if (choices.length > 0) {
+    // Surface the longest run as the active choice; the rest resolve after it.
+    choices.sort((a, b) => b.runLength - a.runLength);
+    const [active, ...rest] = choices;
     return {
       kind: 'choiceRequired',
-      runLength: longest.runLength,
-      cells: longest.cells,
+      runLength: active!.runLength,
+      cells: active!.cells,
+      autoLock,
+      additionalChoices: rest,
     };
   }
 

@@ -175,6 +175,60 @@ describe('detectSequences — locked reuse rule', () => {
   });
 });
 
+describe('detectSequences — crossing auto-lock + choice (I1 regression)', () => {
+  it('keeps a completed exactly-5 in one direction while a >5 run requires a choice', () => {
+    // Vertical exactly-5 through the placed cell (col 5, rows 2..6) AND a
+    // horizontal 6-run through the same cell (row 4, cols 1..6). The placement
+    // earns the vertical sequence outright and freezes a choice on the row.
+    const placed = positionAt(4, 5)!;
+    const vertical = colRun(5, 2, 5); // (2,5)..(6,5) incl. placed
+    const horizontal = rowRun(4, 1, 6); // (4,1)..(4,6) incl. placed
+    const entries = [...chips(1, vertical), ...chips(1, horizontal)];
+    const b = board(entries);
+    const result = detectSequences(b, placed, 1);
+    expect(result.kind).toBe('choiceRequired');
+    if (result.kind === 'choiceRequired') {
+      // The vertical 5 is auto-locked alongside the pending row choice.
+      expect(result.autoLock).toHaveLength(1);
+      expect(new Set(result.autoLock[0])).toEqual(new Set(vertical));
+      expect(result.runLength).toBe(6);
+      expect(new Set(result.cells)).toEqual(new Set(horizontal));
+    }
+  });
+
+  it('reports two pending choices when two crossing runs both exceed five', () => {
+    // Both a 6-run row and a 6-run column through the placed cell.
+    const placed = positionAt(4, 4)!;
+    const horizontal = rowRun(4, 1, 6); // (4,1)..(4,6) incl. placed at idx 3
+    const vertical = colRun(4, 1, 6); // (1,4)..(6,4) incl. placed at idx 3
+    const entries = [...chips(1, horizontal), ...chips(1, vertical)];
+    const b = board(entries);
+    const result = detectSequences(b, placed, 1);
+    expect(result.kind).toBe('choiceRequired');
+    if (result.kind === 'choiceRequired') {
+      // No auto-lock (both directions need a choice); the surfaced choice is one
+      // of the two 6-runs, and the other is recorded as an additional choice.
+      expect(result.autoLock).toHaveLength(0);
+      expect(result.runLength).toBe(6);
+    }
+  });
+
+  it('does not freeze a choice when no 5-window reuses ≤1 locked cell', () => {
+    // A locked 5-sequence on row 4 cols 2..6; a fresh chip at col 1 extends the
+    // run to 7 but every 5-window through col 1 reuses ≥2 locked cells — so no
+    // new sequence is possible and detection must report `none`.
+    const entries: Array<[Position, BoardCell]> = [];
+    for (let c = 2; c <= 6; c++) {
+      entries.push([positionAt(4, c)!, { chip: 1, lockedBy: 1 }]);
+    }
+    entries.push([positionAt(4, 1)!, { chip: 1 }]);
+    entries.push([positionAt(4, 0)!, { chip: 1 }]);
+    const b = board(entries);
+    const result = detectSequences(b, positionAt(4, 1)!, 1);
+    expect(result.kind).toBe('none');
+  });
+});
+
 describe('lockSequence', () => {
   it('marks the chosen cells locked with the sequence id', () => {
     const cells = rowRun(4, 2, 5);
