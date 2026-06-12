@@ -15,7 +15,9 @@ import { type AppRouter, appRouter } from './app-router.ts';
 import { createDb, type Database } from './db/client.ts';
 import { type Env, getEnv } from './env.ts';
 import { setTimerHook } from './game/move-engine.ts';
+import { PresenceTracker, setPresenceHook } from './game/presence.ts';
 import { TimerService } from './game/TimerService.ts';
+import { rooms } from './shared/realtime/rooms.ts';
 import { createContextFactory } from './trpc.ts';
 import { type Auth, createAuth } from './user/auth.ts';
 
@@ -171,8 +173,23 @@ export async function buildServer(
   });
   app.decorate('timers', timers);
   await timers.rehydrate();
+
+  // Presence (FR9): the subscription route reports per-seat connect/disconnect
+  // through this hook → freeze on a drop, resume when the full roster is back.
+  const presence = new PresenceTracker({ db, rooms, timers });
+  setPresenceHook({
+    onConnect(gameId, seat) {
+      void presence.markConnected(gameId, seat);
+    },
+    onDisconnect(gameId, seat) {
+      void presence.markDisconnected(gameId, seat);
+    },
+  });
+
   app.addHook('onClose', async () => {
     timers.clearAll();
+    setPresenceHook(null);
+    setTimerHook(null);
   });
 
   return app;

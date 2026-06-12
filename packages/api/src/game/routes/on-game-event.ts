@@ -11,6 +11,7 @@ import {
 } from '../../shared/realtime/redaction.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { getPresenceHook } from '../presence.ts';
 import { loadGameState } from '../state-mapping.ts';
 
 /** A single item on the subscription stream: a snapshot or a (redacted) event. */
@@ -54,7 +55,18 @@ export const onGameEventRoute = gamePlayerProcedure
     // Subscribe to the room FIRST so no event committed between the snapshot
     // read and the live loop is lost (we de-dupe by seq below).
     const { sub, unsubscribe } = rooms.subscribe(gameId);
-    signal?.addEventListener('abort', unsubscribe);
+
+    // Presence: this connection marks the seat connected; its teardown marks it
+    // disconnected (the heartbeat-lapse signal). A frozen game resumes once all
+    // seats are back. No-op when no presence hook is wired (unit tests).
+    const presence = getPresenceHook();
+    void presence?.onConnect(gameId, recipientSeat);
+
+    const onAbort = (): void => {
+      unsubscribe();
+      void presence?.onDisconnect(gameId, recipientSeat);
+    };
+    signal?.addEventListener('abort', onAbort);
 
     try {
       const [{ value: maxSeq } = { value: null }] = await ctx.db
