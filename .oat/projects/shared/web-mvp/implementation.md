@@ -80,26 +80,34 @@ oat_generated: false
 
 ## Phase 2: game-logic — the rules engine (p02)
 
-**Status:** pending
-**Started:** -
+**Status:** complete
+**Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+The pure rules engine: domain types + lifecycle state machine, seedable deck,
+dealing with alternating-team turn order, corner-as-wild sequence detection +
+locking, jack rules, per-turn dead-card evaluation with resurrection, win
+conditions (incl. double-sequence instant win), the full `applyMove` turn loop
+(placement / removal / pending >5-run choice / dead-card turn-in / forfeit),
+reducer-backed display helpers, and the public surface. 13 test files / 112
+tests; seeded 2p/3p/4p-team simulations terminate < 500 turns with invariants
+(hand size, 104-card conservation, chip bounds) held every turn. No new deps —
+zod (from p01) untouched; root `pnpm-lock.yaml` unchanged. Root gates green.
 
-| Task    | Name                                          | Status  | Commit |
-| ------- | --------------------------------------------- | ------- | ------ |
-| p02-t01 | Domain types + lifecycle state machine        | pending | -      |
-| p02-t02 | Deck + seedable RNG                           | pending | -      |
-| p02-t03 | createGame — dealing + turn order             | pending | -      |
-| p02-t04 | Sequence detection with corners + locking     | pending | -      |
-| p02-t05 | Jack rules                                    | pending | -      |
-| p02-t06 | Dead cards (per-turn evaluation)              | pending | -      |
-| p02-t07 | Win conditions                                | pending | -      |
-| p02-t08 | applyMove — placement path                    | pending | -      |
-| p02-t09 | applyMove — removal, pending choice, forfeit  | pending | -      |
-| p02-t10 | Display helpers                               | pending | -      |
-| p02-t11 | Public API + full-game simulation             | pending | -      |
+| Task    | Name                                          | Status   | Commit  |
+| ------- | --------------------------------------------- | -------- | ------- |
+| p02-t01 | Domain types + lifecycle state machine        | complete | b65cb25 |
+| p02-t02 | Deck + seedable RNG                           | complete | 06ace15 |
+| p02-t03 | createGame — dealing + turn order             | complete | 763a3ea |
+| p02-t04 | Sequence detection with corners + locking     | complete | 2864cd1 |
+| p02-t05 | Jack rules                                    | complete | 83b9158 |
+| p02-t06 | Dead cards (per-turn evaluation)              | complete | 33338a2 |
+| p02-t07 | Win conditions                                | complete | 7d5ab69 |
+| p02-t08 | applyMove — placement path                    | complete | 3589af0 |
+| p02-t09 | applyMove — removal, pending choice, forfeit  | complete | d94923c |
+| p02-t10 | Display helpers                               | complete | 2669785 |
+| p02-t11 | Public API + full-game simulation             | complete | (this)  |
 
 ---
 
