@@ -10,6 +10,7 @@ import { myGamesRoute } from './routes/my-games.ts';
 import { onGameEventRoute } from './routes/on-game-event.ts';
 import { buildPreviewRoute } from './routes/preview.ts';
 import { randomizeTeamsRoute } from './routes/randomize-teams.ts';
+import { rematchRoute } from './routes/rematch.ts';
 import { saveAndExitRoute } from './routes/save-and-exit.ts';
 import { setTeamRoute } from './routes/set-team.ts';
 import { startGameRoute } from './routes/start-game.ts';
@@ -40,6 +41,7 @@ export const gameRouter = router({
   turnInDeadCard: turnInDeadCardRoute,
   saveAndExit: saveAndExitRoute,
   concede: concedeRoute,
+  rematch: rematchRoute,
   myGames: myGamesRoute,
   onGameEvent: onGameEventRoute,
 });

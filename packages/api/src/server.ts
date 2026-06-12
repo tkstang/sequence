@@ -16,6 +16,7 @@ import { createDb, type Database } from './db/client.ts';
 import { type Env, getEnv } from './env.ts';
 import { setTimerHook } from './game/move-engine.ts';
 import { PresenceTracker, setPresenceHook } from './game/presence.ts';
+import { startSweepInterval } from './game/sweep.ts';
 import { TimerService } from './game/TimerService.ts';
 import { rooms } from './shared/realtime/rooms.ts';
 import { createContextFactory } from './trpc.ts';
@@ -186,8 +187,13 @@ export async function buildServer(
     },
   });
 
+  // Hourly expiry sweep: delete expired frozen/saved games (cascade), never
+  // finished. Skipped under test so the suite doesn't run background deletes.
+  const stopSweep = env.NODE_ENV === 'test' ? () => {} : startSweepInterval(db);
+
   app.addHook('onClose', async () => {
     timers.clearAll();
+    stopSweep();
     setPresenceHook(null);
     setTimerHook(null);
   });
