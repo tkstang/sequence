@@ -1,4 +1,5 @@
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import fastifyWebsocket from '@fastify/websocket';
 import {
   fastifyTRPCPlugin,
@@ -28,6 +29,8 @@ export interface BuildServerOptions {
   db?: Database;
   /** Inject an auth instance. Defaults to one built over {@link BuildServerOptions.db}. */
   auth?: Auth;
+  /** Max requests per IP in the auth-route window (default 20 / 1 min). Tests lower this. */
+  authRateLimitMax?: number;
 }
 
 /**
@@ -57,6 +60,13 @@ export async function buildServer(
     credentials: true,
   });
 
+  // Rate limiting registered globally but OFF by default (`global: false`) —
+  // only routes that opt in via `config.rateLimit` are limited. We scope it to
+  // the auth endpoints (threat: credential stuffing / invite-code enumeration
+  // on adjacent public routes). preview/join get a tRPC-side limiter in p04.
+  const authRateLimitMax = options.authRateLimitMax ?? 20;
+  await app.register(rateLimit, { global: false });
+
   // WebSocket support for tRPC subscriptions. Registered before the tRPC
   // plugin so `useWSS: true` can attach to the same HTTP server. The upgrade
   // request carries the Better Auth session cookie (and, for guests, the
@@ -74,18 +84,25 @@ export async function buildServer(
   // request into a Web Request and stream the Web Response back. This is
   // body-parser-agnostic (no raw-stream hijack), which keeps it compatible
   // with the tRPC HTTP plugin registered later.
-  app.all('/api/auth/*', async (request, reply) => {
-    const webRequest = toWebRequest(request, env);
-    const webResponse = await auth.handler(webRequest);
+  app.route({
+    method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    url: '/api/auth/*',
+    config: {
+      rateLimit: { max: authRateLimitMax, timeWindow: '1 minute' },
+    },
+    async handler(request, reply) {
+      const webRequest = toWebRequest(request, env);
+      const webResponse = await auth.handler(webRequest);
 
-    reply.status(webResponse.status);
-    webResponse.headers.forEach((value, key) => {
-      reply.header(key, value);
-    });
-    const body = webResponse.body
-      ? Buffer.from(await webResponse.arrayBuffer())
-      : null;
-    return reply.send(body);
+      reply.status(webResponse.status);
+      webResponse.headers.forEach((value, key) => {
+        reply.header(key, value);
+      });
+      const body = webResponse.body
+        ? Buffer.from(await webResponse.arrayBuffer())
+        : null;
+      return reply.send(body);
+    },
   });
 
   // tRPC over HTTP (queries + mutations) and WS (subscriptions) on one prefix.

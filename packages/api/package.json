@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@fastify/rate-limit": "^11.0.0",
     "@fastify/websocket": "^11.2.0",
     "@sequence/game-logic": "workspace:*",
     "@trpc/server": "^11.17.0",

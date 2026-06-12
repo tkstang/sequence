@@ -1,6 +1,6 @@
 import { gameRouter } from './game/game.router.ts';
 import { historyRouter } from './history/history.router.ts';
-import { publicProcedure, router } from './trpc.ts';
+import { authedProcedure, publicProcedure, router } from './trpc.ts';
 
 /**
  * The root tRPC router. Composes the `game` and `history` domain routers and a
@@ -12,6 +12,8 @@ import { publicProcedure, router } from './trpc.ts';
 export const appRouter = router({
   health: router({
     ping: publicProcedure.query(() => ({ pong: true as const })),
+    // Session probe: succeeds only with a valid session, returns the user.
+    me: authedProcedure.query(({ ctx }) => ({ user: ctx.user })),
   }),
   game: gameRouter,
   history: historyRouter,
