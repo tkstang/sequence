@@ -14,5 +14,9 @@
     "format:check": "pnpm -r format:check",
     "test": "pnpm -r test",
     "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260612.1",
+    "typescript": "^6.0.3"
   }
 }
