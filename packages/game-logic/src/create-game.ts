@@ -72,13 +72,13 @@ function seatOrderedTeams(players: readonly PlayerSeed[]): Team[] {
     throw new Error('seats are not contiguous from 0');
   }
 
-  // Team ids contiguous from 1.
-  const distinct = [...new Set(teams)].toSorted((a, b) => a - b);
-  const teamCount = distinct.length;
-  for (let i = 0; i < teamCount; i++) {
-    if (distinct[i] !== ((i + 1) as Team)) {
+  // Team ids contiguous from 1: distinct ids must be exactly {1..teamCount}.
+  const distinct = new Set(teams);
+  const teamCount = distinct.size;
+  for (let id = 1 as Team; id <= teamCount; id = (id + 1) as Team) {
+    if (!distinct.has(id)) {
       throw new Error(
-        `team ids must be contiguous from 1, got ${distinct.join(', ')}`,
+        `team ids must be contiguous from 1, got ${[...distinct].join(', ')}`,
       );
     }
   }
