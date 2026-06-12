@@ -72,6 +72,17 @@ export async function buildServer(
     credentials: true,
   });
 
+  // I3: stamp the resolved client IP onto the raw request so the tRPC **WS**
+  // context can read it. The @fastify/websocket + tRPC adapter hands the WS
+  // createContext the bare Node `IncomingMessage` (no `.ip`), so without this
+  // every WS caller would share one rate-limit bucket. `onRequest` runs on the
+  // upgrade request (before the protocol switch) while `request.ip` is still
+  // resolved by Fastify (honoring trustProxy); copying it to `req.raw.ip` makes
+  // it available to `resolveClientIp` on the socket side.
+  app.addHook('onRequest', async (request) => {
+    (request.raw as { ip?: string }).ip = request.ip;
+  });
+
   // Rate limiting registered globally but OFF by default (`global: false`) —
   // only routes that opt in via `config.rateLimit` are limited. We scope it to
   // the auth endpoints (threat: credential stuffing / invite-code enumeration

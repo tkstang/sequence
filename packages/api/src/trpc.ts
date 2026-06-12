@@ -47,6 +47,12 @@ export interface Context {
   ip: string;
   /** HMAC secret for verifying guest tokens (the app's `BETTER_AUTH_SECRET`). */
   guestSecret: string;
+  /**
+   * Append a `Set-Cookie` header on the HTTP response (used by `join` to issue
+   * the game-scoped guest cookie). A no-op on the WS transport (no reply
+   * object), which is fine — cookies are only ever set on HTTP mutations.
+   */
+  setCookie: (value: string) => void;
 }
 
 export interface CreateContextDeps {
@@ -70,6 +76,7 @@ export function createContextFactory({
 }: CreateContextDeps) {
   return async function createContext({
     req,
+    res,
   }: CreateFastifyContextOptions): Promise<Context> {
     const headers = fromNodeHeaders(req.headers);
     const session = await auth.api.getSession({ headers });
@@ -82,13 +89,62 @@ export function createContextFactory({
         }
       : null;
 
-    // `req.ip` is Fastify's resolved client IP — it honors `trustProxy` and is
-    // not spoofable via a raw XFF header when trustProxy is off. The limiter
-    // keys on this instead of parsing `x-forwarded-for` itself.
-    const ip = req.ip ?? 'unknown';
+    const ip = resolveClientIp(req);
 
-    return { user, guest: null, db, auth, headers, ip, guestSecret };
+    // `res` is a FastifyReply on the HTTP transport and absent on WS. Append
+    // (don't overwrite) so a Set-Cookie coexists with Better Auth's own.
+    const setCookie = (value: string): void => {
+      if (!res || typeof res.header !== 'function') return;
+      const existing = res.getHeader?.('set-cookie');
+      if (existing === undefined) {
+        res.header('set-cookie', value);
+      } else if (Array.isArray(existing)) {
+        res.header('set-cookie', [...existing, value]);
+      } else {
+        res.header('set-cookie', [String(existing), value]);
+      }
+    };
+
+    return {
+      user,
+      guest: null,
+      db,
+      auth,
+      headers,
+      ip,
+      guestSecret,
+      setCookie,
+    };
   };
+}
+
+/**
+ * Resolve the per-request client IP across BOTH transports (I3).
+ *
+ * On the HTTP path the fastify adapter hands tRPC a `FastifyRequest`, whose
+ * `.ip` is Fastify's resolved client address (honors `trustProxy`, not
+ * spoofable via raw XFF when proxy is untrusted). On the **WS** path the
+ * adapter passes the bare Node `IncomingMessage` from the upgrade — it has no
+ * `.ip`, so without a fallback every WS caller collapses to one shared
+ * rate-limit bucket (one client could lock out all guest joins). We:
+ *   1. read `req.ip` when present (HTTP, and WS upgrades stamped by the
+ *      `onRequest` hook in server.ts, which copies the resolved ip onto
+ *      `req.raw.ip`);
+ *   2. fall back to the socket's `remoteAddress` for any un-stamped upgrade.
+ * The limiter keys on this — never on a hand-parsed `x-forwarded-for`.
+ */
+export function resolveClientIp(req: {
+  ip?: string;
+  raw?: { ip?: string; socket?: { remoteAddress?: string } };
+  socket?: { remoteAddress?: string };
+}): string {
+  return (
+    req.ip ??
+    req.raw?.ip ??
+    req.socket?.remoteAddress ??
+    req.raw?.socket?.remoteAddress ??
+    'unknown'
+  );
 }
 
 const t = initTRPC.context<Context>().create();

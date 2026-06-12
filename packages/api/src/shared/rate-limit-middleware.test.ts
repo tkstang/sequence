@@ -13,6 +13,7 @@ function ctxWithIp(ip: string, opts: { xff?: string } = {}): Context {
     headers: new Headers(opts.xff ? { 'x-forwarded-for': opts.xff } : {}),
     ip,
     guestSecret: 'x',
+    setCookie: () => {},
   };
 }
 
