@@ -1,5 +1,7 @@
 # Sequence Game — Tech Stack Discovery
 
+> **SUPERSEDED (2026-06-11):** This directional draft has been superseded by **`discovery.md`** in this directory, which consolidates it with the brainstorm session's requirements decisions (`rules-and-flows.md`) and stack-validation research (notably: Lucia → Better Auth). Kept for history; do not treat the stack table below as current.
+
 *Discovery / brainstorming doc — drafted for paste into Stoa*
 
 ## What Is This
