@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BOARD_MAP, positionAt } from './board-map.ts';
 import { detectSequences, lockSequence } from './sequence-detection.ts';
-import type { Board, BoardCell, Position, Sequence, Team } from './types.ts';
+import type { Board, BoardCell, Position, Team } from './types.ts';
 
 /** Build a board from a list of [position, cell] entries. */
 function board(entries: Array<[Position, BoardCell]>): Board {
@@ -202,7 +202,3 @@ describe('lockSequence', () => {
     expect(locked.has(corner)).toBe(false);
   });
 });
-
-// Reference the Sequence type to keep imports honest.
-const _seq: Sequence = { id: 1, team: 1, cells: [] };
-void _seq;
