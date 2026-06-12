@@ -260,27 +260,32 @@ _- Outstanding Items_
 **Branch:** 2026
 **Tier:** 1
 **Policy:** merge-strategy=merge, retry-limit=2
-**Phases:** in progress (rows appended as phases complete)
+**Phases:** 3 executed, 3 passed, 0 failed, 0 stopped (p04-p07 pending)
 
 #### Phase Outcomes
 
 | Phase | Implementer        | Review | Fix Iterations | Disposition |
 | ----- | ------------------ | ------ | -------------- | ----------- |
 | p01   | DONE_WITH_CONCERNS (advisory only) | pass | 0/2 | merged (sequential, on-branch) |
+| p02   | DONE | fail → pass (re-review) | 1/2 | merged `84759ba` (fan-in, no conflicts) |
+| p03   | DONE | pass (+ proactive fix round, verified) | 1/2 | merged `fce98ec` (fan-in, implementation.md conflict resolved by subagent) |
 
 #### Parallel Groups
 
-- Group 1 [p02, p03]: worktree-based, merged in order (pending)
+- Group 1 [p02, p03]: worktree-based at `.worktrees/web-mvp/{p02,p03}`, base `fbd9db4` (verified), merged in plan order; integration verification green after each merge (132 tests post-p02; 166 post-p03 incl. live Neon-test-branch integration). Worktrees removed.
 - p01, p04, p05, p06, p07: sequential
 
 #### Dispatch Notes
 
 - Dispatch: p01 implementation model_axis=selected:opus (bleeding-edge toolchain integration); p01 review model_axis=selected:opus (ceiling).
 - User directive (2026-06-12, mid-run): all subsequent REVIEW dispatches run at model_axis=selected:fable (host model above the configured opus ceiling; user-directed override — resolver ladder unchanged). Implementer dispatches remain capped at opus. Applies from the p02/p03 reviews onward.
+- Dispatch: p02/p03 implementation model_axis=selected:opus; p02 review + re-review, p03 review + fix verification model_axis=selected:fable (user override). p02 fix loop iteration 1 cleared all 10 findings; p03 proactive fix round closed I2/M1/M2 + 4 minors.
 
 #### Outstanding Items
 
-- None blocking. Advisory carried forward: `scripts/worktree/init.sh` is stoa-specific — orchestrator review required before p02/p03 worktree bootstrap; heavy J/Q/K SVGs (WebP contingency at p06); `manage-hooks.js` ESM warning.
+- **Carried to p04 (must address):** I3 — WS path `ctx.ip` is `'unknown'` (tRPC fastify WS adapter passes bare IncomingMessage); fix before attaching the rate limiter to preview/join in p04-t03. p02-m6 — actor-seat enforcement is opt-in in game-logic; p04 move engine MUST always set `move.seat`/`actorSeat`, and the p04 review must verify it.
+- **Carried to p07 (deploy bucket):** I1 — SameSite=Lax breaks cross-site prod auth (cookie/domain strategy decided at deploy); M3 — boolean trustProxy keys on leftmost XFF; needs hop-count support or a forged-XFF smoke assertion on Railway.
+- **Advisory:** heavy J/Q/K SVGs (WebP contingency at p06); `manage-hooks.js` ESM warning; p02 m4 (chained additionalRuns lacks reducer-level test) + m5 (`not-a-dead-card` code reused for turn-in cap).
 
 #### Artifact / Design Deltas
 

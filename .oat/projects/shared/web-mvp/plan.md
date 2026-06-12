@@ -863,8 +863,8 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 | Scope  | Type     | Status  | Date | Artifact |
 | ------ | -------- | ------- | ---- | -------- |
 | p01    | code     | passed  | 2026-06-12 | reviews/p01-review-2026-06-12.md |
-| p02    | code     | pending | -    | -        |
-| p03    | code     | pending | -    | -        |
+| p02    | code     | passed  | 2026-06-12 | reviews/p02-review-2026-06-12.md (fail → fixes → re-review pass) |
+| p03    | code     | passed  | 2026-06-12 | reviews/p03-review-2026-06-12.md (pass + fix round verified) |
 | p04    | code     | pending | -    | -        |
 | p05    | code     | pending | -    | -        |
 | p06    | code     | pending | -    | -        |
