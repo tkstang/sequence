@@ -65,6 +65,72 @@ const RANKS = new Set<BoardRank>([
 
 const SUITS = new Set<BoardSuit>(['C', 'D', 'H', 'S']);
 
+/** A board coordinate (row, col), zero-based, row 0 = top. */
+export interface Coord {
+  readonly row: number;
+  readonly col: number;
+}
+
+/** Position code → coordinate, built once from {@link BOARD_MAP}. */
+const COORDS: ReadonlyMap<PositionId, Coord> = (() => {
+  const map = new Map<PositionId, Coord>();
+  for (let row = 0; row < BOARD_MAP.length; row++) {
+    const cells = BOARD_MAP[row]!;
+    for (let col = 0; col < cells.length; col++) {
+      map.set(cells[col]!, { row, col });
+    }
+  }
+  return map;
+})();
+
+/** All position codes (flattened board), in row-major order. */
+export const ALL_POSITIONS: readonly PositionId[] = BOARD_MAP.flat();
+
+/** Card code (`rank`+`suit`, e.g. `'AC'`) → its two board position codes. */
+const CARD_POSITIONS: ReadonlyMap<string, readonly PositionId[]> = (() => {
+  const map = new Map<string, PositionId[]>();
+  for (const position of ALL_POSITIONS) {
+    const parsed = parseBoardCell(position);
+    if (parsed.kind === 'corner') continue;
+    const code = `${parsed.rank}${parsed.suit}`;
+    const list = map.get(code);
+    if (list) {
+      list.push(position);
+    } else {
+      map.set(code, [position]);
+    }
+  }
+  return map;
+})();
+
+/**
+ * The two board cells a card (by rank+suit) can be placed on. Returns an empty
+ * array for cards that never appear on the board (jacks).
+ */
+export function boardCellsFor(
+  rank: BoardRank | 'J',
+  suit: BoardSuit,
+): readonly PositionId[] {
+  return CARD_POSITIONS.get(`${rank}${suit}`) ?? [];
+}
+
+/** Look up a position's coordinate. Throws on an unknown code. */
+export function coordOf(position: PositionId): Coord {
+  const coord = COORDS.get(position);
+  if (!coord) {
+    throw new Error(`unknown board position: ${position}`);
+  }
+  return coord;
+}
+
+/** The position code at a coordinate, or `undefined` if off-board. */
+export function positionAt(row: number, col: number): PositionId | undefined {
+  if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) {
+    return undefined;
+  }
+  return BOARD_MAP[row]![col];
+}
+
 /** True when the position code denotes a wild corner (free) cell. */
 export function isCorner(position: PositionId): boolean {
   return position.slice(1) === 'WW';

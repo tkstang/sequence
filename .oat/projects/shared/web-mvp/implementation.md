@@ -80,26 +80,34 @@ oat_generated: false
 
 ## Phase 2: game-logic — the rules engine (p02)
 
-**Status:** pending
-**Started:** -
+**Status:** complete
+**Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+The pure rules engine: domain types + lifecycle state machine, seedable deck,
+dealing with alternating-team turn order, corner-as-wild sequence detection +
+locking, jack rules, per-turn dead-card evaluation with resurrection, win
+conditions (incl. double-sequence instant win), the full `applyMove` turn loop
+(placement / removal / pending >5-run choice / dead-card turn-in / forfeit),
+reducer-backed display helpers, and the public surface. 13 test files / 112
+tests; seeded 2p/3p/4p-team simulations terminate < 500 turns with invariants
+(hand size, 104-card conservation, chip bounds) held every turn. No new deps —
+zod (from p01) untouched; root `pnpm-lock.yaml` unchanged. Root gates green.
 
-| Task    | Name                                          | Status  | Commit |
-| ------- | --------------------------------------------- | ------- | ------ |
-| p02-t01 | Domain types + lifecycle state machine        | pending | -      |
-| p02-t02 | Deck + seedable RNG                           | pending | -      |
-| p02-t03 | createGame — dealing + turn order             | pending | -      |
-| p02-t04 | Sequence detection with corners + locking     | pending | -      |
-| p02-t05 | Jack rules                                    | pending | -      |
-| p02-t06 | Dead cards (per-turn evaluation)              | pending | -      |
-| p02-t07 | Win conditions                                | pending | -      |
-| p02-t08 | applyMove — placement path                    | pending | -      |
-| p02-t09 | applyMove — removal, pending choice, forfeit  | pending | -      |
-| p02-t10 | Display helpers                               | pending | -      |
-| p02-t11 | Public API + full-game simulation             | pending | -      |
+| Task    | Name                                          | Status   | Commit  |
+| ------- | --------------------------------------------- | -------- | ------- |
+| p02-t01 | Domain types + lifecycle state machine        | complete | b65cb25 |
+| p02-t02 | Deck + seedable RNG                           | complete | 06ace15 |
+| p02-t03 | createGame — dealing + turn order             | complete | 763a3ea |
+| p02-t04 | Sequence detection with corners + locking     | complete | 2864cd1 |
+| p02-t05 | Jack rules                                    | complete | 83b9158 |
+| p02-t06 | Dead cards (per-turn evaluation)              | complete | 33338a2 |
+| p02-t07 | Win conditions                                | complete | 7d5ab69 |
+| p02-t08 | applyMove — placement path                    | complete | 3589af0 |
+| p02-t09 | applyMove — removal, pending choice, forfeit  | complete | d94923c |
+| p02-t10 | Display helpers                               | complete | 2669785 |
+| p02-t11 | Public API + full-game simulation             | complete | (this)  |
 
 ---
 
@@ -294,6 +302,13 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p01-t05 | tsconfig.base.json (p01-t02) | Base config per p01-t02 list | Added `allowImportingTsExtensions: true` to base | Required for explicit `.ts` import specifiers under bundler resolution + `noEmit`; foundational TS setting surfaced by the first real `.ts` import | implementation (shipped) | none |
 | p01-t10 | plan.md p01-t10 delete list | List does not include root `tsconfig.json` | Also deleted legacy root `tsconfig.json` | It is a Next/Panda-era remnant (paths to deleted dirs, `include: **/*.ts` scanning the monorepo) contradicting "legacy gone"; no package extends it (only `tsconfig.base.json`) | implementation (shipped) | none |
 | p01-t11 | plan.md p01-t11 ("Keep as-is: …`scripts/worktree/validate.sh`") + verify "`validate.sh` passes" | Keep validate.sh unchanged | Adapted validate.sh: `type-check`→`typecheck`, dropped `--filter documentation docs:format:check`, added `format:check` | As-is it references stoa-only `pnpm run type-check` and a `documentation` package absent here, so it could not pass — internal plan conflict between "keep as-is" and "must pass" | implementation (shipped) | `scripts/worktree/init.sh` left as-is per plan but references stoa-only `scripts/sync-archived-projects-from-s3.sh` + `oat local sync`; review before p02/p03 worktree bootstrap |
+| p02-t08/t09 | design.md §Component Design (`applyMove(state, move): MoveResult`) | 2-arg reducer signature | `applyMove(state, move, rng?)` — optional third `Rng` param (also on `resolveSequenceChoice`, `turnInDeadCard`); defaults to a state-seeded RNG | The turn loop owns auto-draw deck-reshuffle and default-mode dead-card auto-swap, both of which need an RNG to stay deterministic+testable; design omitted the seam. Optional + defaulted so the documented 2-arg call site still compiles and is deterministic. | implementation (shipped) | p04 move-engine should pass a server RNG explicitly; design.md §Component Design interface block could note the optional rng |
+| p02 review I4 | design.md §Component Design (`applyMove(state, move)`; `resolveSequenceChoice(state, cells)`) | No actor-seat seam — host owns turn ownership | `Move` gains optional `seat?: Seat`; `applyMove` returns `not-your-turn` when `move.seat !== state.currentSeat`. `resolveSequenceChoice(state, cells, rng?, actorSeat?)` rejects a non-placer with `not-your-turn`. `turnInDeadCard` validates `seat === currentSeat`. | Review I4: the engine must reject out-of-turn regardless of client (NFR1); p02-t08/p04-t07/p04-t08 RED specs require engine-produced `not-your-turn` and "only placer resolves". Optional fields keep the documented 2-arg call sites compiling. | implementation (shipped) | p04 move-engine sets `move.seat` from the authenticated seat and passes `actorSeat` to `resolveSequenceChoice`; design.md §Component Design interface block should add the seat param |
+| p02 review I1 | design.md §Data Models / sequence-detection union | `DetectionResult.choiceRequired = {runLength, cells}`; `PendingChoice = {seat,team,placed,cells}` | `choiceRequired` extended with `autoLock: Position[][]` + `additionalChoices: ChoiceRun[]`; `PendingChoice` gains `additionalRuns?`. A placement may auto-lock a crossing exactly-5 while freezing a >5 choice, and multiple >5 runs resolve sequentially. New `ChoiceRun` type exported. | Review I1: the prior union could not represent "auto-lock + choice", silently discarding an earned crossing sequence (and losing a double-sequence instant win). | implementation (shipped) | p04 choose-sequence-cells route resolves chained `additionalRuns`; p06 sequence-choice UI handles a follow-on PendingChoice |
+| p02 review I2/I3 | plan.md p02-t03 / design.md §Data Models (GameSettings) | `createGame` derives team count from playerCount (6→3); turn order positional `[1,2,...]` | Team count derived from the seeds' distinct teams, validated against legal counts per player count (6p → 2 **or** 3 teams). Seat-ordered teams taken directly from `PlayerSeed.seat/.team` (honored, not remapped) with contiguity/evenness/alternation validation. | Review I2: 6p 3v3 was rejected (plan p04-t05 requires it). Review I3: explicit lobby seat/team selections were silently overwritten. No GameSettings field added — the team axis lives in the seeds, which already carry per-player team. | implementation (shipped) | p04-t05 start-game passes seat-ordered alternating seeds from the lobby; p05/p06 lobby produces them |
+| p02 review M1 | plan.md p02-t06 / rules-and-flows (≤1 turn-in per turn) | `turnInDeadCard` unguarded | Added game-active / no-pending-choice / current-seat guards and a one-per-turn cap via new `GameState.deadCardTurnedIn` flag (set on turn-in, cleared in `advanceTurn`). | Review M1: unguarded turn-in allowed mid-opponent-turn swaps and unlimited turn-ins. | implementation (shipped) | none |
+| p02 review M2 | design.md §Component Design (`validPlacements(hand, board)`) | `validPlacements(hand, board, team=1)` | `team` is now **required** (no default) | Review M2: a team=1 default mislabeled other teams' own chips as one-eyed targets, breaking the agrees-with-reducer property. | implementation (shipped) | p06 callers pass the seat's team (always known) |
+| p02 review m1 | types.ts `RuleViolation` union | Included `not-a-wild-card`, `no-chip-to-remove`, `freed-cell-same-turn` | Removed the two never-produced codes; replaced `freed-cell-same-turn` with a comment (removal ends the turn → structurally enforced). `not-your-turn` is now produced (I4). | Review m1: dead union members implied enforced rules that weren't. | implementation (shipped) | none |
 
 ## Test Results
 
@@ -302,7 +317,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | p01   | 7 (game-logic smoke + 6 board-map) | 7 | 0 | n/a |
-| p02   | -         | -      | -      | -        |
+| p02   | 132 (13 files; post-review fixes) | 132 | 0 | n/a |
 | p03   | -         | -      | -      | -        |
 | p04   | -         | -      | -      | -        |
 | p05   | -         | -      | -      | -        |
