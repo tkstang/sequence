@@ -47,6 +47,7 @@ Requirements were settled in an extended discovery brainstorm (2026-06-11). Cano
 - Player counts 8–12 (officially legal; deliberately capped at 6 for MVP).
 - Monetization.
 - Offline move queueing (server-authoritative fail-and-retry only; optimistic UI is a deferred client-side layer).
+- Offline local play (client-side reducer + PWA) — deferred fast-follow after web MVP, before/alongside the RN project. The design keeps the full turn loop inside `game-logic` so this lands without forking rules orchestration.
 
 ## Requirements
 
@@ -172,6 +173,14 @@ Requirements were settled in an extended discovery brainstorm (2026-06-11). Cano
   - All 9 screens from the screens inventory exist and are navigable.
 - **Priority:** P1 (landing content minimal; game flows are the priority)
 
+**FR16: Local Pass-and-Play (2-Player)**
+
+- **Description:** A logged-in user can create a local 2-player game played on a single device: creator names the opponent (no second account, no lobby), and between turns a handoff interstitial hides the outgoing player's hand until the incoming player taps to reveal. Server-backed (same engine and persistence); auto-save/resume works via the creator's account. Local games appear in the creator's history marked "local" but are excluded from aggregate W-L and head-to-head records.
+- **Acceptance Criteria:**
+  - Local game playable start-to-finish on one device with no hand leakage between turns.
+  - Save/resume works; records exclusion verified.
+- **Priority:** P0
+
 ### Non-Functional Requirements
 
 **NFR1: Server-Authoritative Integrity**
@@ -290,6 +299,7 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 | FR13 | In-game information display                | P0       | manual: layout pass (desktop + mobile)    | TBD — see plan.md |
 | FR14 | History & head-to-head                     | P0       | integration: aggregate queries            | TBD — see plan.md |
 | FR15 | Site shell & navigation                    | P1       | manual: screen walk                       | TBD — see plan.md |
+| FR16 | Local pass-and-play (2-player)             | P0       | e2e: local game flow; manual: handoff UX  | TBD — see plan.md |
 | NFR1 | Server-authoritative integrity             | P0       | unit + integration: illegal-move rejection| TBD — see plan.md |
 | NFR2 | Real-time responsiveness (<500ms)          | P1       | manual: latency spot-check                | TBD — see plan.md |
 | NFR3 | Responsive design (375px)                  | P0       | manual: mobile-web pass                   | TBD — see plan.md |

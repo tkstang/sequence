@@ -91,6 +91,7 @@ Resolved during the brainstorm session — full decision log with rationale is i
 - Optimistic UI with rollback for the in-flight move — purely client-side layer; protocol already supports it.
 - Player counts 8–12 (official rules allow; config-level change later).
 - Replay viewer over the move log.
+- **Offline local play (web PWA)** — run the `game-logic` reducer client-side with device storage; user wants this as a fast-follow after web MVP, likely before the RN project. Enabled by the design rule that `game-logic` owns the complete turn loop (API is a thin host).
 
 ## Open Questions
 
