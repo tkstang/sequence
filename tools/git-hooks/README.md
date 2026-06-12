@@ -11,10 +11,13 @@ Automated git hooks for code quality and consistency.
 
 ## Available Hooks
 
-- `pre-commit`: Runs `lint-staged` (linting, formatting, tests on staged files)
-- `commit-msg`: Validates commit messages with `commitlint`
-- `pre-push`: Runs full test suite before pushing
-- `post-checkout`: Runs `pnpm install` when switching branches with lockfile changes
+- `pre-commit`: Runs `oxlint` + `oxfmt --check` on staged source files (no
+  `lint-staged` dependency)
+- `commit-msg`: Validates the conventional-commit shape and the `pNN-tNN`
+  scope convention (no `commitlint` dependency)
+- `pre-push`: Runs the full lint across all workspaces before pushing
+- `post-checkout`: Runs `pnpm install --frozen-lockfile` when switching
+  branches with lockfile changes
 
 ## Usage
 
@@ -45,18 +48,10 @@ pnpm hooks disable pre-commit
 
 ### In Docker/CI
 
-Set the `GIT_HOOKS` environment variable to `0`:
+Skip the `prepare` lifecycle script (which installs hooks) entirely:
 
 ```dockerfile
-ENV GIT_HOOKS=0
-RUN pnpm install
-```
-
-### Locally (Temporary)
-
-```bash
-# Skip hook setup for this install only
-GIT_HOOKS=0 pnpm install
+RUN pnpm install --ignore-scripts
 ```
 
 ### Locally (Permanent)
@@ -71,9 +66,8 @@ Disabled hooks are tracked in `.git/hooks/.disabled-hooks` and won't be re-enabl
 ## How It Works
 
 1. The `prepare` script in `package.json` runs `manage-hooks.js setup` after every `pnpm install`
-2. The script checks if `GIT_HOOKS=0` is set - if so, it exits immediately
-3. If all hooks are already installed or intentionally disabled, it exits silently
-4. Otherwise, it installs missing hooks and reports what was done
+2. If all hooks are already installed or intentionally disabled, it exits silently
+3. Otherwise, it installs missing hooks and reports what was done
 
 ## Troubleshooting
 
@@ -99,7 +93,8 @@ pnpm hooks:disable-all
 
 ### Hooks failing in CI
 
-Ensure `GIT_HOOKS=0` is set in your CI environment or Dockerfile.
+Run `pnpm install --ignore-scripts` in your CI environment or Dockerfile to
+skip hook installation.
 
 ## Implementation Details
 

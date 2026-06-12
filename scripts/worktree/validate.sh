@@ -27,9 +27,9 @@ assert_clean_worktree() {
 assert_clean_worktree "before validation"
 run_step "build" pnpm run build
 run_step "lint" pnpm run lint
-run_step "type-check" pnpm run type-check
+run_step "type-check" pnpm run typecheck
+run_step "format check" pnpm run format:check
 run_step "test" pnpm run test
-run_step "docs format check" pnpm --filter documentation docs:format:check
 
 assert_clean_worktree "after validation"
 echo "worktree validation passed"
