@@ -427,6 +427,91 @@ describe('applyMove — crossing auto-lock + choice (I1 regression)', () => {
   });
 });
 
+describe('applyMove — chained >5 runs resolve sequentially (m4)', () => {
+  it('two crossing 6-runs freeze one choice at a time until both lock', () => {
+    // A single placement at (4,5) completes TWO crossing 6-runs:
+    //  - horizontal: row 4, cols 1..6
+    //  - vertical:   col 5, rows 1..6
+    // Both are >5, so detection yields one active choice + one additionalRun.
+    // Resolving the first must emit a fresh PendingChoice for the second; the
+    // turn stays frozen (no TurnAdvanced) until the second is resolved too.
+    const placed = positionAt(4, 5)!;
+    const horizontal: Position[] = [];
+    for (let c = 1; c <= 6; c++) horizontal.push(positionAt(4, c)!);
+    const vertical: Position[] = [];
+    for (let r = 1; r <= 6; r++) vertical.push(positionAt(r, 5)!);
+
+    const entries: Array<[Position, BoardCell]> = [];
+    for (const p of horizontal)
+      if (p !== placed) entries.push([p, { chip: 1 }]);
+    for (const p of vertical) if (p !== placed) entries.push([p, { chip: 1 }]);
+
+    // 3-team game so two sequences is not an instant win (we want to observe the
+    // chained choice flow, not a win short-circuit). sequencesToWin(3) = 1, so
+    // actually the first lock wins — use a fresh team with 0 prior and a 3-team
+    // setup would win on one. Keep it 2-team: 2 sequences needed, so both locks
+    // are required and the chain is observable before the win fires.
+    const state = baseState({
+      board: makeBoard(entries),
+      hands: [[TWO_EYED], []],
+      teams: [1, 2],
+    });
+
+    const placement = applyMove(
+      state,
+      { type: 'place', position: placed, card: TWO_EYED },
+      createSeededRng(1),
+    );
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+    // First choice is frozen; a second run is queued.
+    expect(placement.nextState.pendingChoice).toBeDefined();
+    expect(placement.nextState.pendingChoice?.additionalRuns?.length).toBe(1);
+    expect(
+      placement.events.filter((e) => e.type === 'PendingChoice'),
+    ).toHaveLength(1);
+    expect(placement.events.some((e) => e.type === 'TurnAdvanced')).toBe(false);
+
+    // Resolve the first run → its sequence locks AND a fresh PendingChoice for
+    // the second run is emitted (turn still frozen, still seat 0).
+    const firstRun = placement.nextState.pendingChoice!.cells;
+    const firstWindow = firstRun.slice(0, 5).includes(placed)
+      ? firstRun.slice(0, 5)
+      : firstRun.slice(1, 6);
+    const r1 = resolveSequenceChoice(
+      placement.nextState,
+      firstWindow,
+      createSeededRng(1),
+    );
+    expect(r1.ok).toBe(true);
+    if (!r1.ok) return;
+    expect(r1.nextState.sequences).toHaveLength(1);
+    expect(r1.nextState.pendingChoice).toBeDefined();
+    expect(r1.events.some((e) => e.type === 'SequenceCompleted')).toBe(true);
+    expect(r1.events.some((e) => e.type === 'PendingChoice')).toBe(true);
+    expect(r1.events.some((e) => e.type === 'TurnAdvanced')).toBe(false);
+
+    // Resolve the second run → second sequence locks; in a 2-team game that is
+    // the 2nd sequence = instant win, so the game finishes (no advance needed).
+    const secondRun = r1.nextState.pendingChoice!.cells;
+    const secondWindow = secondRun.slice(0, 5).includes(placed)
+      ? secondRun.slice(0, 5)
+      : secondRun.slice(1, 6);
+    const r2 = resolveSequenceChoice(
+      r1.nextState,
+      secondWindow,
+      createSeededRng(1),
+    );
+    expect(r2.ok).toBe(true);
+    if (!r2.ok) return;
+    expect(r2.nextState.sequences).toHaveLength(2);
+    expect(r2.nextState.pendingChoice).toBeUndefined();
+    // 2 sequences in a 2-team game = win.
+    expect(r2.nextState.status).toBe('finished');
+    expect(r2.nextState.winner).toBe(1);
+  });
+});
+
 describe('resolveSequenceChoice — reuse rule (C1 regression)', () => {
   it('rejects a chosen window that reuses two or more of this team’s locked cells', () => {
     // Team-1 locked sequence on row 4 cols 0..4 (lockedBy: 1). New unlocked
