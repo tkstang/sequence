@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+# Git sets GIT_INDEX_FILE for hooks, and lint-staged 17 rewrites non-default
+# values to .git/index.lock. In linked worktrees .git is a file, so let Git
+# resolve the worktree index itself.
+unset GIT_INDEX_FILE
+
+# Run lint-staged to only lint changed files
+pnpm exec lint-staged
+
+# >>> oat pre-commit hook >>>
+if command -v oat >/dev/null 2>&1; then
+  oat status --scope project --hook || true
+fi
+# <<< oat pre-commit hook <<<

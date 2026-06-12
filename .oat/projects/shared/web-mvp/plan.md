@@ -142,6 +142,19 @@ Goal: clean monorepo skeleton, tooling green, legacy gone. Exit state: empty pac
 
 **Commit:** `chore(p01-t10): remove legacy app and committed service key`
 
+### Task p01-t11: Git hooks + worktree scripts
+
+**Files:**
+- Modify: `tools/git-hooks/pre-commit` (replace lint-staged with staged-file oxlint + oxfmt check), `tools/git-hooks/commit-msg` (replace commitlint with a light conventional-commit + `pNN-tNN` scope regex check — no new deps), `tools/git-hooks/README.md` (update for this stack)
+- Keep as-is: `tools/git-hooks/manage-hooks.js`, `tools/git-hooks/pre-push`, `tools/git-hooks/post-checkout`, `scripts/worktree/init.sh`, `scripts/worktree/validate.sh` (ported from stoa; stack-agnostic)
+- Modify: root `package.json` (scripts: `worktree:init`, `worktree:validate`, `hooks:setup` → `node tools/git-hooks/manage-hooks.js setup`, wired via `prepare`)
+
+**Why here:** `scripts/worktree/init.sh` copies gitignored `.env` files from the main checkout into linked worktrees — required for the p02/p03 parallel group (the p03 worktree needs `DATABASE_URL_TEST`). `oat-project-implement` worktree bootstrap should run `pnpm worktree:init` after checkout.
+
+**Verify:** `pnpm hooks:setup` installs hooks; a malformed commit message is rejected; `bash scripts/worktree/validate.sh` passes in the main checkout.
+
+**Commit:** `chore(p01-t11): adapted git hooks and worktree env scripts`
+
 ---
 
 ## Phase 2: game-logic — the rules engine (p02)
@@ -867,7 +880,7 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 
 **Summary:**
 
-- Phase 1: 10 tasks — Foundation & salvage (workspace, tooling, assets, legacy deletion)
+- Phase 1: 11 tasks — Foundation & salvage (workspace, tooling, assets, legacy deletion, hooks/worktree scripts)
 - Phase 2: 11 tasks — game-logic rules engine (TDD, exhaustive suite, simulations)
 - Phase 3: 10 tasks — API foundation (Fastify, Drizzle, Better Auth, harness, Bruno)
 - Phase 4: 14 tasks — Game domain (lifecycle, move engine, realtime, timers, history)
@@ -875,7 +888,7 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 - Phase 6: 13 tasks — Game UI (board, hand, controllers, handoff, e2e)
 - Phase 7: 5 tasks — Deploy & handoff (Railway, Vercel, smoke, notes)
 
-**Total: 72 tasks**
+**Total: 73 tasks**
 
 Ready for code review and merge.
 
