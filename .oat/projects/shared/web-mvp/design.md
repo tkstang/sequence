@@ -88,12 +88,12 @@ sequence/
         └── src/
             ├── server.ts · trpc.ts · app-router.ts
             ├── db/schema/              # games.ts · game-players.ts · game-events.ts · auth.ts
-            ├── game/                   # game.router.ts · game.service.ts · game.types.ts
+            ├── game/                   # game.router.ts · game.types.ts · presence.ts
             │   ├── routes/             # file-per-route: create-game.ts · make-move.ts · …
-            │   └── move-engine.ts · TimerService.ts
+            │   └── move-engine.ts · TimerService.ts · sweep.ts
             ├── user/                   # auth.ts (Better Auth) · guest-tokens.ts
             ├── history/                # history.router.ts · routes/
-            └── shared/realtime/        # rooms.ts · redaction.ts · heartbeat.ts
+            └── shared/realtime/        # rooms.ts · redaction.ts
 ```
 
 ### Data Flow
@@ -252,7 +252,7 @@ Aggregates derive from `games (status='finished')` ⋈ `game_players`; head-to-h
 | query | `myGames()` | authed | dashboard resumables + recents |
 | subscription | `onGameEvent(gameId, lastEventId?)` | seat | the single live stream |
 
-**Move shape** (discriminated union mirroring game-logic): `{type:'place', card, position}` · `{type:'removeChip', position}`. **Mode never changes the wire contract** — hard mode is purely client-side affordance.
+**Move shape** (discriminated union mirroring game-logic): `{type:'place', card?, position}` · `{type:'removeChip', position}`. The `card` field is **optional**: tap mode sends the explicitly selected card (a deliberate jack play is honored); drag mode omits it and the server infers the consumed card via the natural-over-jack rule. **Mode never changes the procedure or message shape** — hard mode remains client-side affordance over the same contract.
 
 ### `history` router
 

@@ -284,29 +284,29 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 
 | ID   | Description                                | Priority | Verification                              | Planned Tasks |
 | ---- | ------------------------------------------ | -------- | ----------------------------------------- | ------------- |
-| FR1  | Accounts & session auth                    | P0       | integration: auth flows; manual: UX       | TBD — see plan.md |
-| FR2  | Game creation & settings                   | P0       | integration: create-game procedure        | TBD — see plan.md |
-| FR3  | Invite & join (incl. guests)               | P0       | e2e: join flow                            | TBD — see plan.md |
-| FR4  | Lobby & team formation                     | P0       | integration: lobby state; manual: UX      | TBD — see plan.md |
-| FR5  | Core game engine (full rules)              | P0       | unit: game-logic rules suite              | TBD — see plan.md |
-| FR6  | Real-time sync & reconnect                 | P0       | integration: WS events; manual: reconnect | TBD — see plan.md |
-| FR7  | Two play modes                             | P0       | e2e: move flows; manual: hard mode        | TBD — see plan.md |
-| FR8  | Turn timer enforcement                     | P0       | integration: timeout/pause                | TBD — see plan.md |
-| FR9  | Disconnect auto-save & rejoin              | P0       | integration: freeze/rejoin lifecycle      | TBD — see plan.md |
-| FR10 | Save & exit                                | P0       | integration: save/resume lifecycle        | TBD — see plan.md |
-| FR11 | Concede                                    | P0       | integration: concede outcomes             | TBD — see plan.md |
-| FR12 | Game over & rematch                        | P0       | e2e: rematch flow                         | TBD — see plan.md |
-| FR13 | In-game information display                | P0       | manual: layout pass (desktop + mobile)    | TBD — see plan.md |
-| FR14 | History & head-to-head                     | P0       | integration: aggregate queries            | TBD — see plan.md |
-| FR15 | Site shell & navigation                    | P1       | manual: screen walk                       | TBD — see plan.md |
-| FR16 | Local pass-and-play (2-player)             | P0       | e2e: local game flow; manual: handoff UX  | TBD — see plan.md |
-| NFR1 | Server-authoritative integrity             | P0       | unit + integration: illegal-move rejection| TBD — see plan.md |
-| NFR2 | Real-time responsiveness (<500ms)          | P1       | manual: latency spot-check                | TBD — see plan.md |
-| NFR3 | Responsive design (375px)                  | P0       | manual: mobile-web pass                   | TBD — see plan.md |
-| NFR4 | Game-logic test coverage                   | P0       | unit: rules suite completeness            | TBD — see plan.md |
-| NFR5 | Security hygiene                           | P0       | integration: authz; manual: secret scan   | TBD — see plan.md |
-| NFR6 | Hobby-tier cost envelope                   | P1       | manual: tier audit at deploy              | TBD — see plan.md |
-| NFR7 | End-to-end type safety                     | P0       | unit: type gate (tsgo) across packages    | TBD — see plan.md |
+| FR1  | Accounts & session auth                    | P0       | integration: auth flows; manual: UX       | p03-t04, p03-t05, p03-t09, p05-t03 |
+| FR2  | Game creation & settings                   | P0       | integration: create-game procedure        | p04-t02, p05-t06 |
+| FR3  | Invite & join (incl. guests)               | P0       | e2e: join flow                            | p03-t07, p04-t03, p05-t07 |
+| FR4  | Lobby & team formation                     | P0       | integration: lobby state; manual: UX      | p04-t04, p04-t05, p06-t02 |
+| FR5  | Core game engine (full rules)              | P0       | unit: game-logic rules suite              | p02-t01–p02-t11 |
+| FR6  | Real-time sync & reconnect                 | P0       | integration: WS events; manual: reconnect | p03-t06, p04-t06, p04-t07, p04-t10, p06-t01 |
+| FR7  | Two play modes                             | P0       | e2e: move flows; manual: hard mode        | p06-t06, p06-t07, p06-t13 |
+| FR8  | Turn timer enforcement                     | P0       | integration: timeout/pause                | p04-t09, p06-t05 |
+| FR9  | Disconnect auto-save & rejoin              | P0       | integration: freeze/rejoin lifecycle      | p04-t10, p04-t12, p05-t05 |
+| FR10 | Save & exit                                | P0       | integration: save/resume lifecycle        | p04-t11, p05-t05 |
+| FR11 | Concede                                    | P0       | integration: concede outcomes             | p04-t11, p06-t10 |
+| FR12 | Game over & rematch                        | P0       | e2e: rematch flow                         | p04-t12, p06-t10, p06-t13 |
+| FR13 | In-game information display                | P0       | manual: layout pass (desktop + mobile)    | p06-t03, p06-t04, p06-t05 |
+| FR14 | History & head-to-head                     | P0       | integration: aggregate queries            | p04-t13, p05-t08 |
+| FR15 | Site shell & navigation                    | P1       | manual: screen walk                       | p05-t01, p05-t04, p05-t05, p05-t09 |
+| FR16 | Local pass-and-play (2-player)             | P0       | e2e: local game flow; manual: handoff UX  | p04-t02, p06-t09, p06-t13 |
+| NFR1 | Server-authoritative integrity             | P0       | unit + integration: illegal-move rejection| p02-t08, p04-t06, p04-t07 |
+| NFR2 | Real-time responsiveness (<500ms)          | P1       | manual: latency spot-check                | p07-t04 |
+| NFR3 | Responsive design (375px)                  | P0       | manual: mobile-web pass                   | p06-t12, p07-t04 |
+| NFR4 | Game-logic test coverage                   | P0       | unit: rules suite completeness            | p02-t11 |
+| NFR5 | Security hygiene                           | P0       | integration: authz; manual: secret scan   | p01-t10, p03-t08, p03-t09 |
+| NFR6 | Hobby-tier cost envelope                   | P1       | manual: tier audit at deploy              | p07-t04 |
+| NFR7 | End-to-end type safety                     | P0       | unit: type gate (tsgo) across packages    | p01-t02, ongoing gates |
 
 **Notes:**
 
