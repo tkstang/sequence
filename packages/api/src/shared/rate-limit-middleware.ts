@@ -59,6 +59,9 @@ export function createRateLimiter(options: RateLimitOptions): RateLimiter {
 
       const recent = (buckets.get(key) ?? []).filter((t) => t > cutoff);
       if (recent.length >= max) {
+        // Refresh the pruned window so stale timestamps don't linger on a key
+        // that keeps getting throttled.
+        buckets.set(key, recent);
         throw new TRPCError({
           code: 'TOO_MANY_REQUESTS',
           message: 'Rate limit exceeded. Try again shortly.',
@@ -66,6 +69,15 @@ export function createRateLimiter(options: RateLimitOptions): RateLimiter {
       }
       recent.push(current);
       buckets.set(key, recent);
+
+      // Sweep keys whose window has fully drained so the map can't grow
+      // unbounded with one entry per distinct IP over a long-lived process.
+      for (const [k, times] of buckets) {
+        if (k === key) continue;
+        if (times.length === 0 || times[times.length - 1]! <= cutoff) {
+          buckets.delete(k);
+        }
+      }
 
       return next();
     },

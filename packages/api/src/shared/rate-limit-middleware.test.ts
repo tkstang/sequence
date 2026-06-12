@@ -85,6 +85,28 @@ describe('createRateLimiter', () => {
     );
   });
 
+  it('evicts drained keys without affecting an active key', async () => {
+    let clock = 1_000;
+    const limiter = createRateLimiter({
+      max: 1,
+      windowMs: 1_000,
+      now: () => clock,
+    });
+    // A burst of one-off IPs populates many buckets within the window.
+    for (let i = 0; i < 50; i++) {
+      expect(await call(limiter, ctxWithIp(`10.0.0.${i}`))).toBe('ok');
+    }
+    // Advance past the window so those keys are drained, then drive a fresh IP:
+    // its first call sweeps the stale keys and is allowed; its second is limited
+    // (proving the active key's own state survives the sweep).
+    clock += 2_000;
+    const active = ctxWithIp('192.168.0.1');
+    expect(await call(limiter, active)).toBe('ok');
+    expect(await call(limiter, active)).toBe('limited');
+    // A previously-seen one-off IP gets a clean budget (its bucket was evicted).
+    expect(await call(limiter, ctxWithIp('10.0.0.0'))).toBe('ok');
+  });
+
   it('keys authed callers by user id', async () => {
     const limiter = createRateLimiter({ max: 1, windowMs: 60_000 });
     const ctx: Context = {
