@@ -86,6 +86,34 @@ const COORDS: ReadonlyMap<PositionId, Coord> = (() => {
 /** All position codes (flattened board), in row-major order. */
 export const ALL_POSITIONS: readonly PositionId[] = BOARD_MAP.flat();
 
+/** Card code (`rank`+`suit`, e.g. `'AC'`) → its two board position codes. */
+const CARD_POSITIONS: ReadonlyMap<string, readonly PositionId[]> = (() => {
+  const map = new Map<string, PositionId[]>();
+  for (const position of ALL_POSITIONS) {
+    const parsed = parseBoardCell(position);
+    if (parsed.kind === 'corner') continue;
+    const code = `${parsed.rank}${parsed.suit}`;
+    const list = map.get(code);
+    if (list) {
+      list.push(position);
+    } else {
+      map.set(code, [position]);
+    }
+  }
+  return map;
+})();
+
+/**
+ * The two board cells a card (by rank+suit) can be placed on. Returns an empty
+ * array for cards that never appear on the board (jacks).
+ */
+export function boardCellsFor(
+  rank: BoardRank | 'J',
+  suit: BoardSuit,
+): readonly PositionId[] {
+  return CARD_POSITIONS.get(`${rank}${suit}`) ?? [];
+}
+
 /** Look up a position's coordinate. Throws on an unknown code. */
 export function coordOf(position: PositionId): Coord {
   const coord = COORDS.get(position);

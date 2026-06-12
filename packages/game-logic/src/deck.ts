@@ -89,3 +89,33 @@ export function shuffle<T>(cards: readonly T[], rng: Rng): T[] {
   }
   return out;
 }
+
+/** The result of drawing one card from the deck (with reshuffle on depletion). */
+export interface DrawResult {
+  /** The drawn card, or `undefined` if both deck and played pile are empty. */
+  readonly card: Card | undefined;
+  /** Remaining deck (top = index 0) after the draw. */
+  readonly deck: readonly Card[];
+  /** Remaining played pile after any reshuffle. */
+  readonly played: readonly Card[];
+}
+
+/**
+ * Draw the top card. When the deck is empty, the played pile is reshuffled into
+ * a fresh deck first (deck depletion → automatic reshuffle, per the rules). If
+ * both are empty, returns `card: undefined` (no card available). Pure.
+ */
+export function drawCard(
+  deck: readonly Card[],
+  played: readonly Card[],
+  rng: Rng,
+): DrawResult {
+  if (deck.length > 0) {
+    return { card: deck[0], deck: deck.slice(1), played };
+  }
+  if (played.length > 0) {
+    const reshuffled = shuffle(played, rng);
+    return { card: reshuffled[0], deck: reshuffled.slice(1), played: [] };
+  }
+  return { card: undefined, deck, played };
+}
