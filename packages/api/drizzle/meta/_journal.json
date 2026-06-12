@@ -8,6 +8,13 @@
       "when": 1781299894673,
       "tag": "0000_lively_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781300158217,
+      "tag": "0001_dashing_mojo",
+      "breakpoints": true
     }
   ]
 }

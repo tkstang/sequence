@@ -17,6 +17,7 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@sequence/game-logic": "workspace:*",
+    "better-auth": "^1.6.18",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.8.5",
     "pino": "^10.3.1",
