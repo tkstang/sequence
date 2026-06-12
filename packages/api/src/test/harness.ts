@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { createDb, type Database } from '../db/client.ts';
 import { type Env, parseEnv } from '../env.ts';
+import { sendWebResponse, toWebRequest } from '../server.ts';
 import {
   createContextFactory,
   gamePlayerProcedure,
@@ -85,26 +86,11 @@ export async function createHarness(): Promise<Harness> {
   const app = Fastify({ logger: false });
   app.get('/health', async () => ({ status: 'ok' }));
 
-  // Mount Better Auth (same Web-Request bridge as the production server).
+  // Mount Better Auth via the exact same Web-Request bridge as the production
+  // server (reused, not re-implemented, so the two cannot drift — m2).
   app.all('/api/auth/*', async (request, reply) => {
-    const url = new URL(request.url, env.BETTER_AUTH_URL);
-    const headers = new Headers();
-    for (const [k, v] of Object.entries(request.headers)) {
-      if (v === undefined || k.toLowerCase() === 'content-length') continue;
-      if (Array.isArray(v)) for (const x of v) headers.append(k, x);
-      else headers.set(k, v);
-    }
-    const method = request.method.toUpperCase();
-    const body =
-      method !== 'GET' && method !== 'HEAD' && request.body != null
-        ? typeof request.body === 'string'
-          ? request.body
-          : JSON.stringify(request.body)
-        : undefined;
-    const res = await auth.handler(new Request(url, { method, headers, body }));
-    reply.status(res.status);
-    res.headers.forEach((value, key) => reply.header(key, value));
-    return reply.send(res.body ? Buffer.from(await res.arrayBuffer()) : null);
+    const res = await auth.handler(toWebRequest(request, env));
+    return sendWebResponse(reply, res);
   });
 
   await app.register(fastifyTRPCPlugin, {

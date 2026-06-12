@@ -5,7 +5,11 @@ import {
   fastifyTRPCPlugin,
   type FastifyTRPCPluginOptions,
 } from '@trpc/server/adapters/fastify';
-import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
 
 import { type AppRouter, appRouter } from './app-router.ts';
 import { createDb, type Database } from './db/client.ts';
@@ -101,15 +105,7 @@ export async function buildServer(
     async handler(request, reply) {
       const webRequest = toWebRequest(request, env);
       const webResponse = await auth.handler(webRequest);
-
-      reply.status(webResponse.status);
-      webResponse.headers.forEach((value, key) => {
-        reply.header(key, value);
-      });
-      const body = webResponse.body
-        ? Buffer.from(await webResponse.arrayBuffer())
-        : null;
-      return reply.send(body);
+      return sendWebResponse(reply, webResponse);
     },
   });
 
@@ -141,8 +137,13 @@ export async function buildServer(
   return app;
 }
 
-/** Build a WHATWG `Request` from a Fastify request for Better Auth. */
-function toWebRequest(request: FastifyRequest, env: Env): Request {
+/**
+ * Build a WHATWG `Request` from a Fastify request for Better Auth.
+ *
+ * Exported so the integration harness reuses the exact same bridge instead of
+ * maintaining a second copy that could drift (m2).
+ */
+export function toWebRequest(request: FastifyRequest, env: Env): Request {
   const url = new URL(request.url, env.BETTER_AUTH_URL);
   const headers = new Headers();
   for (const [key, value] of Object.entries(request.headers)) {
@@ -168,6 +169,24 @@ function toWebRequest(request: FastifyRequest, env: Env): Request {
       : undefined;
 
   return new Request(url, { method, headers, body });
+}
+
+/**
+ * Stream a WHATWG `Response` (from Better Auth) back through a Fastify reply.
+ * Exported alongside {@link toWebRequest} so the harness shares one bridge (m2).
+ */
+export async function sendWebResponse(
+  reply: FastifyReply,
+  webResponse: Response,
+): Promise<FastifyReply> {
+  reply.status(webResponse.status);
+  webResponse.headers.forEach((value, key) => {
+    reply.header(key, value);
+  });
+  const body = webResponse.body
+    ? Buffer.from(await webResponse.arrayBuffer())
+    : null;
+  return reply.send(body);
 }
 
 /**
