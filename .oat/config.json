@@ -6,6 +6,13 @@
   "git": {
     "defaultBranch": "master"
   },
+  "archive": {
+    "s3Uri": "s3://tkstang-open-agent-toolkit/repositories",
+    "s3SyncOnComplete": true,
+    "summaryExportPath": ".oat/repo/reference/project-summaries",
+    "awsProfile": "tkstang-artifact-sync",
+    "awsRegion": "us-east-1"
+  },
   "tools": {
     "core": true,
     "ideas": true,
@@ -17,9 +24,18 @@
     "brainstorm": true
   },
   "localPaths": [
+    ".oat/**/analysis",
     ".oat/**/pr",
     ".oat/**/reviews/archived",
+    ".oat/ideas",
     ".oat/projects/**/pr",
-    ".oat/projects/**/reviews/archived"
-  ]
+    ".oat/projects/**/reviews/archived",
+    ".oat/projects/archived",
+    ".oat/projects/local"
+  ],
+  "workflow": {
+    "archiveOnComplete": true,
+    "autoReviewAtHillCheckpoints": true,
+    "postImplementSequence": "pr"
+  }
 }

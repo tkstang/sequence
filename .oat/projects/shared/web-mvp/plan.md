@@ -6,6 +6,8 @@ oat_last_updated: 2026-06-12
 oat_phase: plan
 oat_phase_status: complete
 oat_plan_parallel_groups: [['p02', 'p03']] # file-disjoint; p02 installs no new deps, so root pnpm-lock.yaml is touched only by p03
+oat_plan_hill_phases: ['p07'] # from workflow.hillCheckpointDefault: final
+oat_auto_review_at_hill_checkpoints: true # from workflow.autoReviewAtHillCheckpoints
 oat_plan_source: spec-driven # spec-driven | quick | imported
 oat_import_reference: null
 oat_import_source_path: null

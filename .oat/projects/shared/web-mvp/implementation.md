@@ -24,87 +24,192 @@ oat_generated: false
 
 ## Progress Overview
 
-| Phase   | Status      | Tasks | Completed |
-| ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | N     | 0/N       |
-| Phase 2 | pending     | N     | 0/N       |
+| Phase                            | Status      | Tasks | Completed |
+| -------------------------------- | ----------- | ----- | --------- |
+| Phase 1: Foundation & Salvage    | in_progress | 11    | 0/11      |
+| Phase 2: game-logic rules engine | pending     | 11    | 0/11      |
+| Phase 3: API foundation          | pending     | 10    | 0/10      |
+| Phase 4: Game domain             | pending     | 14    | 0/14      |
+| Phase 5: Web shell               | pending     | 9     | 0/9       |
+| Phase 6: Game UI                 | pending     | 13    | 0/13      |
+| Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 0/{N} tasks completed
+**Total:** 0/73 tasks completed
+
+**Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
+**HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
+**Tier:** 1 (subagents) · **Dispatch ceiling:** claude opus (enforced, Task model arg; preset: maximum)
 
 ---
 
-## Phase 1: {Phase Name}
+## Phase 1: Foundation & Salvage (p01)
 
 **Status:** in_progress
 **Started:** 2026-06-12
 
 ### Phase Summary (fill when phase is complete)
 
-**Outcome (what changed):**
+_Pending._
 
-- {2-5 bullets describing user-visible / behavior-level changes delivered in this phase}
-
-**Key files touched:**
-
-- `{path}` - {why}
-
-**Verification:**
-
-- Run: `{command(s)}`
-- Result: {pass/fail + notes}
-
-**Notes / Decisions:**
-
-- {trade-offs or deviations discovered during implementation}
-
-### Task p01-t01: {Task Name}
-
-**Status:** completed / in_progress / pending / blocked
-**Commit:** {sha} (if completed)
-
-**Outcome (required when completed):**
-
-- {what materially changed (not “did task”, but “system now does X”)}
-
-**Files changed:**
-
-- `{path}` - {why}
-
-**Verification:**
-
-- Run: `{command(s)}`
-- Result: {pass/fail + notes}
-
-**Notes / Decisions:**
-
-- {gotchas, trade-offs, design deltas, important context for future sessions}
-
-**Issues Encountered:**
-
-- {Issue and resolution}
+| Task    | Name                                  | Status  | Commit |
+| ------- | ------------------------------------- | ------- | ------ |
+| p01-t01 | Workspace scaffold                    | pending | -      |
+| p01-t02 | TypeScript side-by-side setup         | pending | -      |
+| p01-t03 | Oxlint + Oxfmt                        | pending | -      |
+| p01-t04 | Vitest workspace                      | pending | -      |
+| p01-t05 | game-logic package skeleton           | pending | -      |
+| p01-t06 | api package skeleton                  | pending | -      |
+| p01-t07 | web app skeleton                      | pending | -      |
+| p01-t08 | Salvage boardMap (TDD)                | pending | -      |
+| p01-t09 | Card SVG pipeline + attribution       | pending | -      |
+| p01-t10 | Legacy deletion + key scrub           | pending | -      |
+| p01-t11 | Git hooks + worktree scripts          | pending | -      |
 
 ---
 
-### Task p01-t02: {Task Name}
-
-**Status:** pending
-**Commit:** -
-
-**Notes:**
-
-- {Notes will be added during implementation}
-
----
-
-## Phase 2: {Phase Name}
+## Phase 2: game-logic — the rules engine (p02)
 
 **Status:** pending
 **Started:** -
 
-### Task p02-t01: {Task Name}
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                                          | Status  | Commit |
+| ------- | --------------------------------------------- | ------- | ------ |
+| p02-t01 | Domain types + lifecycle state machine        | pending | -      |
+| p02-t02 | Deck + seedable RNG                           | pending | -      |
+| p02-t03 | createGame — dealing + turn order             | pending | -      |
+| p02-t04 | Sequence detection with corners + locking     | pending | -      |
+| p02-t05 | Jack rules                                    | pending | -      |
+| p02-t06 | Dead cards (per-turn evaluation)              | pending | -      |
+| p02-t07 | Win conditions                                | pending | -      |
+| p02-t08 | applyMove — placement path                    | pending | -      |
+| p02-t09 | applyMove — removal, pending choice, forfeit  | pending | -      |
+| p02-t10 | Display helpers                               | pending | -      |
+| p02-t11 | Public API + full-game simulation             | pending | -      |
+
+---
+
+## Phase 3: API foundation (p03)
 
 **Status:** pending
-**Commit:** -
+**Started:** -
+
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                                       | Status  | Commit |
+| ------- | ------------------------------------------ | ------- | ------ |
+| p03-t01 | Fastify bootstrap + env validation         | pending | -      |
+| p03-t02 | Drizzle + db client                        | pending | -      |
+| p03-t03 | Game schema + initial migration            | pending | -      |
+| p03-t04 | Better Auth mounted                        | pending | -      |
+| p03-t05 | tRPC init + context + HTTP plugin          | pending | -      |
+| p03-t06 | WebSocket transport + heartbeat            | pending | -      |
+| p03-t07 | Guest tokens (TDD)                         | pending | -      |
+| p03-t08 | Integration harness + gamePlayerProcedure  | pending | -      |
+| p03-t09 | Auth integration tests + rate limiting     | pending | -      |
+| p03-t10 | Bruno scaffold                             | pending | -      |
+
+---
+
+## Phase 4: Game domain — fully playable over the API (p04)
+
+**Status:** pending
+**Started:** -
+
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                                         | Status  | Commit |
+| ------- | -------------------------------------------- | ------- | ------ |
+| p04-t01 | GameState ↔ DB mapping (TDD)                 | pending | -      |
+| p04-t02 | create-game route (incl. local)              | pending | -      |
+| p04-t03 | preview + join routes                        | pending | -      |
+| p04-t04 | Lobby operations                             | pending | -      |
+| p04-t05 | start-game route                             | pending | -      |
+| p04-t06 | Realtime — rooms, redaction, subscription    | pending | -      |
+| p04-t07 | Move engine route                            | pending | -      |
+| p04-t08 | Pending choice + dead-card turn-in routes    | pending | -      |
+| p04-t09 | TimerService (TDD with fake timers)          | pending | -      |
+| p04-t10 | Presence — freeze / rejoin                   | pending | -      |
+| p04-t11 | save-and-exit, concede, my-games             | pending | -      |
+| p04-t12 | Rematch + expiry sweep                       | pending | -      |
+| p04-t13 | History domain                               | pending | -      |
+| p04-t14 | Bruno collection + scripted full game        | pending | -      |
+
+---
+
+## Phase 5: Web shell (p05)
+
+**Status:** pending
+**Started:** -
+
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                            | Status  | Commit |
+| ------- | ------------------------------- | ------- | ------ |
+| p05-t01 | Theme + layout foundation       | pending | -      |
+| p05-t02 | tRPC client wiring              | pending | -      |
+| p05-t03 | Auth screens + session          | pending | -      |
+| p05-t04 | Landing page                    | pending | -      |
+| p05-t05 | Dashboard                       | pending | -      |
+| p05-t06 | Create-game screen              | pending | -      |
+| p05-t07 | Join page                       | pending | -      |
+| p05-t08 | History page                    | pending | -      |
+| p05-t09 | Shell screen walk + a11y pass   | pending | -      |
+
+---
+
+## Phase 6: Game UI (p06)
+
+**Status:** pending
+**Started:** -
+
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                                   | Status  | Commit |
+| ------- | -------------------------------------- | ------- | ------ |
+| p06-t01 | Game route state container             | pending | -      |
+| p06-t02 | Lobby UI (stacked team rows)           | pending | -      |
+| p06-t03 | GameBoard + cells + chips              | pending | -      |
+| p06-t04 | CardHand (peeking fan)                 | pending | -      |
+| p06-t05 | PlayerRail + timer display             | pending | -      |
+| p06-t06 | Tap controller (default mode)          | pending | -      |
+| p06-t07 | Drag controller (hard mode)            | pending | -      |
+| p06-t08 | Pending-choice + sequence lock UI      | pending | -      |
+| p06-t09 | HandoffScreen (pass-and-play)          | pending | -      |
+| p06-t10 | GameOver + rematch                     | pending | -      |
+| p06-t11 | Notifications + Motion polish          | pending | -      |
+| p06-t12 | Responsive pass                        | pending | -      |
+| p06-t13 | Playwright e2e suite                   | pending | -      |
+
+---
+
+## Phase 7: Deploy & handoff (p07)
+
+**Status:** pending
+**Started:** -
+
+### Phase Summary (fill when phase is complete)
+
+_Pending._
+
+| Task    | Name                                | Status  | Commit |
+| ------- | ----------------------------------- | ------- | ------ |
+| p07-t01 | API Dockerfile + Railway config     | pending | -      |
+| p07-t02 | Railway deploy                      | pending | -      |
+| p07-t03 | Vercel deploy                       | pending | -      |
+| p07-t04 | Production smoke + checks           | pending | -      |
+| p07-t05 | Operator handoff notes              | pending | -      |
 
 ---
 
@@ -128,38 +233,12 @@ _Orchestration runs from `oat-project-implement` are appended here, most-recent-
 
 Chronological log of implementation progress.
 
-### 2026-06-12
+### 2026-06-12 — Run 1 start
 
-**Session Start:** {time}
-
-- [x] p01-t01: {Task name} - {commit sha}
-- [ ] p01-t02: {Task name} - in progress
-
-**What changed (high level):**
-
-- {short bullets suitable for PR/docs}
-
-**Decisions:**
-
-- {Decision made and rationale}
-
-**Follow-ups / TODO:**
-
-- {anything discovered during implementation that should be captured for later}
-
-**Blockers:**
-
-- {Blocker description} - {status: resolved/pending}
-
-**Session End:** {time}
-
----
-
-### 2026-06-12
-
-**Session Start:** {time}
-
-{Continue log...}
+- Tier 1 (subagents) selected; dispatch ceiling claude opus (enforced), preset maximum, source project-state.
+- HiLL checkpoints confirmed: ["p07"] (from workflow.hillCheckpointDefault: final).
+- Auto-review at HiLL checkpoints: enabled (workflow.autoReviewAtHillCheckpoints).
+- `.oat/config.json` aligned with stoa baseline before start (archive/S3, localPaths, workflow block); documentation block deliberately omitted (no docs app in this repo); postImplementSequence set to `pr` (not `docs-pr`) for the same reason.
 
 ---
 
@@ -177,8 +256,13 @@ Track test execution during implementation.
 
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
-| 1     | -         | -      | -      | -        |
-| 2     | -         | -      | -      | -        |
+| p01   | -         | -      | -      | -        |
+| p02   | -         | -      | -      | -        |
+| p03   | -         | -      | -      | -        |
+| p04   | -         | -      | -      | -        |
+| p05   | -         | -      | -      | -        |
+| p06   | -         | -      | -      | -        |
+| p07   | -         | -      | -      | -        |
 
 ## Final Summary (for PR/docs)
 
