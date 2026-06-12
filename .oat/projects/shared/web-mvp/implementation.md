@@ -255,6 +255,7 @@ _- Outstanding Items_
 #### Dispatch Notes
 
 - Dispatch: p01 implementation model_axis=selected:opus (bleeding-edge toolchain integration); p01 review model_axis=selected:opus (ceiling).
+- User directive (2026-06-12, mid-run): all subsequent REVIEW dispatches run at model_axis=selected:fable (host model above the configured opus ceiling; user-directed override — resolver ladder unchanged). Implementer dispatches remain capped at opus. Applies from the p02/p03 reviews onward.
 
 #### Outstanding Items
 
