@@ -25,9 +25,12 @@ describe('guest tokens', () => {
   it('rejects a tampered token', () => {
     const token = issueGuestToken(gameId, 2, secret);
     // Flip a character in the payload portion.
-    const [payload, sig] = token.split('.');
+    const dot = token.indexOf('.');
+    const payload = token.slice(0, dot);
+    const sig = token.slice(dot + 1);
+    const lastChar = payload.at(-1);
     const tamperedPayload = `${payload.slice(0, -1)}${
-      payload.at(-1) === 'A' ? 'B' : 'A'
+      lastChar === 'A' ? 'B' : 'A'
     }`;
     const tampered = `${tamperedPayload}.${sig}`;
     expect(verifyGuestToken(tampered, gameId, secret)).toBeNull();
