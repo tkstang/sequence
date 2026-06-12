@@ -169,7 +169,7 @@ describe('full-game simulation', () => {
   });
 
   it('a 4-player team game terminates with a winner', () => {
-    simulate([1, 1, 2, 2], 2024);
+    simulate([1, 2, 1, 2], 2024);
   });
 
   it('is deterministic for a fixed seed', () => {
