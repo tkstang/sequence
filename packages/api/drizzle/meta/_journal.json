@@ -15,6 +15,13 @@
       "when": 1781300158217,
       "tag": "0001_dashing_mojo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781302745112,
+      "tag": "0002_petite_sentinel",
+      "breakpoints": true
     }
   ]
 }
