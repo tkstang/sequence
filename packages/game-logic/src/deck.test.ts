@@ -79,7 +79,7 @@ describe('shuffle with seeded rng', () => {
     const before = deck.map(key);
     const shuffled = shuffle(deck, createSeededRng(7));
     expect(deck.map(key)).toEqual(before);
-    expect([...shuffled].map(key).sort()).toEqual([...before].sort());
+    expect(shuffled.map(key).toSorted()).toEqual(before.toSorted());
   });
 });
 
