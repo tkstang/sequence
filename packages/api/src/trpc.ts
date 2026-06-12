@@ -189,7 +189,10 @@ async function resolveSeat(
       guestTokenHash: gamePlayers.guestTokenHash,
     })
     .from(gamePlayers)
-    .where(eq(gamePlayers.gameId, gameId));
+    .where(eq(gamePlayers.gameId, gameId))
+    // Ascending seat order so the local-game `seats[0]` fallback below is the
+    // lowest seat (as documented), not arbitrary DB-row order.
+    .orderBy(gamePlayers.seat);
 
   // Local game: the creator's session controls every seat.
   if (game.local && ctx.user && ctx.user.id === game.createdBy) {
