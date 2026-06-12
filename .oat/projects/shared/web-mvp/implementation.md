@@ -26,7 +26,7 @@ oat_generated: false
 
 | Phase                            | Status      | Tasks | Completed |
 | -------------------------------- | ----------- | ----- | --------- |
-| Phase 1: Foundation & Salvage    | implemented (review pending) | 11 | 11/11 |
+| Phase 1: Foundation & Salvage    | completed (review passed) | 11 | 11/11 |
 | Phase 2: game-logic rules engine | pending     | 11    | 0/11      |
 | Phase 3: API foundation          | pending     | 10    | 0/10      |
 | Phase 4: Game domain             | pending     | 14    | 0/14      |
@@ -44,7 +44,7 @@ oat_generated: false
 
 ## Phase 1: Foundation & Salvage (p01)
 
-**Status:** implemented — awaiting phase review
+**Status:** completed — review passed (`reviews/p01-review-2026-06-12.md`, 3 Minor)
 **Started:** 2026-06-12
 
 ### Phase Summary
@@ -234,7 +234,35 @@ _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
 
-_Orchestration runs from `oat-project-implement` are appended here, most-recent-first within the file but append-only at the bottom of the log._
+### Run 1 — 2026-06-12 20:54
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** in progress (rows appended as phases complete)
+
+#### Phase Outcomes
+
+| Phase | Implementer        | Review | Fix Iterations | Disposition |
+| ----- | ------------------ | ------ | -------------- | ----------- |
+| p01   | DONE_WITH_CONCERNS (advisory only) | pass | 0/2 | merged (sequential, on-branch) |
+
+#### Parallel Groups
+
+- Group 1 [p02, p03]: worktree-based, merged in order (pending)
+- p01, p04, p05, p06, p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p01 implementation model_axis=selected:opus (bleeding-edge toolchain integration); p01 review model_axis=selected:opus (ceiling).
+
+#### Outstanding Items
+
+- None blocking. Advisory carried forward: `scripts/worktree/init.sh` is stoa-specific — orchestrator review required before p02/p03 worktree bootstrap; heavy J/Q/K SVGs (WebP contingency at p06); `manage-hooks.js` ESM warning.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design` (5 p01 rows consolidated there).
 
 <!-- orchestration-runs-end -->
 

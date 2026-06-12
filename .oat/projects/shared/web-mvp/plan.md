@@ -862,7 +862,7 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 
 | Scope  | Type     | Status  | Date | Artifact |
 | ------ | -------- | ------- | ---- | -------- |
-| p01    | code     | pending | -    | -        |
+| p01    | code     | passed  | 2026-06-12 | reviews/p01-review-2026-06-12.md |
 | p02    | code     | pending | -    | -        |
 | p03    | code     | pending | -    | -        |
 | p04    | code     | pending | -    | -        |
