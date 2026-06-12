@@ -136,6 +136,7 @@ Goal: clean monorepo skeleton, tooling green, legacy gone. Exit state: empty pac
 **Files:**
 - Delete: `pages/`, `components/`, `db/`, `services/`, `utils/`, `app/`, `styled-system/`, `panda.config.ts`, `next.config.js` (root legacy), `eslint.config.mjs`, `.prettierrc`, `firebase-service-key-sequence-staging.json`, `repomix-output.md`, `rewrite.md`, `sequence-rewrite-plan.md`, legacy `public/` remnants (cards now live under `apps/web/public/cards/`), `next-env.d.ts` (root), `.next/`
 - Note for operator (echo in task output): **revoke the GCP service key in Google Cloud** — it is in git history; revocation is the real mitigation.
+- Reference access after deletion: the `legacy-final` git tag marks the last legacy-containing commit — `git show legacy-final:utils/game.js` retrieves any legacy file (used by p02 tasks as algorithm reference if needed).
 
 **Verify:** `pnpm typecheck && pnpm lint && pnpm test` all green on clean tree; `git grep -l "firebase"` returns nothing outside `.oat/`.
 
