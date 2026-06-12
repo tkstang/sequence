@@ -48,3 +48,7 @@ config_file = "agents/oat-reviewer-xhigh.toml"
 [agents.skeptical-evaluator]
 description = "Adversarial claim evaluator — receives a context package and gathers evidence to disprove then support a claim. Returns structured findings with citations."
 config_file = "agents/skeptical-evaluator.toml"
+
+[mcp_servers.neon]
+type = "http"
+url = "https://mcp.neon.tech/mcp"
