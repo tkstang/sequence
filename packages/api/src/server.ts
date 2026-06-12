@@ -98,7 +98,11 @@ export async function buildServer(
     keepAlive: { enabled: boolean; pingMs: number; pongWaitMs: number };
   } = {
     router: appRouter,
-    createContext: createContextFactory({ db, auth }),
+    createContext: createContextFactory({
+      db,
+      auth,
+      guestSecret: env.BETTER_AUTH_SECRET,
+    }),
     // ~20s ping satisfies tRPC liveness and neutralizes Railway WS idle drops.
     keepAlive: { enabled: true, pingMs: 20_000, pongWaitMs: 5_000 },
   };
