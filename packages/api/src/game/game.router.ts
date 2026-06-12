@@ -1,9 +1,12 @@
 import { router } from '../trpc.ts';
+import { createGameRoute } from './routes/create-game.ts';
 
 /**
  * The `game` router — lifecycle, lobby, moves, and the live subscription.
  *
- * Empty in p03 (skeleton). Routes are added per p04 task (create, join, start,
- * makeMove, onGameEvent, …) under `game/routes/`.
+ * Routes are added per p04 task (create, join, start, makeMove, onGameEvent, …)
+ * under `game/routes/`, file-per-route.
  */
-export const gameRouter = router({});
+export const gameRouter = router({
+  create: createGameRoute,
+});
