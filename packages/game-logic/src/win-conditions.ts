@@ -19,13 +19,13 @@ export function sequencesToWin(teamCount: number): number {
 }
 
 /** Number of distinct teams in this game. */
-function teamCount(state: GameState): number {
+function distinctTeamCount(state: GameState): number {
   return new Set(state.teams).size;
 }
 
 /** Has `team` completed enough sequences to win? */
 export function checkWin(state: GameState, team: Team): boolean {
-  const needed = sequencesToWin(teamCount(state));
+  const needed = sequencesToWin(distinctTeamCount(state));
   const owned = state.sequences.filter((s) => s.team === team).length;
   return owned >= needed;
 }

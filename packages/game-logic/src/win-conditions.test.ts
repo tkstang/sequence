@@ -7,11 +7,11 @@ function seq(id: number, team: Team): Sequence {
   return { id, team, cells: [] };
 }
 
-function stateWith(teamCount: 2 | 3, sequences: Sequence[]): GameState {
-  const teams: Team[] = teamCount === 2 ? [1, 2] : [1, 2, 3];
+function stateWith(numTeams: 2 | 3, sequences: Sequence[]): GameState {
+  const teams: Team[] = numTeams === 2 ? [1, 2] : [1, 2, 3];
   return {
     settings: {
-      playerCount: teamCount === 2 ? 2 : 3,
+      playerCount: numTeams === 2 ? 2 : 3,
       mode: 'tap',
       timerSeconds: null,
       local: false,
