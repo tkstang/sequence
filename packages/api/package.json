@@ -17,11 +17,14 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@sequence/game-logic": "workspace:*",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.8.5",
     "pino": "^10.3.1",
+    "postgres": "^3.4.9",
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "vitest": "^3.2.6"
   }
 }
