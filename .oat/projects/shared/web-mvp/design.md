@@ -49,6 +49,53 @@ apps/web (Vercel)                      packages/api (Railway)
                                        └───────────────────┘
 ```
 
+### Repository Layout
+
+Approved concrete tree (conventions: file-per-route per domain, game UI components nested under the game route, dot-extension siblings, kebab-case with PascalCase for components/classes):
+
+```
+sequence/
+├── pnpm-workspace.yaml · package.json · tsconfig.base.json
+├── .oxlintrc.json · .oxfmtrc.json · .nvmrc
+├── bruno/                              # API collection
+├── apps/web/
+│   ├── next.config.ts · tailwind config · tsconfig.json
+│   ├── public/cards/                   # SVGO-optimized SVGs + LGPL attribution
+│   └── src/
+│       ├── app/
+│       │   ├── layout.tsx · page.tsx              # landing (SSR)
+│       │   ├── login/ · signup/                   # auth screens
+│       │   ├── dashboard/page.tsx · history/page.tsx
+│       │   ├── join/[code]/page.tsx               # invite landing
+│       │   └── game/[id]/                         # client-rendered; lobby/game/game-over by status
+│       │       ├── page.tsx
+│       │       └── components/
+│       │           ├── GameBoard/ (GameBoard.tsx · .utils.ts · .test.ts · components/: BoardCell, Chip)
+│       │           ├── CardHand/ · PlayerRail/ · LobbyTeams/ · GameOver/ · HandoffScreen/
+│       │           └── controllers/ (tap-controller.ts · drag-controller.ts)
+│       ├── components/                 # genuinely shared UI only
+│       ├── lib/trpc/                   # client setup (http + ws links)
+│       └── shared/
+└── packages/
+    ├── game-logic/src/                 # flat, kebab-case, sibling tests
+    │   ├── index.ts · types.ts · state-machine.ts
+    │   ├── board-map.ts · deck.ts · create-game.ts
+    │   ├── apply-move.ts               # the reducer (turn loop)
+    │   ├── sequence-detection.ts · jack-rules.ts · dead-cards.ts · win-conditions.ts
+    │   └── display-helpers.ts
+    └── api/
+        ├── Dockerfile · drizzle.config.ts · drizzle/   # generated migrations
+        └── src/
+            ├── server.ts · trpc.ts · app-router.ts
+            ├── db/schema/              # games.ts · game-players.ts · game-events.ts · auth.ts
+            ├── game/                   # game.router.ts · game.service.ts · game.types.ts
+            │   ├── routes/             # file-per-route: create-game.ts · make-move.ts · …
+            │   └── move-engine.ts · TimerService.ts
+            ├── user/                   # auth.ts (Better Auth) · guest-tokens.ts
+            ├── history/                # history.router.ts · routes/
+            └── shared/realtime/        # rooms.ts · redaction.ts · heartbeat.ts
+```
+
 ### Data Flow
 
 The one loop that matters:
