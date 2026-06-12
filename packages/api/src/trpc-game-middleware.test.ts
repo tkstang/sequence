@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { gamePlayers, games } from './db/schema/index.ts';
 import { createHarness, type Harness } from './test/harness.ts';
+import { GUEST_COOKIE_NAME } from './trpc.ts';
 import { hashToken, issueGuestToken } from './user/guest-tokens.ts';
 
 // Integration suite — requires a real Postgres (the Neon test branch). Skips
@@ -166,6 +167,23 @@ describeIntegration('gamePlayerProcedure (integration)', () => {
     });
 
     const res = await h.whoSeat(gameId, outsider.cookie);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('FORBIDDEN');
+  });
+
+  it('returns FORBIDDEN (not 500) for a malformed guest cookie', async () => {
+    const owner = await h.signUp({
+      email: 'malformed@example.com',
+      password: 'supersecret123',
+      name: 'Owner3',
+    });
+    const gameId = await seedGame({
+      createdBy: owner.userId,
+      players: [{ seat: 1, team: 1, userId: owner.userId }],
+    });
+    // A tampered/garbage cookie value (`%` is an invalid percent-escape) must
+    // not crash the decode — it should resolve to "not a participant".
+    const res = await h.whoSeat(gameId, `${GUEST_COOKIE_NAME}=%`);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('FORBIDDEN');
   });

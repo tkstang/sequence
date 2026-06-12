@@ -118,7 +118,15 @@ function readCookie(headers: Headers, name: string): string | null {
     const sep = part.indexOf('=');
     if (sep === -1) continue;
     if (part.slice(0, sep).trim() === name) {
-      return decodeURIComponent(part.slice(sep + 1).trim());
+      const raw = part.slice(sep + 1).trim();
+      // A tampered cookie can carry an invalid percent-escape (e.g. `%`), which
+      // throws URIError. At the authz boundary that must read as "not a
+      // participant" (FORBIDDEN), not a 500 — fall back to the raw value.
+      try {
+        return decodeURIComponent(raw);
+      } catch {
+        return raw;
+      }
     }
   }
   return null;
