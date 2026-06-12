@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD COLUMN "next_sequence_id" integer DEFAULT 1 NOT NULL;

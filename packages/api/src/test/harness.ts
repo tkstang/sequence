@@ -2,13 +2,16 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import { sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 
+import { appRouter } from '../app-router.ts';
 import { createDb, type Database } from '../db/client.ts';
+import * as schema from '../db/schema/index.ts';
 import { type Env, parseEnv } from '../env.ts';
 import { sendWebResponse, toWebRequest } from '../server.ts';
 import {
   createContextFactory,
   gamePlayerProcedure,
   GUEST_COOKIE_NAME,
+  mergeRouters,
   router,
 } from '../trpc.ts';
 import { createAuth } from '../user/auth.ts';
@@ -32,17 +35,31 @@ import { acquireDbLock } from './db-lock.ts';
  * and returns the resolved seat. Keeping it here avoids leaking test routes
  * into the production router.
  */
-const testRouter = router({
+const testOnlyRouter = router({
   _test: router({
     whoSeat: gamePlayerProcedure.query(({ ctx }) => ctx.seat),
   }),
 });
 
+/**
+ * The harness serves the **production** `appRouter` (so route integration tests
+ * call the real procedures) merged with the `_test` helper router (so the
+ * middleware test keeps its seat probe). Merging — not nesting — keeps the
+ * production procedure paths (`game.create`, …) unchanged.
+ */
+const testRouter = mergeRouters(appRouter, testOnlyRouter);
+
 export type TestRouter = typeof testRouter;
+
+/** The result of a raw tRPC HTTP call: either typed data or an error code. */
+export type CallResult =
+  | { ok: true; data: unknown }
+  | { ok: false; code: string; message: string; ruleViolation?: unknown };
 
 export interface Harness {
   app: FastifyInstance;
   db: Database;
+  schema: typeof schema;
   env: Env;
   baseUrl: string;
   /** Truncate all data (auth + game tables). */
@@ -53,6 +70,22 @@ export interface Harness {
     password: string;
     name: string;
   }): Promise<{ cookie: string; userId: string }>;
+  /**
+   * Invoke any tRPC procedure over real HTTP with an optional cookie.
+   * `kind` selects GET (query) vs POST (mutation). Returns typed data or the
+   * tRPC error code (+ any `ruleViolation` from the BAD_REQUEST data shape).
+   */
+  call(
+    path: string,
+    kind: 'query' | 'mutation',
+    input: unknown,
+    cookie?: string,
+  ): Promise<CallResult>;
+  /** Convenience: POST mutation. */
+  mutate(path: string, input: unknown, cookie?: string): Promise<CallResult>;
+  /** Convenience: GET query. */
+  query(path: string, input: unknown, cookie?: string): Promise<CallResult>;
+  /** Extract the guest cookie set by a `join` response, if any. */
   /** Call `_test.whoSeat` for a game with the given cookie header (or none). */
   whoSeat(
     gameId: string,
@@ -115,8 +148,49 @@ export async function createHarness(): Promise<Harness> {
   const harness: Harness = {
     app,
     db,
+    schema,
     env,
     baseUrl,
+    async call(path, kind, input, cookie) {
+      const headers: Record<string, string> = {};
+      if (cookie) headers.cookie = cookie;
+      let res: Response;
+      if (kind === 'query') {
+        const qs = encodeURIComponent(JSON.stringify(input));
+        res = await fetch(`${baseUrl}/trpc/${path}?input=${qs}`, { headers });
+      } else {
+        headers['content-type'] = 'application/json';
+        res = await fetch(`${baseUrl}/trpc/${path}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(input),
+        });
+      }
+      const json = (await res.json()) as
+        | { result: { data: unknown } }
+        | {
+            error: {
+              message?: string;
+              data?: { code?: string; ruleViolation?: unknown };
+            };
+          };
+      if (res.ok && 'result' in json) {
+        return { ok: true, data: json.result.data };
+      }
+      const err = 'error' in json ? json.error : undefined;
+      return {
+        ok: false,
+        code: err?.data?.code ?? 'UNKNOWN',
+        message: err?.message ?? '',
+        ruleViolation: err?.data?.ruleViolation,
+      };
+    },
+    mutate(path, input, cookie) {
+      return harness.call(path, 'mutation', input, cookie);
+    },
+    query(path, input, cookie) {
+      return harness.call(path, 'query', input, cookie);
+    },
     async reset() {
       // Order-independent thanks to CASCADE; RESTART IDENTITY for determinism.
       await db.execute(sql`

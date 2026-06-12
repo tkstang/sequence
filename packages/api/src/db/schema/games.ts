@@ -29,11 +29,19 @@ import {
  * dangling.
  */
 
-/** jsonb shape: one board cell. `null` chip = empty. */
+/** jsonb shape: one board cell. Absent keys = empty. */
 export interface BoardCell {
   chip?: number; // team id (1-3)
   lockedBy?: number; // sequence id that locked this cell
 }
+
+/**
+ * jsonb shape: the board as a sparse object keyed by the game-logic position
+ * code (e.g. `'1AC'`). This round-trips the in-memory `Map<Position, BoardCell>`
+ * exactly — empty cells are simply absent keys. The canonical (de)serialization
+ * lives in `game/state-mapping.ts`.
+ */
+export type BoardJson = Record<string, BoardCell>;
 
 /** jsonb shape: a single card (kept loose; game-logic owns the canonical type). */
 export interface CardJson {
@@ -41,18 +49,20 @@ export interface CardJson {
   suit: string;
 }
 
-/** jsonb shape: a completed sequence record. */
+/** jsonb shape: a completed sequence record (cells are position codes). */
 export interface SequenceJson {
+  id: number;
   team: number;
-  cells: number[]; // board cell indices
-  order: number; // completion order
+  cells: string[];
 }
 
 /** jsonb shape: a pending >5-run lock selection awaiting the placer's choice. */
 export interface PendingChoiceJson {
   seat: number;
-  runLength: number;
-  cells: number[];
+  team: number;
+  placed: string;
+  cells: string[];
+  additionalRuns?: string[][];
 }
 
 export const gameStatuses = [
@@ -90,12 +100,14 @@ export const games = pgTable(
     version: integer('version').notNull().default(0),
     currentSeat: smallint('current_seat'),
     round: integer('round').notNull().default(0),
+    // Monotonic id for the next completed sequence (mirrors GameState).
+    nextSequenceId: integer('next_sequence_id').notNull().default(1),
     turnDeadlineAt: timestamp('turn_deadline_at', { withTimezone: true }),
     turnRemainingMs: integer('turn_remaining_ms'),
     pendingChoice: jsonb('pending_choice').$type<PendingChoiceJson>(),
 
     // Game data (jsonb)
-    board: jsonb('board').$type<BoardCell[]>(),
+    board: jsonb('board').$type<BoardJson>(),
     deck: jsonb('deck').$type<CardJson[]>(),
     played: jsonb('played').$type<CardJson[]>(),
     sequences: jsonb('sequences').$type<SequenceJson[]>(),
