@@ -53,6 +53,12 @@ export function createAuth(db: Database, env: Env = getEnv()) {
     advanced: {
       defaultCookieAttributes: {
         httpOnly: true,
+        // NOTE (p07 obligation, review I1): `SameSite=Lax` does not ride
+        // cross-site Vercel(web)->Railway(api) requests, so credentialed tRPC
+        // calls and the WS upgrade arrive anonymous in prod. The cross-site
+        // cookie strategy (SameSite=None;Secure, or a shared registrable
+        // domain) is decided in p07-t02/t03 where the deploy domains are known;
+        // local dev is same-site (localhost:3000<->3001) and unaffected.
         sameSite: 'lax',
         secure: env.NODE_ENV !== 'development',
       },
