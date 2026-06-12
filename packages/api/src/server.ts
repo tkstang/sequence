@@ -1,8 +1,14 @@
 import cors from '@fastify/cors';
+import {
+  fastifyTRPCPlugin,
+  type FastifyTRPCPluginOptions,
+} from '@trpc/server/adapters/fastify';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 
+import { type AppRouter, appRouter } from './app-router.ts';
 import { createDb, type Database } from './db/client.ts';
 import { type Env, getEnv } from './env.ts';
+import { createContextFactory } from './trpc.ts';
 import { type Auth, createAuth } from './user/auth.ts';
 
 declare module 'fastify' {
@@ -73,6 +79,16 @@ export async function buildServer(
       ? Buffer.from(await webResponse.arrayBuffer())
       : null;
     return reply.send(body);
+  });
+
+  // tRPC over HTTP (queries + mutations). The WS transport for subscriptions
+  // is added in p03-t06.
+  await app.register(fastifyTRPCPlugin, {
+    prefix: '/trpc',
+    trpcOptions: {
+      router: appRouter,
+      createContext: createContextFactory({ db, auth }),
+    } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
   });
 
   return app;
