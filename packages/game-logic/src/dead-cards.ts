@@ -62,8 +62,15 @@ export function autoSwapDeadCard(
   ];
 
   const draw = drawCard(state.deck, state.played, rng);
-  const newHand = draw.card ? [...handWithout, draw.card] : handWithout;
 
+  // If no replacement could be drawn (deck and played pile both empty — near
+  // unreachable in practice), leave the dead card in hand rather than shrinking
+  // it with no event (m3): the event stream must keep reconstructing hand size.
+  if (!draw.card) {
+    return { nextState: state, events: [] };
+  }
+
+  const newHand = [...handWithout, draw.card];
   const nextHands = state.hands.map((h, i) => (i === seat ? newHand : h));
 
   const nextState: GameState = {
@@ -72,15 +79,6 @@ export function autoSwapDeadCard(
     deck: draw.deck,
     played: [...draw.played, discarded],
   };
-
-  // If no replacement could be drawn, no meaningful swap occurred — but the
-  // dead card was still removed; emit the event only when a card was drawn.
-  if (!draw.card) {
-    return {
-      nextState: { ...nextState, played: [...state.played, discarded] },
-      events: [],
-    };
-  }
 
   const event: GameEvent = {
     type: 'DeadCardSwapped',

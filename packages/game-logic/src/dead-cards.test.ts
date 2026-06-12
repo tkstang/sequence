@@ -126,4 +126,19 @@ describe('autoSwapDeadCard', () => {
     expect(events).toEqual([]);
     expect(nextState).toBe(state);
   });
+
+  it('leaves the dead card in hand when no replacement is drawable (m3)', () => {
+    // Deck and played pile both empty → nothing to draw. The hand must not
+    // shrink silently; state is returned unchanged with no event.
+    const b = board(coverCard(ACE_CLUBS));
+    const state = stateWith([ACE_CLUBS, TWO_EYED], b, []);
+    const { nextState, events } = autoSwapDeadCard(
+      state,
+      0,
+      createSeededRng(1),
+    );
+    expect(events).toEqual([]);
+    expect(nextState).toBe(state);
+    expect(nextState.hands[0]).toHaveLength(2);
+  });
 });
