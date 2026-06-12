@@ -151,6 +151,9 @@ const t = initTRPC.context<Context>().create();
 
 export const router = t.router;
 export const mergeRouters = t.mergeRouters;
+/** Server-side caller factory — used by the integration harness to drive
+ * subscriptions in-process (no WS client dep until p05). */
+export const createCallerFactory = t.createCallerFactory;
 
 /** Any caller — no identity required. */
 export const publicProcedure = t.procedure;

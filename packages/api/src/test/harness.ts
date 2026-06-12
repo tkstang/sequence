@@ -8,6 +8,7 @@ import * as schema from '../db/schema/index.ts';
 import { type Env, parseEnv } from '../env.ts';
 import { sendWebResponse, toWebRequest } from '../server.ts';
 import {
+  createCallerFactory,
   createContextFactory,
   gamePlayerProcedure,
   GUEST_COOKIE_NAME,
@@ -93,8 +94,18 @@ export interface Harness {
   ): Promise<{ ok: true; seat: unknown } | { ok: false; code: string }>;
   /** Build the guest cookie header for a raw token. */
   guestCookie(token: string): string;
+  /**
+   * A server-side tRPC caller bound to a context resolved from `cookie` (session
+   * + guest). Used to drive subscriptions in-process — the real WS client only
+   * lands in p05, but subscriptions are async iterables a caller can consume
+   * directly. The context carries the same db/auth/guestSecret as production.
+   */
+  caller(cookie?: string): ReturnType<typeof buildCaller>;
   close(): Promise<void>;
 }
+
+/** Build a server-side caller over the production appRouter for a context. */
+const buildCaller = createCallerFactory(appRouter);
 
 /** Resolve the test environment, pointing `DATABASE_URL` at the test branch. */
 export function testEnv(): Env {
@@ -190,6 +201,32 @@ export async function createHarness(): Promise<Harness> {
     },
     query(path, input, cookie) {
       return harness.call(path, 'query', input, cookie);
+    },
+    caller(cookie) {
+      const headers = new Headers(cookie ? { cookie } : {});
+      return buildCaller(async () => {
+        const session = await auth.api.getSession({ headers });
+        const user = session?.user
+          ? {
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.name,
+            }
+          : null;
+        const setCookie = (): void => {
+          /* no-op: the caller path doesn't carry an HTTP reply */
+        };
+        return {
+          user,
+          guest: null,
+          db,
+          auth,
+          headers,
+          ip: '127.0.0.1',
+          guestSecret: env.BETTER_AUTH_SECRET,
+          setCookie,
+        };
+      });
     },
     async reset() {
       // Order-independent thanks to CASCADE; RESTART IDENTITY for determinism.
