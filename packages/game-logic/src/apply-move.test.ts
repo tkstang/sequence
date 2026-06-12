@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyMove } from './apply-move.ts';
-import { boardCellsFor } from './board-map.ts';
+import {
+  applyMove,
+  forfeitTurn,
+  resolveSequenceChoice,
+  turnInDeadCard,
+} from './apply-move.ts';
+import { boardCellsFor, positionAt } from './board-map.ts';
 import { createSeededRng } from './deck.ts';
-import type { Card, GameState, Move, Team } from './types.ts';
+import type {
+  Board,
+  BoardCell,
+  Card,
+  GameState,
+  Move,
+  Position,
+  Team,
+} from './types.ts';
 
 const ACE_CLUBS: Card = { rank: 'A', suit: 'C' };
 const KING_HEARTS: Card = { rank: 'K', suit: 'H' };
@@ -193,5 +206,224 @@ describe('applyMove — placement', () => {
     // hand refilled from the reshuffled pile
     expect(r.nextState.hands[0]).toHaveLength(2);
     expect(r.events.some((e) => e.type === 'CardDrawn')).toBe(true);
+  });
+});
+
+const ONE_EYED: Card = { rank: 'J', suit: 'S' };
+
+function makeBoard(entries: Array<[Position, BoardCell]>): Board {
+  return new Map(entries);
+}
+
+describe('applyMove — removeChip (one-eyed jack)', () => {
+  it('removes an opponent unlocked chip, consumes the jack, and advances', () => {
+    const target = positionAt(4, 4)!;
+    const state = baseState({
+      hands: [
+        [ONE_EYED, KING_HEARTS],
+        [FIVE_DIAMONDS, ACE_CLUBS],
+      ],
+      board: makeBoard([[target, { chip: 2 }]]),
+    });
+    const move: Move = { type: 'removeChip', position: target };
+    const r = applyMove(state, move, createSeededRng(1));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // cell cleared
+    expect(r.nextState.board.has(target)).toBe(false);
+    // one-eyed jack consumed
+    expect(
+      r.nextState.hands[0]!.some((c) => c.rank === 'J' && c.suit === 'S'),
+    ).toBe(false);
+    // turn completed (advanced to seat 1)
+    expect(r.nextState.currentSeat).toBe(1);
+    const types = r.events.map((e) => e.type);
+    expect(types).toContain('ChipRemoved');
+    expect(types).toContain('TurnAdvanced');
+  });
+
+  it('rejects removing a locked chip', () => {
+    const target = positionAt(4, 4)!;
+    const state = baseState({
+      hands: [
+        [ONE_EYED, KING_HEARTS],
+        [FIVE_DIAMONDS, ACE_CLUBS],
+      ],
+      board: makeBoard([[target, { chip: 2, lockedBy: 1 }]]),
+    });
+    const r = applyMove(state, { type: 'removeChip', position: target });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('chip-locked');
+  });
+
+  it('rejects removeChip without a one-eyed jack in hand', () => {
+    const target = positionAt(4, 4)!;
+    const state = baseState({
+      hands: [
+        [KING_HEARTS, ACE_CLUBS],
+        [FIVE_DIAMONDS, TWO_EYED],
+      ],
+      board: makeBoard([[target, { chip: 2 }]]),
+    });
+    const r = applyMove(state, { type: 'removeChip', position: target });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('not-a-one-eyed-jack');
+  });
+});
+
+describe('applyMove — pending sequence choice (>5 run)', () => {
+  function sixInARow(): {
+    state: GameState;
+    placed: Position;
+    cells: Position[];
+  } {
+    // Pre-place 5 team-1 chips on row 4 cols 0..4 (unlocked); the player
+    // completes col 5 making six → choice required.
+    const existing: Position[] = [];
+    for (let c = 0; c < 5; c++) existing.push(positionAt(4, c)!);
+    const placedPos = positionAt(4, 5)!;
+    const entries: Array<[Position, BoardCell]> = existing.map((p) => [
+      p,
+      { chip: 1 } as BoardCell,
+    ]);
+    const state = baseState({
+      board: makeBoard(entries),
+      hands: [[], [FIVE_DIAMONDS, ACE_CLUBS]],
+    });
+    const cells = [...existing, placedPos];
+    return { state, placed: placedPos, cells };
+  }
+
+  it('freezes the turn on a run longer than five and emits PendingChoice', () => {
+    const { state, placed } = sixInARow();
+    // Use an explicit two-eyed jack so we control the placement card.
+    const withJack: GameState = {
+      ...state,
+      hands: [[TWO_EYED], state.hands[1]!],
+    };
+    const r = applyMove(withJack, {
+      type: 'place',
+      position: placed,
+      card: TWO_EYED,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.nextState.pendingChoice).toBeDefined();
+    // turn did NOT advance
+    expect(r.nextState.currentSeat).toBe(0);
+    expect(r.events.some((e) => e.type === 'PendingChoice')).toBe(true);
+    // no draw / advance while frozen
+    expect(r.events.some((e) => e.type === 'TurnAdvanced')).toBe(false);
+  });
+
+  it('resolveSequenceChoice locks a valid straight-5 (incl. placed) and advances', () => {
+    const { state, placed, cells } = sixInARow();
+    const withJack: GameState = {
+      ...state,
+      hands: [[TWO_EYED], state.hands[1]!],
+    };
+    const placement = applyMove(withJack, {
+      type: 'place',
+      position: placed,
+      card: TWO_EYED,
+    });
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+
+    const chosen = cells.slice(1, 6); // 5 cells including the placed (col 5)
+    expect(chosen).toContain(placed);
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      chosen,
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.nextState.pendingChoice).toBeUndefined();
+    expect(r.nextState.sequences).toHaveLength(1);
+    // turn advanced after resolution
+    expect(r.nextState.currentSeat).toBe(1);
+    expect(r.events.some((e) => e.type === 'SequenceCompleted')).toBe(true);
+  });
+
+  it('rejects a choice that does not include the placed cell', () => {
+    const { state, placed, cells } = sixInARow();
+    const withJack: GameState = {
+      ...state,
+      hands: [[TWO_EYED], state.hands[1]!],
+    };
+    const placement = applyMove(withJack, {
+      type: 'place',
+      position: placed,
+      card: TWO_EYED,
+    });
+    if (!placement.ok) throw new Error('setup failed');
+    const badChoice = cells.slice(0, 5); // cols 0..4 — excludes placed col 5
+    expect(badChoice).not.toContain(placed);
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      badChoice,
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('invalid-sequence-choice');
+  });
+});
+
+describe('forfeitTurn', () => {
+  it('advances the turn without play or draw', () => {
+    const state = baseState();
+    const before = state.hands[0]!.length;
+    const r = forfeitTurn(state, createSeededRng(1));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.nextState.currentSeat).toBe(1);
+    // no chip placed, no card drawn for the forfeiting seat
+    expect(r.nextState.hands[0]).toHaveLength(before);
+    expect(r.events.some((e) => e.type === 'ChipPlaced')).toBe(false);
+    expect(r.events.some((e) => e.type === 'TurnAdvanced')).toBe(true);
+  });
+});
+
+describe('turnInDeadCard (hard mode)', () => {
+  it('swaps a genuinely dead card and continues the same turn', () => {
+    const deadCard: Card = { rank: 'A', suit: 'C' };
+    const board = makeBoard(
+      boardCellsFor('A', 'C').map((p) => [p, { chip: 1 } as BoardCell]),
+    );
+    const state: GameState = {
+      ...baseState({ board, hands: [[deadCard, KING_HEARTS], []] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+    };
+    const r = turnInDeadCard(state, 0, deadCard, createSeededRng(1));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // dead card gone, turn NOT advanced (player keeps playing)
+    expect(
+      r.nextState.hands[0]!.some((c) => c.rank === 'A' && c.suit === 'C'),
+    ).toBe(false);
+    expect(r.nextState.currentSeat).toBe(0);
+    expect(r.events.some((e) => e.type === 'DeadCardSwapped')).toBe(true);
+  });
+
+  it('rejects turning in a card that is not actually dead', () => {
+    const liveCard: Card = { rank: 'A', suit: 'C' };
+    const state: GameState = {
+      ...baseState({ hands: [[liveCard, KING_HEARTS], []] }),
+      settings: {
+        playerCount: 2,
+        mode: 'drag',
+        timerSeconds: null,
+        local: false,
+      },
+    };
+    const r = turnInDeadCard(state, 0, liveCard, createSeededRng(1));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('not-a-dead-card');
   });
 });
