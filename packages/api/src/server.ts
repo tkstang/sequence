@@ -46,6 +46,13 @@ export async function buildServer(
   const db = options.db ?? createDb(env.DATABASE_URL).db;
   const auth = options.auth ?? createAuth(db, env);
 
+  // Resolve client IPs from the edge proxy's `X-Forwarded-For`. Railway sits
+  // behind a trusted edge proxy, so without this `request.ip` is the proxy
+  // address and per-IP rate limiting collapses to one shared bucket. Env-gated
+  // (`TRUST_PROXY`); defaults on in production, off elsewhere so a direct,
+  // non-proxied deploy is not spoofable via a forged XFF header.
+  const trustProxy = env.TRUST_PROXY ?? env.NODE_ENV === 'production';
+
   const app = Fastify({
     // Pino is Fastify's built-in logger. No hands/deck/PII ever logged.
     logger: options.logger ?? {
@@ -53,6 +60,7 @@ export async function buildServer(
     },
     // Better Auth and tRPC parse their own bodies on their routes.
     disableRequestLogging: env.NODE_ENV === 'test',
+    trustProxy,
   });
 
   await app.register(cors, {

@@ -4,13 +4,14 @@ import { describe, expect, it } from 'vitest';
 import type { Context } from '../trpc.ts';
 import { createRateLimiter } from './rate-limit-middleware.ts';
 
-function ctxWithIp(ip: string): Context {
+function ctxWithIp(ip: string, opts: { xff?: string } = {}): Context {
   return {
     user: null,
     guest: null,
     db: {} as Context['db'],
     auth: {} as Context['auth'],
-    headers: new Headers({ 'x-forwarded-for': ip }),
+    headers: new Headers(opts.xff ? { 'x-forwarded-for': opts.xff } : {}),
+    ip,
     guestSecret: 'x',
   };
 }
@@ -69,6 +70,19 @@ describe('createRateLimiter', () => {
     expect(await call(limiter, ctx)).toBe('limited');
     limiter.reset();
     expect(await call(limiter, ctx)).toBe('ok');
+  });
+
+  it('keys on the resolved ctx.ip, ignoring a spoofable x-forwarded-for', async () => {
+    const limiter = createRateLimiter({ max: 1, windowMs: 60_000 });
+    // Two requests from the same resolved IP but with different (spoofed) XFF
+    // headers must share one budget — the limiter cannot be bypassed by
+    // rotating the X-Forwarded-For value.
+    expect(await call(limiter, ctxWithIp('9.9.9.9', { xff: '1.1.1.1' }))).toBe(
+      'ok',
+    );
+    expect(await call(limiter, ctxWithIp('9.9.9.9', { xff: '2.2.2.2' }))).toBe(
+      'limited',
+    );
   });
 
   it('keys authed callers by user id', async () => {

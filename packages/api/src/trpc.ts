@@ -37,6 +37,14 @@ export interface Context {
   auth: Auth;
   /** Raw request headers — needed for guest-cookie resolution downstream. */
   headers: Headers;
+  /**
+   * The resolved client IP for this request (`request.ip`). With `trustProxy`
+   * enabled on the Fastify factory this is the real client address parsed from
+   * the trusted edge's `X-Forwarded-For`; with `trustProxy` off it is the
+   * direct socket address (an attacker cannot spoof it via a raw XFF header).
+   * Rate limiters MUST key on this, not on a hand-parsed `x-forwarded-for`.
+   */
+  ip: string;
   /** HMAC secret for verifying guest tokens (the app's `BETTER_AUTH_SECRET`). */
   guestSecret: string;
 }
@@ -74,7 +82,12 @@ export function createContextFactory({
         }
       : null;
 
-    return { user, guest: null, db, auth, headers, guestSecret };
+    // `req.ip` is Fastify's resolved client IP — it honors `trustProxy` and is
+    // not spoofable via a raw XFF header when trustProxy is off. The limiter
+    // keys on this instead of parsing `x-forwarded-for` itself.
+    const ip = req.ip ?? 'unknown';
+
+    return { user, guest: null, db, auth, headers, ip, guestSecret };
   };
 }
 

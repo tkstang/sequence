@@ -24,6 +24,15 @@ export const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
+  // Trust the edge proxy's `X-Forwarded-For` when resolving `request.ip`.
+  // Railway (and most PaaS) terminate TLS at a trusted edge proxy, so this MUST
+  // be on in production for per-IP rate limiting to key on the real client.
+  // Off by default so a direct/non-proxied deploy cannot be spoofed via XFF;
+  // resolved per env below with a prod-sane default. Accepts `true`/`false`/`1`/`0`.
+  TRUST_PROXY: z
+    .enum(['true', 'false', '1', '0'])
+    .transform((v) => v === 'true' || v === '1')
+    .optional(),
   // Optional social OAuth providers — presence gates registration.
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),

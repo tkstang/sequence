@@ -29,9 +29,11 @@ export interface RateLimiter {
 
 function defaultKey(ctx: Context): string {
   if (ctx.user) return `user:${ctx.user.id}`;
-  const fwd = ctx.headers.get('x-forwarded-for');
-  if (fwd) return `ip:${fwd.split(',')[0]?.trim()}`;
-  return 'ip:unknown';
+  // Key on the resolved client IP (`ctx.ip` from Fastify's `request.ip`, which
+  // honors `trustProxy`). Parsing the raw `x-forwarded-for` header here would
+  // let a client behind a direct connection rotate the value to evade the
+  // limit; `request.ip` is only derived from XFF when the edge proxy is trusted.
+  return `ip:${ctx.ip || 'unknown'}`;
 }
 
 /**

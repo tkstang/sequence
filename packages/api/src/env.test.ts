@@ -36,6 +36,28 @@ describe('parseEnv', () => {
     expect(env.BETTER_AUTH_URL).toBe('http://localhost:3001');
   });
 
+  it('leaves TRUST_PROXY undefined when unset (factory applies the prod-sane default)', () => {
+    const env = parseEnv(base as NodeJS.ProcessEnv);
+    expect(env.TRUST_PROXY).toBeUndefined();
+  });
+
+  it('parses TRUST_PROXY truthy/falsey strings to a boolean', () => {
+    expect(
+      parseEnv({ ...base, TRUST_PROXY: 'true' } as NodeJS.ProcessEnv)
+        .TRUST_PROXY,
+    ).toBe(true);
+    expect(
+      parseEnv({ ...base, TRUST_PROXY: '1' } as NodeJS.ProcessEnv).TRUST_PROXY,
+    ).toBe(true);
+    expect(
+      parseEnv({ ...base, TRUST_PROXY: 'false' } as NodeJS.ProcessEnv)
+        .TRUST_PROXY,
+    ).toBe(false);
+    expect(
+      parseEnv({ ...base, TRUST_PROXY: '0' } as NodeJS.ProcessEnv).TRUST_PROXY,
+    ).toBe(false);
+  });
+
   it('accepts a valid full environment', () => {
     const env = parseEnv({
       ...base,
