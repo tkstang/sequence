@@ -115,6 +115,13 @@ export interface PendingChoice {
   readonly placed: Position;
   /** The eligible run of cells (length > 5) the player chooses 5 from. */
   readonly cells: readonly Position[];
+  /**
+   * Further >5 runs (crossing directions) the same placement produced, resolved
+   * one at a time after this choice locks. Each entry is an eligible run the
+   * placer will then pick a 5-window from. Empty in the common single-choice
+   * case.
+   */
+  readonly additionalRuns?: readonly (readonly Position[])[];
 }
 
 export interface GameState {

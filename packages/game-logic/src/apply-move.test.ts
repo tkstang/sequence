@@ -370,6 +370,154 @@ describe('applyMove — pending sequence choice (>5 run)', () => {
   });
 });
 
+describe('applyMove — crossing auto-lock + choice (I1 regression)', () => {
+  it('locks the exactly-5 crossing sequence and wins instantly with the choice', () => {
+    // Vertical exactly-5 (col 5, rows 2..6) AND a horizontal 6-run (row 4,
+    // cols 1..6) both completed by covering (4,5). The vertical is earned
+    // outright; resolving the row choice yields the second sequence → 2-team
+    // instant win. Previously the vertical sequence was silently discarded.
+    const placed = positionAt(4, 5)!;
+    const vertical: Position[] = [];
+    for (let r = 2; r <= 6; r++) vertical.push(positionAt(r, 5)!);
+    const horizontal: Position[] = [];
+    for (let c = 1; c <= 6; c++) horizontal.push(positionAt(4, c)!);
+    const entries: Array<[Position, BoardCell]> = [];
+    for (const p of vertical) if (p !== placed) entries.push([p, { chip: 1 }]);
+    for (const p of horizontal)
+      if (p !== placed) entries.push([p, { chip: 1 }]);
+    const state = baseState({
+      board: makeBoard(entries),
+      hands: [[TWO_EYED], []],
+    });
+    const placement = applyMove(
+      state,
+      { type: 'place', position: placed, card: TWO_EYED },
+      createSeededRng(1),
+    );
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+    // The vertical 5 is already locked while the row choice is pending.
+    expect(placement.nextState.pendingChoice).toBeDefined();
+    expect(placement.nextState.sequences).toHaveLength(1);
+
+    const chosen = horizontal.slice(1, 6); // cols 2..6, includes placed col 5
+    expect(chosen).toContain(placed);
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      chosen,
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.nextState.sequences).toHaveLength(2);
+    // 2-team game: two sequences in one placement = instant win.
+    expect(r.nextState.status).toBe('finished');
+    expect(r.nextState.winner).toBe(1);
+    expect(r.events.some((e) => e.type === 'GameWon')).toBe(true);
+  });
+});
+
+describe('resolveSequenceChoice — reuse rule (C1 regression)', () => {
+  it('rejects a chosen window that reuses two or more of this team’s locked cells', () => {
+    // Team-1 locked sequence on row 4 cols 0..4 (lockedBy: 1). New unlocked
+    // team-1 chips at cols 6..9, then the placer covers col 5 → a 10-cell run
+    // (cols 0..9, placed at col 5). Legal 5-windows exist (cols 4..8, 5..9), so
+    // the turn freezes for a choice — but the placer must NOT be allowed to
+    // choose cols 3..7 (reuses cols 3 and 4, two locked cells). FR5: at most one
+    // reused space between own sequences.
+    const entries: Array<[Position, BoardCell]> = [];
+    for (let c = 0; c < 5; c++) {
+      entries.push([positionAt(4, c)!, { chip: 1, lockedBy: 1 } as BoardCell]);
+    }
+    for (const c of [6, 7, 8, 9]) {
+      entries.push([positionAt(4, c)!, { chip: 1 } as BoardCell]);
+    }
+    const placed = positionAt(4, 5)!;
+    const state: GameState = {
+      ...baseState({
+        board: makeBoard(entries),
+        hands: [[TWO_EYED], []],
+      }),
+      sequences: [
+        {
+          id: 1,
+          team: 1,
+          cells: [0, 1, 2, 3, 4].map((c) => positionAt(4, c)!),
+        },
+      ],
+      nextSequenceId: 2,
+    };
+    const placement = applyMove(
+      state,
+      { type: 'place', position: placed, card: TWO_EYED },
+      createSeededRng(1),
+    );
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+    expect(placement.nextState.pendingChoice).toBeDefined();
+
+    // Illegal window: cols 3,4,5,6,7 — reuses cols 3 and 4 (both locked).
+    const illegal = [3, 4, 5, 6, 7].map((c) => positionAt(4, c)!);
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      illegal,
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('invalid-sequence-choice');
+    // And no win was granted off the illegal window.
+    if (r.ok) expect(r.nextState.winner).toBeUndefined();
+  });
+
+  it('accepts a window reusing exactly one of this team’s locked cells', () => {
+    // Same setup, but choose cols 4..7 + col 3 would be two; instead choose
+    // cols 4,5,6,7 plus one more from the unlocked side is impossible (run ends
+    // at 7), so the only legal 5-window including placed col 7 that reuses ≤1
+    // locked cell is cols 3..7? No — that reuses 3 and 4. The legal window is
+    // cols 4..8 — but col 8 isn't in the run. With an 8-run (cols 0..7) and two
+    // locked cells at 3,4 adjacent to the unlocked tail, the placer simply has
+    // no legal fresh window here. Use a longer tail so a legal window exists.
+    const entries: Array<[Position, BoardCell]> = [];
+    for (let c = 0; c < 5; c++) {
+      entries.push([positionAt(4, c)!, { chip: 1, lockedBy: 1 } as BoardCell]);
+    }
+    for (let c = 5; c < 8; c++) {
+      entries.push([positionAt(4, c)!, { chip: 1 } as BoardCell]);
+    }
+    const placed = positionAt(4, 8)!;
+    const state: GameState = {
+      ...baseState({
+        board: makeBoard(entries),
+        hands: [[TWO_EYED], []],
+      }),
+      sequences: [
+        {
+          id: 1,
+          team: 1,
+          cells: [0, 1, 2, 3, 4].map((c) => positionAt(4, c)!),
+        },
+      ],
+      nextSequenceId: 2,
+    };
+    const placement = applyMove(
+      state,
+      { type: 'place', position: placed, card: TWO_EYED },
+      createSeededRng(1),
+    );
+    expect(placement.ok).toBe(true);
+    if (!placement.ok) return;
+
+    // Legal window: cols 4,5,6,7,8 — reuses only col 4 (one locked cell).
+    const legal = [4, 5, 6, 7, 8].map((c) => positionAt(4, c)!);
+    const r = resolveSequenceChoice(
+      placement.nextState,
+      legal,
+      createSeededRng(1),
+    );
+    expect(r.ok).toBe(true);
+  });
+});
+
 describe('forfeitTurn', () => {
   it('advances the turn without play or draw', () => {
     const state = baseState();

@@ -63,14 +63,34 @@ function botMove(state: GameState, rng: Rng): ReturnType<typeof applyMove> {
   let result = applyMove(state, move, rng);
   if (!result.ok) return result;
 
-  // Resolve a pending >5-run choice by locking the 5 cells around the placed.
+  // Resolve a pending >5-run choice by locking 5 contiguous cells including the
+  // placed one — honoring the reuse rule (a window may reuse at most one cell
+  // already locked into this team's existing sequences).
   if (result.nextState.pendingChoice) {
     const pending = result.nextState.pendingChoice;
+    const placedState = result.nextState;
     const idx = pending.cells.indexOf(pending.placed);
-    // Choose a contiguous window of 5 that includes the placed cell.
-    const start = Math.max(0, Math.min(idx - 2, pending.cells.length - 5));
-    const chosen = pending.cells.slice(start, start + 5);
-    result = resolveSequenceChoice(result.nextState, chosen, rng);
+    const teamSeqIds = new Set(
+      placedState.sequences
+        .filter((s) => s.team === pending.team)
+        .map((s) => s.id),
+    );
+    const reusedLocked = (window: readonly string[]): number =>
+      window.filter((pos) => {
+        const lockedBy = placedState.board.get(pos)?.lockedBy;
+        return lockedBy !== undefined && teamSeqIds.has(lockedBy);
+      }).length;
+
+    // Every contiguous 5-window that contains the placed cell.
+    const candidates: string[][] = [];
+    const lo = Math.max(0, idx - 4);
+    const hi = Math.min(pending.cells.length - 5, idx);
+    for (let start = lo; start <= hi; start++) {
+      candidates.push(pending.cells.slice(start, start + 5));
+    }
+    const legal =
+      candidates.find((w) => reusedLocked(w) <= 1) ?? candidates[0]!;
+    result = resolveSequenceChoice(placedState, legal, rng);
   }
 
   return result;

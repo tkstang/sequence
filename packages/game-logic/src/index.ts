@@ -71,6 +71,7 @@ export { createGame } from './create-game.ts';
 export {
   detectSequences,
   lockSequence,
+  type ChoiceRun,
   type DetectionResult,
 } from './sequence-detection.ts';
 

@@ -149,6 +149,14 @@ export function resolveSequenceChoice(
   if (!isValidChoice(cells, pending.cells, pending.placed)) {
     return fail('invalid-sequence-choice');
   }
+  // Reuse rule (FR5): the chosen window may reuse at most one cell already
+  // locked into one of this team's existing sequences — same constraint the
+  // auto-lock path enforces (sequence-detection.ts). Without this, a run
+  // extended through an own locked sequence lets the placer pick a window that
+  // reuses ≥2 locked cells, minting an illegal second sequence (and win).
+  if (reusedLockedCount(state, cells, pending.team) > 1) {
+    return fail('invalid-sequence-choice');
+  }
 
   const events: GameEvent[] = [];
   let next: GameState = { ...state, pendingChoice: undefined };
@@ -157,6 +165,32 @@ export function resolveSequenceChoice(
   if (checkWin(next, pending.team)) {
     next = { ...next, status: 'finished', winner: pending.team };
     events.push({ type: 'GameWon', team: pending.team });
+    return { ok: true, nextState: next, events };
+  }
+
+  // Chain any further >5 runs from the same placement: re-validate that each
+  // still has a legal window (the just-locked cells may have consumed it), and
+  // freeze the next choice. Runs with no remaining legal window are dropped.
+  const remaining = (pending.additionalRuns ?? []).filter((run) =>
+    hasLegalWindowFor(next, run, pending.placed, pending.team),
+  );
+  if (remaining.length > 0) {
+    const [activeRun, ...rest] = remaining;
+    next = {
+      ...next,
+      pendingChoice: {
+        seat: pending.seat,
+        team: pending.team,
+        placed: pending.placed,
+        cells: activeRun!,
+        additionalRuns: rest,
+      },
+    };
+    events.push({
+      type: 'PendingChoice',
+      seat: pending.seat,
+      cells: activeRun!,
+    });
     return { ok: true, nextState: next, events };
   }
 
@@ -190,6 +224,48 @@ function isValidChoice(
     if (indices[i]! !== indices[i - 1]! + 1) return false;
   }
   return true;
+}
+
+/**
+ * Count cells in `cells` already locked into one of `team`'s existing
+ * sequences. A chosen window is a fresh sequence only when it reuses at most one
+ * such cell (FR5). Cross-references the board's `lockedBy` against this team's
+ * recorded sequences so another team's lock never counts.
+ */
+function reusedLockedCount(
+  state: GameState,
+  cells: readonly Position[],
+  team: Team,
+): number {
+  const teamSeqIds = new Set(
+    state.sequences.filter((s) => s.team === team).map((s) => s.id),
+  );
+  let count = 0;
+  for (const pos of cells) {
+    const lockedBy = state.board.get(pos)?.lockedBy;
+    if (lockedBy !== undefined && teamSeqIds.has(lockedBy)) count++;
+  }
+  return count;
+}
+
+/**
+ * Does `run` still contain a contiguous 5-window that includes `placed` and
+ * reuses at most one cell locked into one of `team`'s sequences? Used to drop
+ * queued choice runs whose only legal windows were consumed by an earlier lock.
+ */
+function hasLegalWindowFor(
+  state: GameState,
+  run: readonly Position[],
+  placed: Position,
+  team: Team,
+): boolean {
+  const placedIdx = run.indexOf(placed);
+  for (let start = 0; start + 5 <= run.length; start++) {
+    if (placedIdx < start || placedIdx >= start + 5) continue;
+    const window = run.slice(start, start + 5);
+    if (reusedLockedCount(state, window, team) <= 1) return true;
+  }
+  return false;
 }
 
 /**
@@ -302,8 +378,23 @@ function applyPlace(state: GameState, move: PlaceMove, rng: Rng): MoveResult {
   const detection = detectSequences(board, move.position, team);
 
   if (detection.kind === 'choiceRequired') {
+    // A single placement can both complete an exactly-5 sequence in one
+    // direction (auto-locked outright) and produce a >5 run in another (a
+    // frozen choice). Lock the auto-lock sequences first — including the win
+    // check, so an earned double-sequence instant win is never lost — then
+    // freeze on the remaining choice.
+    if (detection.autoLock.length > 0) {
+      next = lockAndRecord(next, detection.autoLock, team, events);
+      if (checkWin(next, team)) {
+        next = { ...next, status: 'finished', winner: team };
+        events.push({ type: 'GameWon', team });
+        return { ok: true, nextState: next, events };
+      }
+    }
+
     // Turn freezes: the placer must choose which 5 cells lock. No draw / no
-    // advance until resolved (handled by resolveSequenceChoice in p02-t09).
+    // advance until resolved (handled by resolveSequenceChoice). Any further >5
+    // runs from this placement are queued to resolve after this one.
     next = {
       ...next,
       pendingChoice: {
@@ -311,6 +402,7 @@ function applyPlace(state: GameState, move: PlaceMove, rng: Rng): MoveResult {
         team,
         placed: move.position,
         cells: detection.cells,
+        additionalRuns: detection.additionalChoices.map((c) => c.cells),
       },
     };
     events.push({ type: 'PendingChoice', seat, cells: detection.cells });
