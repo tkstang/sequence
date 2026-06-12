@@ -19,6 +19,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260612.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
+    "svgo": "^4.0.1",
     "typescript": "^6.0.3",
     "vitest": "^3.2.6"
   }
