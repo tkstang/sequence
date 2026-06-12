@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-12
-oat_current_task_id: p01-t01
+oat_current_task_id: p02-t01
 oat_generated: false
 ---
 
@@ -26,7 +26,7 @@ oat_generated: false
 
 | Phase                            | Status      | Tasks | Completed |
 | -------------------------------- | ----------- | ----- | --------- |
-| Phase 1: Foundation & Salvage    | in_progress | 11    | 0/11      |
+| Phase 1: Foundation & Salvage    | implemented (review pending) | 11 | 11/11 |
 | Phase 2: game-logic rules engine | pending     | 11    | 0/11      |
 | Phase 3: API foundation          | pending     | 10    | 0/10      |
 | Phase 4: Game domain             | pending     | 14    | 0/14      |
@@ -34,7 +34,7 @@ oat_generated: false
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 0/73 tasks completed
+**Total:** 11/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -44,26 +44,37 @@ oat_generated: false
 
 ## Phase 1: Foundation & Salvage (p01)
 
-**Status:** in_progress
+**Status:** implemented — awaiting phase review
 **Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+**Outcome (what changed):**
 
-| Task    | Name                                  | Status  | Commit |
-| ------- | ------------------------------------- | ------- | ------ |
-| p01-t01 | Workspace scaffold                    | pending | -      |
-| p01-t02 | TypeScript side-by-side setup         | pending | -      |
-| p01-t03 | Oxlint + Oxfmt                        | pending | -      |
-| p01-t04 | Vitest workspace                      | pending | -      |
-| p01-t05 | game-logic package skeleton           | pending | -      |
-| p01-t06 | api package skeleton                  | pending | -      |
-| p01-t07 | web app skeleton                      | pending | -      |
-| p01-t08 | Salvage boardMap (TDD)                | pending | -      |
-| p01-t09 | Card SVG pipeline + attribution       | pending | -      |
-| p01-t10 | Legacy deletion + key scrub           | pending | -      |
-| p01-t11 | Git hooks + worktree scripts          | pending | -      |
+- pnpm monorepo skeleton live: `packages/game-logic`, `packages/api`, `apps/web` (Next 16 + React 19 + Tailwind v4), all root gates green (`typecheck` via tsgo, `lint` oxlint, `format:check` oxfmt, `test` vitest).
+- Typed `BOARD_MAP` salvaged from legacy via TDD (6 tests); 54 SVGO-optimized card assets with LGPL attribution.
+- Entire legacy app deleted including the committed GCP service key (operator must still revoke it in GCP Console — it remains in git history).
+- Git hooks (oxlint/oxfmt pre-commit, conventional+pNN-tNN commit-msg) and worktree scripts adapted from stoa.
+
+**Key files touched:** root workspace configs, `packages/game-logic/src/board-map.ts`, `apps/web/` skeleton, `apps/web/public/cards/`, `tools/git-hooks/`, `scripts/worktree/`.
+
+**Verification:** all four root gates + `pnpm --filter @sequence/web build` green on clean tree; 7 tests passing.
+
+**Notes / Decisions:** 5 recorded deltas (see Deviations table); J/Q/K SVGs remain heavy (~65–157KiB, WebP contingency documented for p06); `scripts/worktree/init.sh` is stoa-specific — orchestrator must review before p02/p03 worktree bootstrap.
+
+| Task    | Name                                  | Status    | Commit    |
+| ------- | ------------------------------------- | --------- | --------- |
+| p01-t01 | Workspace scaffold                    | completed | `69b8fa0` |
+| p01-t02 | TypeScript side-by-side setup         | completed | `0012e1f` |
+| p01-t03 | Oxlint + Oxfmt                        | completed | `3f38110` |
+| p01-t04 | Vitest workspace                      | completed | `f65cd5c` |
+| p01-t05 | game-logic package skeleton           | completed | `4cb64f8` |
+| p01-t06 | api package skeleton                  | completed | `3c01a3f` |
+| p01-t07 | web app skeleton                      | completed | `6617f72` |
+| p01-t08 | Salvage boardMap (TDD)                | completed | `9b25439` |
+| p01-t09 | Card SVG pipeline + attribution       | completed | `a728b57` |
+| p01-t10 | Legacy deletion + key scrub           | completed | `8a07e59` |
+| p01-t11 | Git hooks + worktree scripts          | completed | `3849ad5` |
 
 ---
 
@@ -239,6 +250,7 @@ Chronological log of implementation progress.
 - HiLL checkpoints confirmed: ["p07"] (from workflow.hillCheckpointDefault: final).
 - Auto-review at HiLL checkpoints: enabled (workflow.autoReviewAtHillCheckpoints).
 - `.oat/config.json` aligned with stoa baseline before start (archive/S3, localPaths, workflow block); documentation block deliberately omitted (no docs app in this repo); postImplementSequence set to `pr` (not `docs-pr`) for the same reason.
+- p01 implemented by oat-phase-implementer (opus): 11/11 tasks, commits `69b8fa0`..`3849ad5`, DONE_WITH_CONCERNS (3 advisory: stoa-specific worktree init.sh, heavy J/Q/K SVGs, manage-hooks ESM warning). Phase review next.
 
 ---
 
@@ -248,7 +260,11 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 
 | Task / Review | Source Artifact | Planned / Documented | Actual / Accepted | Reason | Source of Truth | Follow-up |
 | ------------- | --------------- | -------------------- | ----------------- | ------ | --------------- | --------- |
-| -             | -               | -                    | -                 | -      | -               | -         |
+| p01-t01/t03 | plan.md p01-t01 ("root scripts fan out via `pnpm -r`") | All root scripts fan out via `pnpm -r` | `typecheck`/`test`/`build` fan out per-package; `lint`/`format`/`format:check` run root-level `oxlint`/`oxfmt` scoped to `apps packages scripts tools` (with `--no-error-on-unmatched-pattern`) | oxlint/oxfmt are single-binary whole-tree tools driven by root `.oxlintrc.json`/`.oxfmtrc.json` (as p01-t03 itself specifies); per-package fan-out would duplicate config and mis-scope. Scoping avoids linting `.oat/`, `.agents/`, docs. | implementation (shipped) | none — matches tool design |
+| p01-t04 | plan.md p01-t04 (projects: `packages/*`, `apps/web`) | `vitest.workspace.ts` lists literal `apps/web` | Lists glob `apps/*` instead; root `test` wrapped in `scripts/run-tests.mjs` guard for the empty-tree "no tests tolerated" case | Vitest errors on a literal not-yet-existing path (`apps/web`) but tolerates an empty glob; the guard satisfies the t04 verify before any package exists | implementation (shipped) | `apps/web` is the only app, so glob is equivalent |
+| p01-t05 | tsconfig.base.json (p01-t02) | Base config per p01-t02 list | Added `allowImportingTsExtensions: true` to base | Required for explicit `.ts` import specifiers under bundler resolution + `noEmit`; foundational TS setting surfaced by the first real `.ts` import | implementation (shipped) | none |
+| p01-t10 | plan.md p01-t10 delete list | List does not include root `tsconfig.json` | Also deleted legacy root `tsconfig.json` | It is a Next/Panda-era remnant (paths to deleted dirs, `include: **/*.ts` scanning the monorepo) contradicting "legacy gone"; no package extends it (only `tsconfig.base.json`) | implementation (shipped) | none |
+| p01-t11 | plan.md p01-t11 ("Keep as-is: …`scripts/worktree/validate.sh`") + verify "`validate.sh` passes" | Keep validate.sh unchanged | Adapted validate.sh: `type-check`→`typecheck`, dropped `--filter documentation docs:format:check`, added `format:check` | As-is it references stoa-only `pnpm run type-check` and a `documentation` package absent here, so it could not pass — internal plan conflict between "keep as-is" and "must pass" | implementation (shipped) | `scripts/worktree/init.sh` left as-is per plan but references stoa-only `scripts/sync-archived-projects-from-s3.sh` + `oat local sync`; review before p02/p03 worktree bootstrap |
 
 ## Test Results
 
@@ -256,7 +272,7 @@ Track test execution during implementation.
 
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
-| p01   | -         | -      | -      | -        |
+| p01   | 7 (game-logic smoke + 6 board-map) | 7 | 0 | n/a |
 | p02   | -         | -      | -      | -        |
 | p03   | -         | -      | -      | -        |
 | p04   | -         | -      | -      | -        |
