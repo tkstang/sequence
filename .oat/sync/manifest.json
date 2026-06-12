@@ -611,7 +611,17 @@
       "contentHash": null,
       "isFile": true,
       "lastSynced": "2026-06-11T23:56:58.229Z"
+    },
+    {
+      "canonicalPath": ".agents/skills/neon-postgres",
+      "providerPath": ".claude/skills/neon-postgres",
+      "provider": "claude",
+      "contentType": "skill",
+      "strategy": "symlink",
+      "contentHash": null,
+      "isFile": false,
+      "lastSynced": "2026-06-12T19:42:50.951Z"
     }
   ],
-  "lastUpdated": "2026-06-11T23:56:58.229Z"
+  "lastUpdated": "2026-06-12T19:42:50.952Z"
 }
