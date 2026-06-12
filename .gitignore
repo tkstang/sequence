@@ -11,6 +11,7 @@ node_modules
 # next.js / build output
 .next/
 /out/
+next-env.d.ts
 dist
 /build
 
