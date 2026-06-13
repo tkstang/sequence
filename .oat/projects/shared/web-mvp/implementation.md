@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p07-t05
+oat_current_task_id: null
 oat_generated: false
 ---
 
@@ -353,7 +353,7 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** in progress at p07-t05
+**Status:** implementation tasks complete; final review pending
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -418,13 +418,18 @@ and public preview are materially faster, so the current evidence points at
 DB-backed authenticated game routes rather than a broken deploy. Operator
 handoff must call this out as a performance follow-up.
 
+p07-t05 is complete. `handoff.md` now includes the live URLs, deployment/env
+checklists, FR-by-FR operator test script, NFR status table, known limitations,
+and follow-ups. The NFR2 latency gap is documented as an open production
+performance item rather than marked passed.
+
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
 | p07-t02 | Railway deploy                      | completed | `3896a8e` |
 | p07-t03 | Vercel deploy                       | completed | `9bbcf76`, `57227bc` |
 | p07-t04 | Production smoke + checks           | completed | `13fba71`, `b36afa6`, `953139f` |
-| p07-t05 | Operator handoff notes              | pending | -      |
+| p07-t05 | Operator handoff notes              | completed | `694b40e` |
 
 ---
 
@@ -437,6 +442,37 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 8 — 2026-06-13 16:23
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 completed, 0 passed, 0 failed, 0 stopped (p07 implementation tasks complete; final review pending)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | p07-t05 completed | pending | 0/2 | operator handoff ready; all 73 implementation tasks complete; final p07 review/HiLL remains |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Handoff artifact: `.oat/projects/shared/web-mvp/handoff.md`.
+
+#### Outstanding Items
+
+- **Final review pending:** run p07 review before the configured final HiLL checkpoint.
+- **Known product gap:** NFR2 latency is documented as an open follow-up.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 7 — 2026-06-13 16:20
 
