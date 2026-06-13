@@ -89,6 +89,16 @@ describeIntegration('auth integration', () => {
     expect(await callMe(cookie)).toBe(200);
   });
 
+  it('exposes server-side request duration for production latency smoke', async () => {
+    const res = await fetch(`${baseUrl}/health`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('server-timing')).toMatch(/^app;dur=\d+\.\d$/);
+    expect(res.headers.get('x-sequence-server-duration-ms')).toMatch(
+      /^\d+\.\d$/,
+    );
+  });
+
   it('rejects the authed procedure without a session (UNAUTHORIZED)', async () => {
     const res = await fetch(`${baseUrl}/trpc/health.me`);
     expect(res.status).toBe(401);

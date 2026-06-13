@@ -78,6 +78,7 @@ export async function buildServer(
   await app.register(cors, {
     origin: env.WEB_ORIGIN,
     credentials: true,
+    exposedHeaders: ['Server-Timing', 'X-Sequence-Server-Duration-Ms'],
   });
 
   // I3: stamp the resolved client IP onto the raw request so the tRPC **WS**
@@ -88,7 +89,22 @@ export async function buildServer(
   // resolved by Fastify (honoring trustProxy); copying it to `req.raw.ip` makes
   // it available to `resolveClientIp` on the socket side.
   app.addHook('onRequest', async (request) => {
-    (request.raw as { ip?: string }).ip = request.ip;
+    const raw = request.raw as {
+      ip?: string;
+      sequenceStartNs?: bigint;
+    };
+    raw.ip = request.ip;
+    raw.sequenceStartNs = process.hrtime.bigint();
+  });
+
+  app.addHook('onSend', async (request, reply) => {
+    const started = (request.raw as { sequenceStartNs?: bigint })
+      .sequenceStartNs;
+    if (started === undefined) return;
+    const durationMs = Number(process.hrtime.bigint() - started) / 1_000_000;
+    const rounded = durationMs.toFixed(1);
+    reply.header('Server-Timing', `app;dur=${rounded}`);
+    reply.header('X-Sequence-Server-Duration-Ms', rounded);
   });
 
   // Rate limiting registered globally but OFF by default (`global: false`) —
