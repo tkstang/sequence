@@ -6,6 +6,7 @@ import { appRouter } from '../app-router.ts';
 import { createDb, type Database } from '../db/client.ts';
 import * as schema from '../db/schema/index.ts';
 import { type Env, parseEnv } from '../env.ts';
+import { joinPreviewLimiter } from '../game/game.router.ts';
 import { sendWebResponse, toWebRequest } from '../server.ts';
 import {
   createCallerFactory,
@@ -229,6 +230,11 @@ export async function createHarness(): Promise<Harness> {
       });
     },
     async reset() {
+      // The join/preview limiter is a process singleton shared across every
+      // integration file via the production router. Reset it per test so one
+      // file's bursts don't leak into another (otherwise a late file's normal
+      // join/preview calls would 429 unexpectedly).
+      joinPreviewLimiter.reset();
       // Order-independent thanks to CASCADE; RESTART IDENTITY for determinism.
       await db.execute(sql`
         truncate table

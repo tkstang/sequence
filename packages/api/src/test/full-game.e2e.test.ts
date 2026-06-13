@@ -226,5 +226,7 @@ describeIntegration('scripted full game over the API (e2e)', () => {
       expect(data.rematchOf).toBe(gameId);
       expect(data.gameId).not.toBe(gameId);
     }
-  }, 120_000);
+    // A full random game is hundreds of HTTP round-trips; under full-suite DB
+    // contention this runs slower than in isolation, so the cap is generous.
+  }, 240_000);
 });

@@ -26,7 +26,10 @@ import { turnInDeadCardRoute } from './routes/turn-in-dead-card.ts';
  * (the p03-t09 reusable limiter) to throttle invite-code enumeration. Keyed on
  * the resolved client IP (`ctx.ip`), now correct on the WS path too (I3).
  */
-const joinPreviewLimiter = createRateLimiter({ max: 30, windowMs: 60_000 });
+export const joinPreviewLimiter = createRateLimiter({
+  max: 30,
+  windowMs: 60_000,
+});
 
 export const gameRouter = router({
   create: createGameRoute,
