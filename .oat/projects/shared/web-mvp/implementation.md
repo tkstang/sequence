@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p06-t01
+oat_current_task_id: p07-t01
 oat_generated: false
 ---
 
@@ -31,10 +31,10 @@ oat_generated: false
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
-| Phase 6: Game UI                 | pending     | 13    | 0/13      |
+| Phase 6: Game UI                 | completed (awaiting review) | 13 | 13/13 |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 55/73 tasks completed
+**Total:** 68/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -296,28 +296,48 @@ Lifecycle-broadcast version stamping remains deferred to p06.
 
 ## Phase 6: Game UI (p06)
 
-**Status:** pending
-**Started:** -
+**Status:** completed (awaiting review)
+**Started:** 2026-06-13
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+The playable game route is implemented end-to-end. The route consumes snapshot-first
+realtime state, keeps optimistic `version` current from live events, and renders
+the lobby, board, chips/locks/highlights, peeking hand, player rail/timer,
+tap-mode legal-target controller, hard-mode drag/drop controller, pending
+sequence-choice resolution, local pass-and-play hand veil, game-over/rematch,
+typed notifications, reconnect banner, and responsive mobile/desktop layout.
+Playwright now covers the local-game browser path in desktop and 375px mobile
+projects against the real API/test DB.
+
+**Carried p04 obligation closed:** lifecycle broadcasts from `presence.ts` and
+`concede.ts` now carry the bumped post-transition `version`; the next mover no
+longer needs to absorb an avoidable stale-version conflict after freeze/resume
+or concede races.
+
+**Verification:** focused component/controller suites per task; `pnpm typecheck`;
+`pnpm lint` (0 errors; pre-existing warnings only); `pnpm format:check`;
+`pnpm test` (368 tests / 55 files, including DB-backed API integration);
+`pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web e2e`
+(2 Playwright projects: desktop + mobile-375). Playwright asserts the game board
+and hand fit within viewport bounds at desktop and 375px and verifies the local
+handoff veil removes the hand from the DOM before reveal.
 
 | Task    | Name                                   | Status  | Commit |
 | ------- | -------------------------------------- | ------- | ------ |
-| p06-t01 | Game route state container             | pending | -      |
-| p06-t02 | Lobby UI (stacked team rows)           | pending | -      |
-| p06-t03 | GameBoard + cells + chips              | pending | -      |
-| p06-t04 | CardHand (peeking fan)                 | pending | -      |
-| p06-t05 | PlayerRail + timer display             | pending | -      |
-| p06-t06 | Tap controller (default mode)          | pending | -      |
-| p06-t07 | Drag controller (hard mode)            | pending | -      |
-| p06-t08 | Pending-choice + sequence lock UI      | pending | -      |
-| p06-t09 | HandoffScreen (pass-and-play)          | pending | -      |
-| p06-t10 | GameOver + rematch                     | pending | -      |
-| p06-t11 | Notifications + Motion polish          | pending | -      |
-| p06-t12 | Responsive pass                        | pending | -      |
-| p06-t13 | Playwright e2e suite                   | pending | -      |
+| p06-t01 | Game route state container             | completed | `accf051` |
+| p06-t02 | Lobby UI (stacked team rows)           | completed | `f9199d3` |
+| p06-t03 | GameBoard + cells + chips              | completed | `3171cc3` |
+| p06-t04 | CardHand (peeking fan)                 | completed | `e07f2f5` |
+| p06-t05 | PlayerRail + timer display             | completed | `3cc8846` |
+| p06-t06 | Tap controller (default mode)          | completed | `d2debfe` |
+| p06-t07 | Drag controller (hard mode)            | completed | `eefa5a5` |
+| p06-t08 | Pending-choice + sequence lock UI      | completed | `7282d95` |
+| p06-t09 | HandoffScreen (pass-and-play)          | completed | `e816fea` |
+| p06-t10 | GameOver + rematch                     | completed | `c6e4bdd` |
+| p06-t11 | Notifications + Motion polish          | completed | `cdf26ca` |
+| p06-t12 | Responsive pass                        | completed | `a1d57ac` |
+| p06-t13 | Playwright e2e suite                   | completed | `c5ec8bd` (+`7293143` fix) |
 
 ---
 
@@ -474,6 +494,9 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p05-t02 | design.md §Internal Dependencies ("web depends on api's router types (type-only import)") / plan.md p05-t02 (`AppRouter` type-only from `@sequence/api`) | `AppRouter` importable from the package root | Added `export type { AppRouter } from './app-router.ts'` to `packages/api/src/index.ts` so `import type { AppRouter } from '@sequence/api'` resolves at the package root (the index previously exported only `PACKAGE_NAME`). Type-only re-export — no API runtime ships in the web bundle; `@sequence/api` moved to web `devDependencies` (p01 review minor). | implementation (shipped) | none — matches the multi-client contract surface |
 | p05-t05 | api `game.myGames` `MyGameCard` (`{…, mySeat}`) | Card carried only `mySeat` (no team/opponents/round) | Enhanced `MyGameCard` additively with `myTeam`, `opponents: string[]` (other players' display names via a `user` left-join), `round`, and tri-state `result: "win" \| "loss" \| "none"` so the dashboard can render "vs Sarah, Ben", the round number, and W/L/neutral markers per the approved wireframe and no-winner FFA concede semantics. Existing `lifecycle.test.ts` (asserts only `gameId` membership) unaffected. | implementation (shipped) — dashboard is the consumer | none — additive, no behavior change to existing fields |
 | p05-t08 (carried fix, filed `fix(p04-t13)`) | rules-and-flows ("their team takes the recorded loss") — run-1 outstanding item (`head-to-head.ts:57`) | `headToHead` scored a no-winner FFA concede as a loss for BOTH users (`won=false → loss`), inconsistent with `myRecord`'s conceder-only-loss semantics | `headToHead` now left-joins the `GameConceded` event: a `winner_team`-null game counts as a loss vs the opponent ONLY when MY team conceded; otherwise it is excluded (not a decided head-to-head result) — matching `myRecord`. New integration test (`headToHead scores a no-winner FFA concede only against the conceder`) added; full history suite (8 tests) green vs the Neon test branch. | implementation (shipped) | none — closes a run-1 carried item |
+| p06-t01 | plan.md p06-t01 (game route state container) / carried p04 outstanding item | Build the client route state container; lifecycle version stamping remained a carried p04 issue | p06-t01 also extended the API realtime payloads needed by the route: snapshot metadata/roster/settings, live lobby publications, private `HandUpdated` start events for local hand state, and post-transition `version` stamping on presence/concede/save broadcasts. | The route could not be correct without authoritative metadata and live private hand updates; the carried lifecycle-version bug was p06-adjacent realtime correctness. | implementation (shipped) | none — API redaction and lifecycle tests cover the added behavior |
+| p06-t02 | p02/p04 engine supports legal 6-player 2-team and 3-team layouts | Full rules/API can start 6p as 3v3 or 2x3 depending on seeds | The web create/lobby UI currently presents 6-player games as 3 teams of 2 (matching the p06 lobby wireframe) and does not expose a 6p 2-team selector. | The approved p06 lobby wireframe uses the 3-team layout; adding a team-count mode would expand create/lobby UX beyond this phase's UI scope. | implementation (shipped UI constraint) | Follow-up if product wants 6p 3v3 in the web UI: add team-count selection to create/lobby before start |
+| p06-t13 | plan.md p06-t13 / p04 test infra | Playwright e2e should run against `DATABASE_URL_TEST` only when DB-backed | `apps/web/playwright.config.ts` loads the repo root `.env`, starts the API with `DATABASE_URL="$DATABASE_URL_TEST"` and the web app pointed at that API, and skips only when `DATABASE_URL_TEST` is absent. | Matches the API Vitest env-loading convention and prevents accidental production `DATABASE_URL` use while still making local/CI browser e2e executable. | implementation (shipped) | none — desktop and mobile-375 Playwright projects passed against the test DB |
 
 ## Test Results
 
@@ -486,7 +509,7 @@ Track test execution during implementation.
 | p03   | 34 api after review fixes (9 env + 7 guest + 7 rate-limit unit + 11 integration [4 auth + 7 middleware]; +7 game-logic salvage = 41 root) | 34 api / 41 root | 0 | n/a |
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
-| p06   | -         | -      | -      | -        |
+| p06   | 368 root tests / 55 files; Playwright desktop + mobile-375 e2e; web build; root typecheck/lint/format | 368 root + 2 e2e | 0 | n/a |
 | p07   | -         | -      | -      | -        |
 
 ## Final Summary (for PR/docs)
