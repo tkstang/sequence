@@ -1,6 +1,6 @@
 # web-mvp Deployment Handoff
 
-**Status:** blocked at p07-t02 (Railway deploy target not linked)
+**Status:** Railway API deployed; Vercel web deploy pending
 **Last updated:** 2026-06-13
 **No secrets are recorded here.**
 
@@ -14,27 +14,22 @@
 - Production cookie strategy: `AUTH_COOKIE_SAME_SITE=none`, `AUTH_COOKIE_SECURE=true`
 - Railway proxy strategy: `TRUST_PROXY=1`
 
-## Blocker
+## Railway Deployment
 
-p07-t02 cannot deploy non-interactively yet.
+- Project: `sequence`
+- Environment: `production`
+- Service: `sequence-api`
+- Public API URL: `https://sequence-api-production-8687.up.railway.app`
+- Deployment ID: `016512d9-afef-4204-b9e6-11fb1b74a9d6`
+- Predeploy migrations: passed (`drizzle-kit migrate`)
+- Healthcheck: passed (`GET /health` returned `{"status":"ok"}`)
+- WebSocket upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc` opened)
 
-Observed locally:
+Notes:
 
-- `railway` CLI is not installed in `PATH`.
-- `vercel` CLI is not installed in `PATH`.
-- `wscat` and `bru` are not installed in `PATH`.
-- `RAILWAY_TOKEN` and `VERCEL_TOKEN` are present locally, but no values were printed or recorded.
-- No Railway project/service/environment link is present in the repo (`.railway/` missing).
-- No non-interactive Railway target env vars are present: `RAILWAY_PROJECT_ID`, `RAILWAY_SERVICE_ID`, `RAILWAY_ENVIRONMENT_ID`.
-- No Vercel link is present in the repo (`.vercel/` missing), and `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` are absent.
-
-Required before resuming p07-t02:
-
-- Railway project + API service created or linked, preferably US East (`us-east4-eqdc4a`).
-- A non-interactive Railway target available to the agent, either via `.railway/` link metadata or explicit project/service/environment IDs.
-- Confirm Railway "Serverless" sleep is off for the API service.
-- Confirm production Neon direct `DATABASE_URL` is the intended production branch. Do not use the test branch for deploy.
-- Vercel project linked for `apps/web`, or project/org IDs made available before p07-t03.
+- Railway CLI auth was via local OAuth. A stale local `RAILWAY_TOKEN` from `.env` was explicitly unset during deployment because it did not have access to the new project.
+- `DATABASE_URL` was sourced from local `.env` after checking it was distinct from `DATABASE_URL_TEST`, did not contain `pooler`, and did not look like a test URL. The value was never printed or recorded.
+- `WEB_ORIGIN` is currently set to `https://sequence.vercel.app` as the expected web origin. Update it after p07-t03 if Vercel assigns a different production URL.
 
 ## Railway API Env Checklist
 
@@ -53,18 +48,17 @@ Set on the Railway API service, without committing values:
 
 ## Railway Deploy Steps
 
-Once a Railway service is linked:
+Completed on 2026-06-13:
 
-1. Confirm the linked service is the API service and region is US East.
-2. Set env vars from the checklist above.
-3. Confirm Serverless sleep is off.
-4. Deploy the current commit.
-5. Confirm predeploy migrations complete.
-6. Capture the public API URL.
-7. Verify:
-   - `GET <api-url>/health` returns `200` and `{"status":"ok"}`.
-   - A WebSocket connection to `<ws-url>/trpc` upgrades and receives the tRPC keepalive frame.
-   - A forged `X-Forwarded-For` does not bypass the public preview/join rate limit.
+1. Confirmed the linked target is project `sequence`, environment `production`, service `sequence-api`.
+2. Generated Railway service domain.
+3. Set env vars from the checklist above without printing secret values.
+4. Deployed current branch via `railway up --detach`.
+5. Polled deployment status until Railway reported `SUCCESS`.
+6. Confirmed predeploy migrations completed in Railway logs.
+7. Verified:
+   - `GET https://sequence-api-production-8687.up.railway.app/health` returns `200` and `{"status":"ok"}`.
+   - WebSocket connection to `wss://sequence-api-production-8687.up.railway.app/trpc` opens.
 
 ## Vercel Web Env Checklist
 
@@ -79,8 +73,8 @@ The web project root should be `apps/web`, with workspace-aware install/build fr
 
 Fill these after p07-t03/p07-t04:
 
-- API health: pending
-- WS upgrade: pending
+- API health: passed (`https://sequence-api-production-8687.up.railway.app/health`)
+- WS upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc`)
 - Signup/login cross-origin cookie round-trip: pending
 - Guest join cookie round-trip: pending
 - Local pass-and-play full game: pending
