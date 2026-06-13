@@ -2,7 +2,7 @@
 oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
-oat_last_updated: 2026-06-12
+oat_last_updated: 2026-06-13
 oat_current_task_id: p06-t01
 oat_generated: false
 ---
@@ -10,7 +10,7 @@ oat_generated: false
 # Implementation: web-mvp
 
 **Started:** 2026-06-12
-**Last Updated:** 2026-06-12
+**Last Updated:** 2026-06-13
 
 > This document is used to resume interrupted implementation sessions.
 >
@@ -30,7 +30,7 @@ oat_generated: false
 | Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
-| Phase 5: Web shell               | completed (pre-review) | 9 | 9/9 |
+| Phase 5: Web shell               | completed (review fixes applied) | 9 | 9/9 |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
@@ -231,10 +231,22 @@ no-winner FFA concede with conceder-only-loss semantics (matching `myRecord`),
 closing a run-1 outstanding item — verified by a new integration test against
 the Neon test branch.
 
+**Review-fix loop (2026-06-13):** p05 review findings C1/I1/I2/M1/m1 applied
+without marking the review passed. Commits: `57f692b` preserves safe relative
+`/login?next=/join/{code}` redirects; `efa852e` adds a reachable authenticated
+shell logout control (Better Auth sign-out + query cache clear + `/login`
+redirect), removes nested dashboard link/button CTAs, and renders neutral
+no-result list items; `7551aa3` returns tri-state `result: "win" | "loss" |
+"none"` from `game.myGames` and `history.myGames` using `GameConceded.payload.team`
+for no-winner FFA concedes.
+
 **Verification:** root gates green on a clean tree — `pnpm typecheck` (3
-packages), `pnpm lint` (oxlint, 0 errors incl. jsx-a11y on `apps/web`),
-`pnpm format:check`, `pnpm test` (304 tests / 42 files, api integration against
-the Neon test branch). `pnpm --filter @sequence/web build` green. Screen walk:
+packages), `pnpm lint` (oxlint, 0 errors; pre-existing warnings only),
+`pnpm format:check`, `pnpm test` (313 tests / 44 files, api integration against
+the Neon test branch). `pnpm --filter @sequence/web build` and
+`pnpm --filter @sequence/web typecheck` green. Focused fix suites green: web
+auth/login/dashboard/history/join tests (30 tests) and API `game.myGames` +
+`history.myGames` integration tests (17 tests). Screen walk:
 booted api (against `DATABASE_URL_TEST`) + web locally; all 9 shell routes
 return 200 and render their expected content; Better Auth signup round-trips
 (session cookie issued); tRPC `health.ping` returns over HTTP. See the screen-
@@ -278,7 +290,7 @@ Lifecycle-broadcast version stamping remains deferred to p06.
 | p05-t07 | Join page                       | complete | 74f0fb2 |
 | (p04-t13)| head-to-head FFA-concede carried fix | complete | 8b79dc0 |
 | p05-t08 | History page                    | complete | 2eb642f |
-| p05-t09 | Shell screen walk + a11y pass   | complete | a42e661 |
+| p05-t09 | Shell screen walk + a11y pass   | complete | ab1e9f5 |
 
 ---
 
