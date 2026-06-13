@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
 import { notifyTurnStart } from '../move-engine.ts';
 import { createServerRng } from '../server-rng.ts';
@@ -85,9 +86,21 @@ export const startGameRoute = gamePlayerProcedure
         game.version,
       );
 
-      await appendEvents(tx, input.gameId, [
+      const appended = await appendEvents(tx, input.gameId, [
         { type: 'GameStarted', currentSeat: state.currentSeat },
       ]);
+
+      // Broadcast GameStarted to the room with the post-start version so any
+      // already-subscribed lobby client learns the version to make the first
+      // move with (FR6) — and the snapshot supplies it to late subscribers.
+      for (const ev of appended) {
+        rooms.publish(input.gameId, {
+          seq: ev.seq,
+          type: ev.type,
+          payload: ev.payload as unknown as Record<string, unknown>,
+          version: newVersion,
+        });
+      }
 
       // Arm the first turn's timer (no-op for untimed games / in tests with no
       // timer hook wired). The hook is module-level on the move engine.
@@ -97,6 +110,12 @@ export const startGameRoute = gamePlayerProcedure
         version: newVersion,
       });
 
-      return { status: 'active' as const, currentSeat: state.currentSeat };
+      // Return the version too: the creator (first mover) can act immediately
+      // without a separate read.
+      return {
+        status: 'active' as const,
+        currentSeat: state.currentSeat,
+        version: newVersion,
+      };
     });
   });

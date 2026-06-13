@@ -3,6 +3,7 @@ import { and, asc, eq, gt, max } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { gameEvents } from '../../db/schema/game-events.ts';
+import { games } from '../../db/schema/games.ts';
 import {
   buildSnapshot,
   type GameSnapshot,
@@ -117,8 +118,19 @@ export const onGameEventRoute = gamePlayerProcedure
         }
       } else {
         // Snapshot-first: a full redacted snapshot tagged at the current seq.
+        // The current `version` rides the snapshot so a recovering client can
+        // submit its next move without any privileged DB read (FR6).
+        const [vrow] = await ctx.db
+          .select({ version: games.version })
+          .from(games)
+          .where(eq(games.id, gameId))
+          .limit(1);
         const state = await loadGameState(ctx.db, gameId);
-        const snapshot = buildSnapshot(state, recipientSeat);
+        const snapshot = buildSnapshot(
+          state,
+          recipientSeat,
+          vrow?.version ?? 0,
+        );
         lastSent = currentMax;
         yield tracked(String(currentMax), {
           kind: 'snapshot',

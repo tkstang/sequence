@@ -18,6 +18,20 @@ import { persistGameState } from '../state-mapping.ts';
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const describeIntegration = hasTestDb ? describe : describe.skip;
 
+/** A legal placement for `seat` given the state, via the shared rule helpers. */
+function legalMove(
+  state: GameState,
+  seat: number,
+): { card: Card; position: Position } {
+  const hand = state.hands[seat]!;
+  const team = state.teams[seat]!;
+  const placements = validPlacements(hand, state.board, team);
+  for (const [card, positions] of placements) {
+    if (positions.length > 0) return { card, position: positions[0]! };
+  }
+  throw new Error('no legal move for seat');
+}
+
 describeIntegration('game.makeMove (integration)', () => {
   let h: Harness;
 
@@ -80,20 +94,6 @@ describeIntegration('game.makeMove (integration)', () => {
       gameId,
       state,
     };
-  }
-
-  /** A legal placement for `seat` given the state, via the shared rule helpers. */
-  function legalMove(
-    state: GameState,
-    seat: number,
-  ): { card: Card; position: Position } {
-    const hand = state.hands[seat]!;
-    const team = state.teams[seat]!;
-    const placements = validPlacements(hand, state.board, team);
-    for (const [card, positions] of placements) {
-      if (positions.length > 0) return { card, position: positions[0]! };
-    }
-    throw new Error('no legal move for seat');
   }
 
   it('applies a legal place, bumps version, and returns events', async () => {
@@ -177,6 +177,39 @@ describeIntegration('game.makeMove (integration)', () => {
       expect((res.ruleViolation as { code: string } | undefined)?.code).toBe(
         'not-your-turn',
       );
+    }
+  });
+
+  it('a client can drive a move using ONLY the subscription snapshot version', async () => {
+    // The Critical contract: a pure-tRPC client (no privileged DB access) learns
+    // the version to move with from the recovery snapshot, not a games.version
+    // read. This test takes the version EXCLUSIVELY from the snapshot.
+    const seeded = await seedGame();
+    const { cookie, gameId, state } = seeded;
+
+    const stream = await h.caller(cookie).game.onGameEvent({ gameId });
+    const iterator = (stream as AsyncIterable<readonly [string, unknown]>)[
+      Symbol.asyncIterator
+    ]();
+    const first = await iterator.next();
+    await iterator.return?.();
+    const item = first.value?.[1] as
+      | { kind: 'snapshot'; snapshot: { version: number } }
+      | undefined;
+    expect(item?.kind).toBe('snapshot');
+    const snapshotVersion = item!.snapshot.version;
+
+    const move = legalMove(state, 0);
+    const res = await h.mutate(
+      'game.makeMove',
+      { gameId, version: snapshotVersion, move: { type: 'place', ...move } },
+      cookie,
+    );
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      const data = res.data as { version: number };
+      // The mutation response advances the version the client tracks forward.
+      expect(data.version).toBe(snapshotVersion + 1);
     }
   });
 

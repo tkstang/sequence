@@ -161,12 +161,15 @@ export async function runReduction(
   const { newVersion, appended, nextState } = result;
 
   // Broadcast AFTER the commit so subscribers never see an event the DB rolled
-  // back. Redaction happens per-recipient in the subscription generator.
+  // back. Redaction happens per-recipient in the subscription generator. Each
+  // event carries the post-commit `version` (global per-game, not redacted) so
+  // every subscriber tracks the version to submit its next move with (FR6).
   for (const ev of appended) {
     rooms.publish(gameId, {
       seq: ev.seq,
       type: ev.type,
       payload: ev.payload as unknown as Record<string, unknown>,
+      version: newVersion,
     });
   }
 

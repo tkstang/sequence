@@ -1,0 +1,43 @@
+meta {
+  name: make-move
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/trpc/game.makeMove
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  origin: {{webOrigin}}
+}
+
+body:json {
+  {
+    "gameId": "{{localGameId}}",
+    "version": 1,
+    "move": {
+      "type": "place",
+      "position": "1WW",
+      "card": { "rank": "A", "suit": "C" }
+    }
+  }
+}
+
+docs {
+  Exercises the move contract over pure HTTP against the just-created local game
+  (active at version 1). The client supplies the `version` it last saw — here the
+  known post-deal version 1 (a real client reads it from the subscription
+  snapshot; see full-game.e2e.test.ts). Placing on a wild corner (`1WW`) is
+  always illegal, so the server deterministically returns the typed BAD_REQUEST
+  rule-violation contract — proving makeMove is wired, version-guarded, and
+  reachable through the client-facing API with no UI.
+}
+
+assert {
+  res.status: eq 400
+  res.body.error.data.ruleViolation.code: isDefined
+}

@@ -117,6 +117,45 @@ describeIntegration('game.onGameEvent (integration)', () => {
     }
   });
 
+  it('the recovery snapshot carries the current version (client move read path)', async () => {
+    // seedStartedGame persists the dealt state at version 1 (from 0).
+    const { host, gameId } = await seedStartedGame();
+    const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
+    const [first] = await take(sub, 1);
+    const firstData = first ? dataOf(first) : undefined;
+    expect(firstData?.kind).toBe('snapshot');
+    if (firstData?.kind === 'snapshot') {
+      expect(firstData.snapshot.version).toBe(1);
+    }
+  });
+
+  it('a live broadcast event carries the post-commit version', async () => {
+    const { host, gameId } = await seedStartedGame();
+    const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
+    const iterator = asTuples(sub);
+    await iterator.next(); // snapshot
+
+    // The move engine publishes events stamped with the post-commit version.
+    rooms.publish(gameId, {
+      seq: 1,
+      type: 'TurnAdvanced',
+      payload: { seat: 1, round: 1 },
+      version: 2,
+    });
+    const next = await Promise.race([
+      iterator.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 5000),
+      ),
+    ]);
+    const data = dataOf(next.value as Yielded);
+    expect(data.kind).toBe('event');
+    if (data.kind === 'event') {
+      expect(data.event.version).toBe(2);
+    }
+    await iterator.return?.();
+  });
+
   it('snapshot then live events flow in order', async () => {
     const { host, gameId } = await seedStartedGame();
     const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });

@@ -19,6 +19,15 @@ export interface LoggedEvent {
   seq: number;
   type: string;
   payload: Record<string, unknown>;
+  /**
+   * The game's `version` immediately AFTER the reduction that produced this
+   * event (set on live broadcast by the move engine / lifecycle writers). It is
+   * global per-game — safe for every seat, never redacted — so a client tracking
+   * the live stream always knows the `version` to submit its next move with. Not
+   * persisted per-event, so gap-replayed events from the log omit it (the
+   * recovery snapshot supplies the version in that path).
+   */
+  version?: number;
 }
 
 /**
@@ -47,13 +56,20 @@ export function redactEvent(
   const owner = event.payload.seat;
   if (typeof owner === 'number' && owner === recipientSeat) return event;
 
-  // Non-owning recipient: strip private card fields.
+  // Non-owning recipient: strip private card fields (the public version field,
+  // when present, is preserved — it is global per-game, not seat-private).
   const redacted: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(event.payload)) {
     if ((PRIVATE_FIELDS as readonly string[]).includes(key)) continue;
     redacted[key] = value;
   }
-  return { seq: event.seq, type: event.type, payload: redacted };
+  const out: LoggedEvent = {
+    seq: event.seq,
+    type: event.type,
+    payload: redacted,
+  };
+  if (event.version !== undefined) out.version = event.version;
+  return out;
 }
 
 /**
@@ -65,6 +81,14 @@ export interface GameSnapshot {
   status: string;
   currentSeat: number;
   round: number;
+  /**
+   * The game's current optimistic-concurrency `version`. A move mutation
+   * requires the caller's last-seen `version`; the recovery snapshot is the
+   * client's read path for it (the live stream keeps it current thereafter), so
+   * a freshly-subscribed client can submit its next move without a DB read.
+   * Global per-game — identical for every seat, nothing redacted.
+   */
+  version: number;
   /** Position code → { chip?, lockedBy? }. */
   board: Record<string, { chip?: number; lockedBy?: number }>;
   sequences: { id: number; team: number; cells: string[] }[];
@@ -76,6 +100,10 @@ export interface GameSnapshot {
   pendingChoice?: {
     seat: number;
     cells: string[];
+    /** The cell just placed that opened the >5 run (lets the placer rebuild). */
+    placed: string;
+    /** Further >5 runs queued to resolve after this one (chained sequences). */
+    additionalRuns?: string[][];
   };
   winner?: number;
 }
@@ -88,6 +116,7 @@ export interface GameSnapshot {
 export function buildSnapshot(
   state: GameState,
   recipientSeat: number,
+  version: number,
 ): GameSnapshot {
   const board: GameSnapshot['board'] = {};
   for (const [pos, cell] of state.board) {
@@ -101,6 +130,7 @@ export function buildSnapshot(
     status: state.status,
     currentSeat: state.currentSeat,
     round: state.round,
+    version,
     board,
     sequences: state.sequences.map((s) => ({
       id: s.id,
@@ -118,6 +148,14 @@ export function buildSnapshot(
     snapshot.pendingChoice = {
       seat: state.pendingChoice.seat,
       cells: [...state.pendingChoice.cells],
+      placed: state.pendingChoice.placed,
+      ...(state.pendingChoice.additionalRuns
+        ? {
+            additionalRuns: state.pendingChoice.additionalRuns.map((r) => [
+              ...r,
+            ]),
+          }
+        : {}),
     };
   }
   if (state.winner !== undefined) snapshot.winner = state.winner;

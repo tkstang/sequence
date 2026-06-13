@@ -94,8 +94,8 @@ describe('redactEvent', () => {
 describe('buildSnapshot', () => {
   it('includes only the recipient hand and never the deck (NFR1)', () => {
     const state = activeGame();
-    const snap0 = buildSnapshot(state, 0);
-    const snap1 = buildSnapshot(state, 1);
+    const snap0 = buildSnapshot(state, 0, 1);
+    const snap1 = buildSnapshot(state, 1, 1);
 
     expect(snap0.hand).toEqual(state.hands[0]);
     expect(snap1.hand).toEqual(state.hands[1]);
@@ -119,7 +119,7 @@ describe('buildSnapshot', () => {
 
   it('a local-game snapshot includes every hand', () => {
     const state = activeGame(true);
-    const snap = buildSnapshot(state, 0);
+    const snap = buildSnapshot(state, 0, 1);
     expect(snap.localHands).toBeDefined();
     expect(snap.localHands).toHaveLength(2);
     expect(snap.localHands?.[1]).toEqual(state.hands[1]);
@@ -127,10 +127,37 @@ describe('buildSnapshot', () => {
 
   it('public state (board, sequences, status, currentSeat) is present', () => {
     const state = activeGame();
-    const snap = buildSnapshot(state, 0);
+    const snap = buildSnapshot(state, 0, 1);
     expect(snap.status).toBe('active');
     expect(snap.currentSeat).toBe(0);
     expect(snap.board).toEqual({});
     expect(snap.sequences).toEqual([]);
+  });
+
+  it('carries the current version so a recovering client can submit a move', () => {
+    const state = activeGame();
+    // version is global per-game (not redacted) — identical for every seat.
+    expect(buildSnapshot(state, 0, 7).version).toBe(7);
+    expect(buildSnapshot(state, 1, 7).version).toBe(7);
+  });
+
+  it('includes pendingChoice.placed and additionalRuns for a reconnecting placer', () => {
+    const state: GameState = {
+      ...activeGame(),
+      pendingChoice: {
+        seat: 0,
+        team: 1,
+        placed: '5AC',
+        cells: ['5AC', '6AC', '7AC', '8AC', '9AC', 'TAC'],
+        additionalRuns: [['1AD', '2AD', '3AD', '4AD', '5AD']],
+      },
+    };
+    const snap = buildSnapshot(state, 0, 3);
+    expect(snap.pendingChoice).toMatchObject({
+      seat: 0,
+      placed: '5AC',
+      cells: ['5AC', '6AC', '7AC', '8AC', '9AC', 'TAC'],
+      additionalRuns: [['1AD', '2AD', '3AD', '4AD', '5AD']],
+    });
   });
 });
