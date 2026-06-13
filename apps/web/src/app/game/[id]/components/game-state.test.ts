@@ -141,4 +141,28 @@ describe('game route view state', () => {
 
     expect(screenForState(state)).toBe('game-over');
   });
+
+  it('preserves pending choice metadata for chained selections', () => {
+    const state = applyStreamItem(
+      applyStreamItem(null, {
+        kind: 'snapshot',
+        snapshot: snapshot({ status: 'active' }),
+      }),
+      {
+        kind: 'event',
+        event: event('PendingChoice', {
+          seat: 0,
+          placed: '1AC',
+          cells: ['1AC', '1KC', '1QC', '1JC', '1TC', '19C'],
+          additionalRuns: [['2AC', '2KC', '2QC', '2JC', '2TC', '29C']],
+        }),
+      },
+    );
+
+    expect(state?.pendingChoice).toMatchObject({
+      seat: 0,
+      placed: '1AC',
+      additionalRuns: [['2AC', '2KC', '2QC', '2JC', '2TC', '29C']],
+    });
+  });
 });

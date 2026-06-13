@@ -12,6 +12,7 @@ export interface GameBoardProps {
   validTargets?: readonly Position[];
   hoverPosition?: Position | null;
   pendingChoiceCells?: readonly Position[];
+  choiceSelectedCells?: readonly Position[];
   winningCells?: readonly Position[];
   canDragCell?: (position: Position) => boolean;
   onCellSelect?: (position: Position) => void;
@@ -37,6 +38,7 @@ export function GameBoard({
   validTargets = [],
   hoverPosition = null,
   pendingChoiceCells = [],
+  choiceSelectedCells = [],
   winningCells = [],
   canDragCell,
   onCellSelect,
@@ -54,9 +56,17 @@ export function GameBoard({
         validTargets,
         hoverPosition,
         pendingChoiceCells,
+        choiceSelectedCells,
         winningCells,
       }),
-    [board, hoverPosition, pendingChoiceCells, validTargets, winningCells],
+    [
+      board,
+      choiceSelectedCells,
+      hoverPosition,
+      pendingChoiceCells,
+      validTargets,
+      winningCells,
+    ],
   );
 
   return (

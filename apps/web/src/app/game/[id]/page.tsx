@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
 import { useParams } from 'next/navigation';
 import type { DragEvent } from 'react';
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 
 import { Badge } from '@/components/badge.tsx';
 import { Card } from '@/components/card.tsx';
@@ -31,6 +31,11 @@ import {
   type GameStreamItem,
   type GameViewState,
 } from './components/game-state.ts';
+import {
+  initialChoiceSelection,
+  SequenceChoice,
+  toggleChoiceCell,
+} from './components/GameBoard/components/SequenceChoice.tsx';
 import { GameBoard } from './components/GameBoard/GameBoard.tsx';
 import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 import { PlayerRail } from './components/PlayerRail/PlayerRail.tsx';
@@ -81,6 +86,9 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const [dragHoverPosition, setDragHoverPosition] = useState<Position | null>(
     null,
   );
+  const [choiceCells, setChoiceCells] = useState<Position[]>(
+    initialChoiceSelection(state.pendingChoice),
+  );
   const makeMove = useMutation(
     trpc.game.makeMove.mutationOptions({
       onSuccess: () => {
@@ -98,12 +106,27 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
       },
     }),
   );
+  const chooseSequenceCells = useMutation(
+    trpc.game.chooseSequenceCells.mutationOptions({
+      onSuccess: () => setChoiceCells([]),
+    }),
+  );
+  const pendingChoiceKey = state.pendingChoice
+    ? `${state.pendingChoice.seat}:${state.pendingChoice.cells.join('|')}:${
+        state.pendingChoice.placed ?? ''
+      }`
+    : 'none';
+  useEffect(() => {
+    setChoiceCells(initialChoiceSelection(state.pendingChoice));
+  }, [pendingChoiceKey, state.pendingChoice]);
   const myTeam =
     state.teams[state.mySeat] ??
     state.players.find((player) => player.seat === state.mySeat)?.team ??
     1;
+  const pendingChoice = state.pendingChoice;
+  const canMakeBoardMove = pendingChoice === undefined;
   const tapSelection =
-    state.mode === 'tap'
+    state.mode === 'tap' && canMakeBoardMove
       ? createTapSelection({
           hand: state.hand,
           board: state.board,
@@ -113,7 +136,11 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
       : null;
   const defaultModeDeadCards =
     state.mode === 'tap' ? deadCardIndexes(state.hand, state.board) : [];
-  const dragMode = state.mode === 'drag';
+  const choosingSequence = pendingChoice?.seat === state.mySeat;
+  const choiceActorName =
+    state.players.find((player) => player.seat === pendingChoice?.seat)?.name ??
+    `Seat ${(pendingChoice?.seat ?? 0) + 1}`;
+  const dragMode = state.mode === 'drag' && canMakeBoardMove;
   const clearDrag = () => {
     setDragIntent(null);
     setDragHoverPosition(null);
@@ -212,10 +239,18 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
             .filter((sequence) => sequence.team === state.winnerTeam)
             .flatMap((sequence) => sequence.cells)}
           pendingChoiceCells={state.pendingChoice?.cells}
+          choiceSelectedCells={choosingSequence ? choiceCells : []}
           canDragCell={(position) =>
             dragMode && canDragChipForRemoval(state.board, position, myTeam)
           }
           onCellSelect={(position) => {
+            if (choosingSequence && pendingChoice) {
+              setChoiceCells((current) =>
+                toggleChoiceCell(current, position, pendingChoice),
+              );
+              return;
+            }
+            if (!canMakeBoardMove) return;
             const move = buildTapMove(tapSelection, position);
             submitMove(move);
           }}
@@ -235,6 +270,28 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           }}
         />
       </section>
+
+      {pendingChoice ? (
+        <SequenceChoice
+          pendingChoice={pendingChoice}
+          selectedCells={choiceCells}
+          isActor={choosingSequence}
+          actorName={choiceActorName}
+          isSubmitting={chooseSequenceCells.isPending}
+          onToggleCell={(cell) =>
+            setChoiceCells((current) =>
+              toggleChoiceCell(current, cell, pendingChoice),
+            )
+          }
+          onConfirm={(cells) =>
+            chooseSequenceCells.mutate({
+              gameId: state.gameId,
+              version: state.version,
+              cells,
+            })
+          }
+        />
+      ) : null}
 
       {dragMode ? (
         <section className="mx-auto flex w-full max-w-[min(94vw,680px)] items-center justify-between gap-3">

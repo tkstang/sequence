@@ -112,6 +112,18 @@ function asPosition(value: unknown): Position | undefined {
   return typeof value === 'string' ? (value as Position) : undefined;
 }
 
+function asPositions(value: unknown): Position[] {
+  return Array.isArray(value)
+    ? (value.filter((cell) => typeof cell === 'string') as Position[])
+    : [];
+}
+
+function asPositionRuns(value: unknown): Position[][] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const runs = value.map(asPositions).filter((run) => run.length > 0);
+  return runs.length > 0 ? runs : undefined;
+}
+
 function asTeam(value: unknown): Team | undefined {
   return value === 1 || value === 2 || value === 3 ? value : undefined;
 }
@@ -379,13 +391,19 @@ export function applyGameEvent(
     }
     case 'PendingChoice': {
       const seat = asSeat(payload.seat);
-      const cells = Array.isArray(payload.cells)
-        ? (payload.cells.filter(
-            (cell) => typeof cell === 'string',
-          ) as Position[])
-        : [];
+      const cells = asPositions(payload.cells);
+      const placed = asPosition(payload.placed);
+      const additionalRuns = asPositionRuns(payload.additionalRuns);
       if (seat === undefined || cells.length === 0) return state;
-      return { ...state, pendingChoice: { seat, cells } };
+      return {
+        ...state,
+        pendingChoice: {
+          seat,
+          cells,
+          ...(placed ? { placed } : {}),
+          ...(additionalRuns ? { additionalRuns } : {}),
+        },
+      };
     }
     case 'TurnAdvanced': {
       const seat = asSeat(payload.seat);

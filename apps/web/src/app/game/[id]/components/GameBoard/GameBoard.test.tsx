@@ -46,13 +46,14 @@ describe('<GameBoard>', () => {
     expect(screen.getByLabelText(/team 2 chip locked/i)).toBeInTheDocument();
   });
 
-  it('marks valid, hover, pending, and winning cells', () => {
+  it('marks valid, hover, pending, choice-selected, and winning cells', () => {
     render(
       <GameBoard
         board={{ '1AC': { chip: 1, lockedBy: 2 } }}
         validTargets={['1KC' as Position]}
         hoverPosition={'1QC' as Position}
         pendingChoiceCells={['1TC' as Position]}
+        choiceSelectedCells={['19C' as Position]}
         winningCells={['1AC' as Position]}
       />,
     );
@@ -68,6 +69,10 @@ describe('<GameBoard>', () => {
     expect(screen.getByLabelText(/TC 1TC/i)).toHaveAttribute(
       'data-highlight',
       'pending-choice',
+    );
+    expect(screen.getByLabelText(/9C 19C/i)).toHaveAttribute(
+      'data-highlight',
+      'choice-selected',
     );
   });
 

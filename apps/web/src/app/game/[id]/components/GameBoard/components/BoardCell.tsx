@@ -28,6 +28,7 @@ const HIGHLIGHT_CLASS: Record<CellHighlight, string> = {
   'valid-target': 'ring-2 ring-yellow-300',
   'hover-confirm': 'ring-2 ring-team-green brightness-110',
   'pending-choice': 'ring-2 ring-white',
+  'choice-selected': 'ring-2 ring-team-green brightness-110',
 };
 
 export function BoardCell({
