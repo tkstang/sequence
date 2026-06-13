@@ -18,6 +18,7 @@ import {
 } from './components/game-state.ts';
 import { GameBoard } from './components/GameBoard/GameBoard.tsx';
 import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
+import { PlayerRail } from './components/PlayerRail/PlayerRail.tsx';
 
 type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
@@ -63,15 +64,17 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 p-4">
-      <section className="bg-slate rounded-lg p-4 text-white">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-bold">Sequence</h1>
-          <Badge tone="neutral">{state.inviteCode}</Badge>
-          <span className="ml-auto text-xs text-white/70">
-            v{state.version} · {state.mode} · round {state.round}
-          </span>
-        </div>
-      </section>
+      <PlayerRail
+        players={state.players}
+        currentSeat={state.currentSeat}
+        round={state.round}
+        sequences={state.sequences}
+        lastPlayedCards={state.lastPlayedCards}
+        timerSeconds={state.timerSeconds}
+        turnDeadlineAt={state.turnDeadlineAt}
+        turnRemainingMs={state.turnRemainingMs}
+        status={state.status}
+      />
 
       <Card className="flex flex-col gap-3">
         <div className="flex items-center gap-2">

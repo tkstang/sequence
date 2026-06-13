@@ -80,6 +80,7 @@ export interface LastMoveView {
 export interface GameViewState extends GameSnapshotView {
   lastSeq: number;
   lastMove?: LastMoveView;
+  lastPlayedCards: Record<number, Card>;
   recentEvents: LoggedGameEvent[];
 }
 
@@ -187,6 +188,7 @@ export function stateFromSnapshot(snapshot: GameSnapshotView): GameViewState {
     turnDeadlineAt: snapshot.turnDeadlineAt ?? null,
     turnRemainingMs: snapshot.turnRemainingMs ?? null,
     lastSeq: 0,
+    lastPlayedCards: {},
     recentEvents: [],
   };
 }
@@ -272,6 +274,10 @@ export function applyGameEvent(
       return {
         ...state,
         board: { ...state.board, [position]: { chip: team } },
+        lastPlayedCards:
+          seat !== undefined && card
+            ? { ...state.lastPlayedCards, [seat]: card }
+            : state.lastPlayedCards,
         hand:
           seat === state.mySeat && card
             ? removeOneCard(state.hand, card)
@@ -297,6 +303,10 @@ export function applyGameEvent(
       return {
         ...state,
         board,
+        lastPlayedCards:
+          seat !== undefined && card
+            ? { ...state.lastPlayedCards, [seat]: card }
+            : state.lastPlayedCards,
         hand:
           seat === state.mySeat && card
             ? removeOneCard(state.hand, card)
