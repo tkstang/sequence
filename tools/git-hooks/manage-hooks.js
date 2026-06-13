@@ -7,12 +7,38 @@ const hooks = ['commit-msg', 'pre-commit', 'pre-push', 'post-checkout'];
 const hooksSourceDir = path.resolve('tools/git-hooks');
 const hooksSourceDisplayDir = 'tools/git-hooks';
 const gitHooksDir = resolveGitHooksDir();
+const [action, requestedHookName] = process.argv.slice(2);
+
+if (process.env.GIT_HOOKS === '0') {
+  if (action === 'setup') {
+    console.log('Git hooks setup skipped because GIT_HOOKS=0');
+    process.exit(0);
+  }
+}
+
+if (!gitHooksDir) {
+  if (action === 'setup') {
+    console.log('Git hooks setup skipped outside a Git repository');
+    process.exit(0);
+  }
+
+  console.error('Git hooks management requires a Git repository');
+  process.exit(1);
+}
+
 const disabledHooksFile = path.join(gitHooksDir, '.disabled-hooks');
 
 function resolveGitHooksDir() {
-  const gitHooksPath = execFileSync('git', ['rev-parse', '--git-path', 'hooks'])
-    .toString()
-    .trim();
+  let gitHooksPath;
+  try {
+    gitHooksPath = execFileSync('git', ['rev-parse', '--git-path', 'hooks'], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+  } catch {
+    return null;
+  }
 
   return path.resolve(gitHooksPath);
 }
@@ -156,8 +182,6 @@ function showStatus() {
   console.log();
 }
 
-const [action, hookName] = process.argv.slice(2);
-
 if (!action) {
   showUsage();
   process.exit(1);
@@ -214,19 +238,19 @@ switch (action) {
     break;
 
   case 'enable':
-    if (!hookName || !hooks.includes(hookName)) {
+    if (!requestedHookName || !hooks.includes(requestedHookName)) {
       console.log(`❌ Please specify a valid hook: ${hooks.join(', ')}`);
       process.exit(1);
     }
-    enableHook(hookName);
+    enableHook(requestedHookName);
     break;
 
   case 'disable':
-    if (!hookName || !hooks.includes(hookName)) {
+    if (!requestedHookName || !hooks.includes(requestedHookName)) {
       console.log(`❌ Please specify a valid hook: ${hooks.join(', ')}`);
       process.exit(1);
     }
-    disableHook(hookName);
+    disableHook(requestedHookName);
     break;
 
   case 'status':

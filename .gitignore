@@ -49,3 +49,4 @@ yarn-error.log*
 
 # local worktrees root
 .worktrees/
+.vercel
