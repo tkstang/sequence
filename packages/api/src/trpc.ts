@@ -201,7 +201,7 @@ export const authedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 /** Read a single cookie value from a `Cookie` header. */
-function readCookie(headers: Headers, name: string): string | null {
+export function readCookie(headers: Headers, name: string): string | null {
   const cookie = headers.get('cookie');
   if (!cookie) return null;
   for (const part of cookie.split(';')) {

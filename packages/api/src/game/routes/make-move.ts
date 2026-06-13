@@ -1,8 +1,19 @@
 import type { Move } from '@sequence/game-logic';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { gamePlayerProcedure } from '../../trpc.ts';
-import { executeMove, toTrpcError } from '../move-engine.ts';
+import {
+  GUEST_COOKIE_NAME,
+  publicProcedure,
+  readCookie,
+  type Context,
+} from '../../trpc.ts';
+import { hashToken, verifyGuestToken } from '../../user/guest-tokens.ts';
+import { executeMoveFromLoadedState, toTrpcError } from '../move-engine.ts';
+import {
+  type LoadedGameState,
+  loadGameStateWithPlayers,
+} from '../state-mapping.ts';
 
 /** zod schema for a `Card` (jacks are valid card values too). */
 const cardSchema = z.object({
@@ -54,7 +65,7 @@ const moveSchema = z.discriminatedUnion('type', [
  * itself. Errors map to the contract: rule violations → BAD_REQUEST with a
  * typed `ruleViolation`; stale/raced version → CONFLICT.
  */
-export const makeMoveRoute = gamePlayerProcedure
+export const makeMoveRoute = publicProcedure
   .input(
     z.object({
       gameId: z.string().uuid(),
@@ -63,11 +74,20 @@ export const makeMoveRoute = gamePlayerProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
+    const loaded = await loadGameStateWithPlayers(ctx.db, input.gameId);
+    if (!loaded) {
+      throw new TRPCError({ code: 'NOT_FOUND' });
+    }
+    const seat = resolveMoveSeat(ctx, loaded);
+    if (seat === null) {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
+
     try {
-      const { version, events } = await executeMove(
+      const { version, events } = await executeMoveFromLoadedState(
         ctx.db,
-        input.gameId,
-        ctx.seat.seat,
+        loaded,
+        seat,
         input.move as Move,
         input.version,
       );
@@ -76,3 +96,30 @@ export const makeMoveRoute = gamePlayerProcedure
       throw toTrpcError(err);
     }
   });
+
+function resolveMoveSeat(ctx: Context, loaded: LoadedGameState): number | null {
+  if (loaded.local && ctx.user && ctx.user.id === loaded.createdBy) {
+    const target =
+      loaded.players.find((player) => player.seat === loaded.currentSeat) ??
+      loaded.players[0];
+    return target?.seat ?? null;
+  }
+
+  if (ctx.user) {
+    const mine = loaded.players.find(
+      (player) => player.userId === ctx.user?.id,
+    );
+    if (mine) return mine.seat;
+  }
+
+  const rawToken = readCookie(ctx.headers, GUEST_COOKIE_NAME);
+  if (!rawToken) return null;
+  const identity = verifyGuestToken(rawToken, loaded.gameId, ctx.guestSecret);
+  if (!identity) return null;
+  const tokenHash = hashToken(rawToken);
+  const guestSeat = loaded.players.find(
+    (player) =>
+      player.seat === identity.seat && player.guestTokenHash === tokenHash,
+  );
+  return guestSeat?.seat ?? null;
+}

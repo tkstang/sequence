@@ -39,7 +39,9 @@ import { rooms } from '../shared/realtime/rooms.ts';
 import { createServerRng } from './server-rng.ts';
 import {
   appendEvents,
+  type LoadedGameState,
   loadGameState,
+  persistGameStateAndAppendEvents,
   persistGameState,
   VersionConflictError,
 } from './state-mapping.ts';
@@ -205,6 +207,69 @@ export async function executeMove(
   return runReduction(db, gameId, version, (state, rng) =>
     applyMove(state, stamped, rng),
   );
+}
+
+/**
+ * Execute a move from a preloaded state bundle. The makeMove route uses this
+ * production hot path after authorizing the caller from the same joined load
+ * that builds the GameState, avoiding the generic middleware's repeated
+ * game/player reads.
+ */
+export async function executeMoveFromLoadedState(
+  db: Database,
+  loaded: LoadedGameState,
+  seat: number,
+  move: Move,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  if (loaded.version !== version) {
+    throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+  }
+
+  const stamped: Move = { ...move, seat };
+  const rng = createServerRng();
+  const reduced = applyMove(loaded.state, stamped, rng);
+  if (!reduced.ok) {
+    throw new RuleViolationError(reduced.error);
+  }
+
+  let persisted;
+  try {
+    persisted = await persistGameStateAndAppendEvents(
+      db,
+      loaded.gameId,
+      reduced.nextState,
+      version,
+      reduced.events,
+    );
+  } catch (err) {
+    if (err instanceof VersionConflictError) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+    }
+    throw err;
+  }
+
+  for (const ev of persisted.appended) {
+    rooms.publish(loaded.gameId, {
+      seq: ev.seq,
+      type: ev.type,
+      payload: ev.payload as unknown as Record<string, unknown>,
+      version: persisted.version,
+    });
+  }
+
+  timerHook?.onTurnCommitted({
+    gameId: loaded.gameId,
+    timerSeconds: reduced.nextState.settings.timerSeconds,
+    version: persisted.version,
+    pendingChoice: reduced.nextState.pendingChoice !== undefined,
+    finished: reduced.nextState.status === 'finished',
+  });
+
+  return {
+    version: persisted.version,
+    events: persisted.appended.map((a) => a.payload as unknown as GameEvent),
+  };
 }
 
 /** Resolve a pending >5-run choice for the authenticated seat (passes actorSeat). */
