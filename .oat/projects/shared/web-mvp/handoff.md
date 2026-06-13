@@ -28,6 +28,7 @@
   - Server-timing smoke redeploy: `6645cbaf-5a0d-4021-894d-ad30e8f4baa3`
   - Move hot-path optimization redeploy: `ebb55666-f046-45a1-b5cc-ba63c50cf2f8`
   - Session-cache latency redeploy: `85e343cd-993c-4e72-8ab3-5bae24c55061`
+  - Lifecycle version-guard redeploy: `2a313ac4-91b1-4915-aa16-4b4722c8f3da`
 - Current replica placement: one replica in `us-east4-eqdc4a`; previous `sfo` replica removed with `railway scale`
 - Predeploy migrations: passed (`drizzle-kit migrate`)
 - Healthcheck: passed (`GET /health` returned `{"status":"ok"}`)
@@ -84,8 +85,8 @@ Vercel project settings:
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm --filter @sequence/web build`
 - Initial production deployment: `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`
-- Current production deployment: `dpl_2EvfgY4k8miUL2Eb8sMX2GQ6WN9R`
-- Current production URL: `https://sequence-nix9lmbc1-stangtks-projects.vercel.app`
+- Current production deployment: `dpl_3EgH16neQoi79NZmeHfHxarjgB2v`
+- Current production URL: `https://sequence-rmncsihfp-stangtks-projects.vercel.app`
 - Production alias: `https://sequence-cyan.vercel.app`
 
 Deployment note:
@@ -100,7 +101,8 @@ Deployment note:
 - Guest join cookie round-trip: passed; guest cookie was `SameSite=None`, `Secure`, `HttpOnly`
 - Local pass-and-play full game: passed in an automated 375px browser viewport; real physical phone not performed
 - Two-browser realtime game: passed; move broadcast observed and two-browser concede reached final state
-- Move-to-broadcast latency spot-check: passed after review fix. Pre-fix probes were `2548ms-3846ms` total client time and `1780.3ms` server time. The fix moved the Railway API replica to `us-east4-eqdc4a`, collapsed `game.makeMove` DB work from many sequential round trips into one load plus one atomic write/event CTE, and added a short invalidation-backed Better Auth session-user cache for gameplay requests. Post-fix production smoke returned `Server-Timing: app;dur=24.4` (`X-Sequence-Server-Duration-Ms: 24.4`) for a successful `game.makeMove`; total client round-trip from this machine was `865ms`, dominated by network/Railway edge rather than server processing.
+- Move-to-broadcast latency spot-check: passed after review fix. Pre-fix probes were `2548ms-3846ms` total client time and `1780.3ms` server time. The fix moved the Railway API replica to `us-east4-eqdc4a`, collapsed `game.makeMove` DB work from many sequential round trips into one load plus one atomic write/event CTE, and added a short invalidation-backed Better Auth session-user cache for gameplay requests. Production smoke returned `Server-Timing: app;dur=24.4` (`X-Sequence-Server-Duration-Ms: 24.4`) after the latency fix; after the lifecycle version-guard redeploy, the comparable production smoke returned `Server-Timing: app;dur=45.6` (`X-Sequence-Server-Duration-Ms: 45.6`) for a successful `game.makeMove`; total client round-trip from this machine was `499ms`.
+- Versioned lifecycle smoke: passed after deployment `2a313ac4-91b1-4915-aa16-4b4722c8f3da`; a production local game accepted `game.makeMove` at version `1`, returned version `2`, then accepted `game.concede` with version `2` (`Server-Timing: app;dur=49.8`, HTTP 200).
 - 375px mobile pass: passed in an automated Pixel 5 / 375px viewport; real physical phone not performed
 - Forged-XFF invite rate-limit check: passed after limiter hardening; 31st rotated-header `game.preview` request returned `429`
 - Neon/Vercel/Railway tier audit: passed for MVP architecture; one Vercel Hobby project, one Railway API service, external Neon direct Postgres URL, no Railway database/buckets/volumes, and no paid-tier-only dependency was added
@@ -140,7 +142,7 @@ Use disposable email/password accounts for manual testing. Email/password auth i
 | ID | Current status | Operator note |
 | --- | --- | --- |
 | NFR1 | Passed by automated unit/integration coverage | Crafted illegal moves and private-hand redaction are covered in the API/game-logic suites. |
-| NFR2 | Passed after review fix | Production `game.makeMove` server timing was `24.4ms` after region correction, move hot-path CTE optimization, and session lookup caching. |
+| NFR2 | Passed after review fix | Production `game.makeMove` server timing was `24.4ms` after region correction, move hot-path CTE optimization, and session lookup caching; post lifecycle redeploy smoke was `45.6ms`. |
 | NFR3 | Passed in automated 375px viewport | A real phone pass was not performed; run one before broader playtesting. |
 | NFR4 | Passed by `@sequence/game-logic` tests | Run `pnpm --filter @sequence/game-logic test` for the rules suite. |
 | NFR5 | Passed for current repo/deploy posture | No secrets are recorded in this handoff. Keep env values in Railway/Vercel only and revoke the legacy GCP service key if still active. |
