@@ -1,12 +1,23 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
+import {
+  closeTestDb,
+  createLocalGame,
+  playFirstHighlightedMove,
+  seedOpeningHand,
+} from './helpers.ts';
+
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 
-test.describe('game route', () => {
+test.describe('pass-and-play and hard mode', () => {
   test.skip(!hasTestDb, 'DATABASE_URL_TEST is required for DB-backed e2e');
 
-  test('creates a local game and keeps the game UI within the viewport', async ({
+  test.afterAll(async () => {
+    await closeTestDb();
+  });
+
+  test('local handoff hides the outgoing hand at desktop and 375px', async ({
     page,
   }) => {
     const suffix = `${Date.now()}-${test.info().project.name}`;
@@ -38,23 +49,42 @@ test.describe('game route', () => {
     await page.getByRole('button', { name: /show hand/i }).click();
     await expect(page.getByLabel('Your hand')).toBeVisible();
   });
-});
 
-async function playFirstHighlightedMove(page: Page) {
-  const cardButtons = page.locator(
-    'section[aria-label="Your hand"] button[aria-label]:not([aria-label="Raise hand"]):not([aria-label="Lower hand"])',
-  );
-  const count = await cardButtons.count();
-  for (let index = 0; index < count; index++) {
-    await cardButtons.nth(index).click();
-    const target = page.locator('[data-highlight="valid-target"]').first();
-    if ((await target.count()) > 0) {
-      await target.click();
-      return;
-    }
-  }
-  throw new Error('No highlighted move found in starting hand');
-}
+  test('hard-mode chip drag plays through the browser', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const { gameId } = await createLocalGame(context, 'DragHost', 'drag');
+    await seedOpeningHand(gameId, [{ rank: 'T', suit: 'C' }]);
+
+    await page.goto(`/game/${gameId}`);
+    await expect(
+      page.getByRole('grid', { name: /sequence board/i }),
+    ).toBeVisible();
+    await expect(page.locator('[data-highlight="valid-target"]')).toHaveCount(
+      0,
+    );
+
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await page
+      .getByRole('button', { name: /drag chip to board/i })
+      .dispatchEvent('dragstart', { dataTransfer });
+    await page.locator('[data-position="1TC"]').dispatchEvent('dragover', {
+      dataTransfer,
+    });
+    await page.locator('[data-position="1TC"]').dispatchEvent('drop', {
+      dataTransfer,
+    });
+    await page
+      .getByRole('button', { name: /drag chip to board/i })
+      .dispatchEvent('dragend', { dataTransfer });
+
+    await expect(
+      page.locator('[data-position="1TC"] [aria-label="Team 1 chip"]'),
+    ).toBeVisible();
+
+    await context.close();
+  });
+});
 
 async function expectWithinViewport(page: Page, locator: Locator) {
   const viewport = page.viewportSize();
