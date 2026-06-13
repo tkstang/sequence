@@ -431,12 +431,23 @@ checklists, FR-by-FR operator test script, NFR status table, known limitations,
 and follow-ups. After the p07 review-fix, the NFR2 section records the passing
 server-timing result and keeps only the client-network caveat as a limitation.
 
+Post-handoff production hotfix: a manual production test exposed that opening a
+game route without the creator/participant session rendered the generic
+"Connection interrupted" banner over "Loading game..." forever. The root cause
+was a pre-snapshot `game.onGameEvent` subscription authorization error
+(`FORBIDDEN`) with no initial-load error branch. Commit `87d84d3` adds an
+actionable "Game unavailable" state with login/dashboard actions and a
+regression test. Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9` is live
+behind `https://sequence-online.vercel.app`; `sequence-cyan.vercel.app` was
+removed. Production smokes passed for the unauthenticated game-route error path
+and for signup -> local pass-and-play -> initial WS snapshot -> board render.
+
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
 | p07-t02 | Railway deploy                      | completed | `3896a8e` |
 | p07-t03 | Vercel deploy                       | completed | `9bbcf76`, `57227bc` |
-| p07-t04 | Production smoke + checks           | completed | `13fba71`, `b36afa6`, `953139f`, `519e21f`, `8afd6a3`, `acbdec9` |
+| p07-t04 | Production smoke + checks           | completed | `13fba71`, `b36afa6`, `953139f`, `519e21f`, `8afd6a3`, `acbdec9`, `87d84d3` |
 | p07-t05 | Operator handoff notes              | completed | `694b40e` |
 
 ---
@@ -450,6 +461,37 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 10 — 2026-06-13 18:44
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** post-handoff production hotfix
+**Phases:** 0 completed, 0 passed, 0 failed, 0 stopped (p07 hotfix deployed; final HiLL still pending)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | hotfix completed | not run | 0/2 | fixed pre-snapshot game-stream auth errors so unauthorized/non-participant game routes show "Game unavailable" instead of indefinite loading; deployed Vercel `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9` |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Reproduced the screenshot against production by opening a game route without the API participant cookie; WS returned `FORBIDDEN`.
+- Deployed via Vercel CLI after device login; corrected alias so `sequence-online.vercel.app` points at the new deployment and removed `sequence-cyan.vercel.app`.
+
+#### Outstanding Items
+
+- **Final HiLL approval still pending:** do not proceed to final review / PR completion without operator approval.
+- **Physical phone caveat:** still only automated 375px viewport, not a real phone, unless operator runs a device pass.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 9 — 2026-06-13 17:01
 
@@ -812,7 +854,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke; p07 review-fix focused auth/makeMove/full-game/lifecycle tests; API/web typechecks; touched-file oxlint; full root `pnpm test`; post-rereview alias rename smoke | 30 focused + 383 root + Docker/migrate/health; p07 review-fix local gate: lifecycle 9/9, makeMove+auth 11/11, full-game e2e 1/1, API typecheck, web typecheck, oxlint, root 386/386; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2`; NFR2 server timing passed after `acbdec9` / Railway `85e343cd-993c-4e72-8ab3-5bae24c55061` (`game.makeMove` `app;dur=24.4ms`) and after lifecycle deploy `2a313ac4-91b1-4915-aa16-4b4722c8f3da` (`game.makeMove` `app;dur=45.6ms`, `game.concede` `app;dur=49.8ms`); Vercel production deployments `dpl_3EgH16neQoi79NZmeHfHxarjgB2v` and `dpl_GnJi7APdv7NBa5v1afXjhhou1W12` READY; Railway `WEB_ORIGIN` redeploy `eb50f46c-f4b7-4e63-850a-05f5426ddbf4` SUCCESS; `https://sequence-online.vercel.app` `/ping`, API CORS preflight, `/health`, and signup -> `health.me` auth-cookie round trip passed | Pre-fix NFR2 probes failed (`game.makeMove` direct Node fetch `2548ms`, server timing `1780.3ms`); grouped focused Vitest run was manually terminated after opaque silence, then equivalent files passed individually; Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke; p07 review-fix focused auth/makeMove/full-game/lifecycle tests; API/web typechecks; touched-file oxlint; full root `pnpm test`; post-rereview alias rename smoke; post-handoff game-route auth-error regression test and deployed browser smokes | 30 focused + 383 root + Docker/migrate/health; p07 review-fix local gate: lifecycle 9/9, makeMove+auth 11/11, full-game e2e 1/1, API typecheck, web typecheck, oxlint, root 386/386; post-handoff web page regression 1/1, web typecheck, full web suite 98/98, web build; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2`; NFR2 server timing passed after `acbdec9` / Railway `85e343cd-993c-4e72-8ab3-5bae24c55061` (`game.makeMove` `app;dur=24.4ms`) and after lifecycle deploy `2a313ac4-91b1-4915-aa16-4b4722c8f3da` (`game.makeMove` `app;dur=45.6ms`, `game.concede` `app;dur=49.8ms`); Vercel production deployments `dpl_3EgH16neQoi79NZmeHfHxarjgB2v`, `dpl_GnJi7APdv7NBa5v1afXjhhou1W12`, and `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9` READY; Railway `WEB_ORIGIN` redeploy `eb50f46c-f4b7-4e63-850a-05f5426ddbf4` SUCCESS; `https://sequence-online.vercel.app` `/ping`, API CORS preflight, `/health`, signup -> `health.me` auth-cookie round trip, unauthenticated game-route error UX, and signup -> local game WS snapshot all passed | Pre-fix NFR2 probes failed (`game.makeMove` direct Node fetch `2548ms`, server timing `1780.3ms`); grouped focused Vitest run was manually terminated after opaque silence, then equivalent files passed individually; Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check; one post-handoff Playwright smoke clicked before hydration and was rerun with network-idle waits successfully | n/a |
 
 ## Final Summary (for PR/docs)
 

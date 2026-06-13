@@ -86,10 +86,11 @@ Vercel project settings:
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm --filter @sequence/web build`
 - Initial production deployment: `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`
-- Current production deployment: `dpl_GnJi7APdv7NBa5v1afXjhhou1W12`
-- Current production URL: `https://sequence-online-diyopov9t-stangtks-projects.vercel.app`
+- Current production deployment: `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`
+- Current production URL: `https://sequence-online-5ei6rq5i4-stangtks-projects.vercel.app`
 - Production alias: `https://sequence-online.vercel.app`
 - Vercel deployment protection: SSO protection disabled so the public `vercel.app` alias is reachable for operator testing
+- Deprecated alias `https://sequence-cyan.vercel.app` removed after the current deployment
 
 Deployment note:
 
@@ -105,6 +106,8 @@ Deployment note:
 - Two-browser realtime game: passed; move broadcast observed and two-browser concede reached final state
 - Move-to-broadcast latency spot-check: passed after review fix. Pre-fix probes were `2548ms-3846ms` total client time and `1780.3ms` server time. The fix moved the Railway API replica to `us-east4-eqdc4a`, collapsed `game.makeMove` DB work from many sequential round trips into one load plus one atomic write/event CTE, and added a short invalidation-backed Better Auth session-user cache for gameplay requests. Production smoke returned `Server-Timing: app;dur=24.4` (`X-Sequence-Server-Duration-Ms: 24.4`) after the latency fix; after the lifecycle version-guard redeploy, the comparable production smoke returned `Server-Timing: app;dur=45.6` (`X-Sequence-Server-Duration-Ms: 45.6`) for a successful `game.makeMove`; total client round-trip from this machine was `499ms`.
 - Versioned lifecycle smoke: passed after deployment `2a313ac4-91b1-4915-aa16-4b4722c8f3da`; a production local game accepted `game.makeMove` at version `1`, returned version `2`, then accepted `game.concede` with version `2` (`Server-Timing: app;dur=49.8`, HTTP 200).
+- Initial game-stream auth error UX: passed after Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; opening a game route without a participant session produced `FORBIDDEN` on the WS subscription and rendered "Game unavailable" with login/dashboard actions instead of indefinite "Loading game..." plus "Connection interrupted".
+- Signup to local pass-and-play route: passed after Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; `https://sequence-online.vercel.app` signup set the API session cookie, `game.create` returned 200, the WS subscription emitted the initial snapshot, and the board rendered.
 - 375px mobile pass: passed in an automated Pixel 5 / 375px viewport; real physical phone not performed
 - Forged-XFF invite rate-limit check: passed after limiter hardening; 31st rotated-header `game.preview` request returned `429`
 - Neon/Vercel/Railway tier audit: passed for MVP architecture; one Vercel Hobby project, one Railway API service, external Neon direct Postgres URL, no Railway database/buckets/volumes, and no paid-tier-only dependency was added
