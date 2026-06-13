@@ -29,6 +29,7 @@
   - Move hot-path optimization redeploy: `ebb55666-f046-45a1-b5cc-ba63c50cf2f8`
   - Session-cache latency redeploy: `85e343cd-993c-4e72-8ab3-5bae24c55061`
   - Lifecycle version-guard redeploy: `2a313ac4-91b1-4915-aa16-4b4722c8f3da`
+  - `WEB_ORIGIN=https://sequence-online.vercel.app` redeploy: `eb50f46c-f4b7-4e63-850a-05f5426ddbf4`
 - Current replica placement: one replica in `us-east4-eqdc4a`; previous `sfo` replica removed with `railway scale`
 - Predeploy migrations: passed (`drizzle-kit migrate`)
 - Healthcheck: passed (`GET /health` returned `{"status":"ok"}`)
@@ -38,7 +39,7 @@ Notes:
 
 - Railway CLI auth was via local OAuth. A stale local `RAILWAY_TOKEN` from `.env` was explicitly unset during deployment because it did not have access to the new project.
 - `DATABASE_URL` was sourced from local `.env` after checking it was distinct from `DATABASE_URL_TEST`, did not contain `pooler`, and did not look like a test URL. The value was never printed or recorded.
-- `WEB_ORIGIN` was updated to the actual Vercel production alias `https://sequence-cyan.vercel.app` and Railway was redeployed successfully.
+- `WEB_ORIGIN` was updated to the actual Vercel production alias `https://sequence-online.vercel.app` and Railway was redeployed successfully.
 - `TRUST_PROXY=1` plus the prior IP-keyed anonymous invite limiter did not survive a forged-XFF smoke check on Railway. Production now keeps `TRUST_PROXY=false`, and anonymous `game.preview`/`game.join` traffic shares one limiter bucket so rotating `X-Forwarded-For` cannot bypass invite-code throttling.
 
 ## Railway API Env Checklist
@@ -79,15 +80,16 @@ Set on the Vercel web project `sequence`:
 
 Vercel project settings:
 
-- Project: `sequence`
+- Project: `sequence-online`
 - Project ID: `prj_n0X1Xk6YS1Efwnd45l3EfKfy5lmr`
 - Root directory: `apps/web`
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm --filter @sequence/web build`
 - Initial production deployment: `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`
-- Current production deployment: `dpl_3EgH16neQoi79NZmeHfHxarjgB2v`
-- Current production URL: `https://sequence-rmncsihfp-stangtks-projects.vercel.app`
-- Production alias: `https://sequence-cyan.vercel.app`
+- Current production deployment: `dpl_GnJi7APdv7NBa5v1afXjhhou1W12`
+- Current production URL: `https://sequence-online-diyopov9t-stangtks-projects.vercel.app`
+- Production alias: `https://sequence-online.vercel.app`
+- Vercel deployment protection: SSO protection disabled so the public `vercel.app` alias is reachable for operator testing
 
 Deployment note:
 
@@ -97,7 +99,7 @@ Deployment note:
 
 - API health: passed (`https://sequence-api-production-8687.up.railway.app/health`)
 - WS upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc`)
-- Signup/login cross-origin cookie round-trip: passed (`Origin: https://sequence-cyan.vercel.app`; CORS credentials allowed; session cookies `SameSite=None`, `Secure`, `HttpOnly`; `health.me` returned 200 after signup and login)
+- Signup/login cross-origin cookie round-trip: passed (`Origin: https://sequence-online.vercel.app`; CORS credentials allowed; session cookies `SameSite=None`, `Secure`, `HttpOnly`; `health.me` returned 200 after signup and login)
 - Guest join cookie round-trip: passed; guest cookie was `SameSite=None`, `Secure`, `HttpOnly`
 - Local pass-and-play full game: passed in an automated 375px browser viewport; real physical phone not performed
 - Two-browser realtime game: passed; move broadcast observed and two-browser concede reached final state
@@ -111,7 +113,7 @@ Deployment note:
 
 Use these URLs:
 
-- Web: `https://sequence-cyan.vercel.app`
+- Web: `https://sequence-online.vercel.app`
 - API health: `https://sequence-api-production-8687.up.railway.app/health`
 
 Use disposable email/password accounts for manual testing. Email/password auth is enabled; social OAuth is intentionally unset until provider credentials are configured.

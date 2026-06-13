@@ -471,7 +471,7 @@ _- Outstanding Items_
 #### Dispatch Notes
 
 - Review artifact: `.oat/projects/shared/web-mvp/reviews/p07-review-2026-06-13.md`.
-- Deployment targets: Railway API `https://sequence-api-production-8687.up.railway.app`; Vercel web alias `https://sequence-cyan.vercel.app`.
+- Deployment targets: Railway API `https://sequence-api-production-8687.up.railway.app`; Vercel web alias `https://sequence-online.vercel.app`.
 
 #### Outstanding Items
 
@@ -533,7 +533,7 @@ Run-scoped snapshot only. The durable record is `## Deviations from Plan / Desig
 #### Dispatch Notes
 
 - Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
-- Deployment targets: Railway API `https://sequence-api-production-8687.up.railway.app`; Vercel web alias `https://sequence-cyan.vercel.app`.
+- Deployment targets: Railway API `https://sequence-api-production-8687.up.railway.app`; Vercel web alias `https://sequence-online.vercel.app`.
 
 #### Outstanding Items
 
@@ -563,7 +563,7 @@ Run-scoped snapshot only. The durable record is `## Deviations from Plan / Desig
 #### Dispatch Notes
 
 - Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
-- Deployment target: Vercel project `sequence`, root directory `apps/web`, production alias `https://sequence-cyan.vercel.app`.
+- Deployment target: Vercel project `sequence-online`, root directory `apps/web`, production alias `https://sequence-online.vercel.app`.
 
 #### Outstanding Items
 
@@ -812,7 +812,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke; p07 review-fix focused auth/makeMove/full-game/lifecycle tests; API/web typechecks; touched-file oxlint; full root `pnpm test` | 30 focused + 383 root + Docker/migrate/health; p07 review-fix local gate: lifecycle 9/9, makeMove+auth 11/11, full-game e2e 1/1, API typecheck, web typecheck, oxlint, root 386/386; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2`; NFR2 server timing passed after `acbdec9` / Railway `85e343cd-993c-4e72-8ab3-5bae24c55061` (`game.makeMove` `app;dur=24.4ms`) and after lifecycle deploy `2a313ac4-91b1-4915-aa16-4b4722c8f3da` (`game.makeMove` `app;dur=45.6ms`, `game.concede` `app;dur=49.8ms`); Vercel production deployment `dpl_3EgH16neQoi79NZmeHfHxarjgB2v` READY | Pre-fix NFR2 probes failed (`game.makeMove` direct Node fetch `2548ms`, server timing `1780.3ms`); grouped focused Vitest run was manually terminated after opaque silence, then equivalent files passed individually; Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke; p07 review-fix focused auth/makeMove/full-game/lifecycle tests; API/web typechecks; touched-file oxlint; full root `pnpm test`; post-rereview alias rename smoke | 30 focused + 383 root + Docker/migrate/health; p07 review-fix local gate: lifecycle 9/9, makeMove+auth 11/11, full-game e2e 1/1, API typecheck, web typecheck, oxlint, root 386/386; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2`; NFR2 server timing passed after `acbdec9` / Railway `85e343cd-993c-4e72-8ab3-5bae24c55061` (`game.makeMove` `app;dur=24.4ms`) and after lifecycle deploy `2a313ac4-91b1-4915-aa16-4b4722c8f3da` (`game.makeMove` `app;dur=45.6ms`, `game.concede` `app;dur=49.8ms`); Vercel production deployments `dpl_3EgH16neQoi79NZmeHfHxarjgB2v` and `dpl_GnJi7APdv7NBa5v1afXjhhou1W12` READY; Railway `WEB_ORIGIN` redeploy `eb50f46c-f4b7-4e63-850a-05f5426ddbf4` SUCCESS; `https://sequence-online.vercel.app` `/ping`, API CORS preflight, `/health`, and signup -> `health.me` auth-cookie round trip passed | Pre-fix NFR2 probes failed (`game.makeMove` direct Node fetch `2548ms`, server timing `1780.3ms`); grouped focused Vitest run was manually terminated after opaque silence, then equivalent files passed individually; Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check | n/a |
 
 ## Final Summary (for PR/docs)
 
