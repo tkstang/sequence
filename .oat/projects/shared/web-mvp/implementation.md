@@ -30,7 +30,7 @@ oat_generated: false
 | Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
-| Phase 5: Web shell               | completed (review fixes applied) | 9 | 9/9 |
+| Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
@@ -38,7 +38,7 @@ oat_generated: false
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
-**Tier:** 1 (subagents) · **Dispatch ceiling:** claude opus (enforced, Task model arg; preset: maximum)
+**Tier:** 1 (subagents) · **Dispatch ceiling:** codex xhigh / claude opus (enforced where supported; preset: maximum)
 
 ---
 
@@ -150,7 +150,7 @@ zod (from p01) untouched; root `pnpm-lock.yaml` unchanged. Root gates green.
 
 ## Phase 4: Game domain — fully playable over the API (p04)
 
-**Status:** complete (pre-review)
+**Status:** completed (review passed)
 **Started:** 2026-06-12
 
 ### Phase Summary
@@ -203,7 +203,7 @@ api single-fork). Bruno `game` 6/6 + `auth` 3/3 vs a booted server.
 
 ## Phase 5: Web shell (p05)
 
-**Status:** complete (pre-review)
+**Status:** complete — review passed (`reviews/p05-review-2026-06-13.md`, fail -> fixes -> re-review pass)
 **Started:** 2026-06-12
 
 ### Phase Summary
@@ -254,7 +254,7 @@ walk record below.
 
 **Notes / Decisions:** 3 recorded p05 deltas (see Deviations table) — the
 `AppRouter` type re-export from the api package root, the additive `MyGameCard`
-enhancement (myTeam/opponents/round/won) the dashboard consumes, and the
+enhancement (myTeam/opponents/round/result) the dashboard consumes, and the
 carried head-to-head fix. No game-route UI or `game-logic` touched (p06).
 Lifecycle-broadcast version stamping remains deferred to p06.
 
@@ -275,9 +275,9 @@ Lifecycle-broadcast version stamping remains deferred to p06.
 - **375px:** no fixed pixel widths in shell components (all `max-w-*` / `w-full`
   / flex) — no horizontal scroll at mobile width; full desktop responsiveness
   verified via the build + route renders.
-- **Gaps found:** none requiring code changes — the a11y fixes (explicit
-  labels) were folded into their originating tasks (t03/t06/t07) as built. t09
-  is a documentation commit of the walk results.
+- **Gaps found:** p05 review caught missing logout, invite-login redirect loss,
+  neutral-result list semantics, nested CTA markup, and stale hash bookkeeping;
+  all were fixed in iteration 1 and re-reviewed as pass.
 
 | Task    | Name                            | Status   | Commit |
 | ------- | ------------------------------- | -------- | ------ |
@@ -349,6 +349,38 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 2 — 2026-06-13 02:55
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 executed, 1 passed, 0 failed, 0 stopped (p06-p07 pending)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p05   | DONE | fail -> pass (re-review) | 1/2 | sequential on-branch; fixes closed logout, invite redirect, tri-state list results, CTA markup, and bookkeeping hash |
+
+#### Parallel Groups
+
+- p05: sequential resume after interrupted Claude review dispatch
+
+#### Dispatch Notes
+
+- Dispatch: p05 review effort_axis=selected:xhigh via Codex `oat-reviewer-xhigh` after Claude's selected `claude-fable-5` model was unavailable.
+- Dispatch: p05 fix effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Dispatch: p05 re-review effort_axis=selected:xhigh via Codex `oat-reviewer-xhigh`; verdict pass.
+
+#### Outstanding Items
+
+- **Carried to p06:** lifecycle broadcasts (`presence.ts:191`, `concede.ts:78`) do not carry the bumped `version` -> one recoverable CONFLICT for the next mover after freeze/resume; fold into p06-adjacent work.
+- **Carried to p07 (deploy bucket):** I1 — SameSite=Lax breaks cross-site prod auth; M3 — boolean trustProxy keys on leftmost XFF; needs hop-count support or forged-XFF smoke assertion on Railway.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 1 — 2026-06-12 20:54
 
@@ -440,7 +472,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p04 review (Minor) | — (cursor pagination) | `history.myGames` cursor ordered/advanced by `finished_at` only → rows could skip on a `finished_at` tie | Composite `(finished_at, id)` keyset cursor (total order), encoded `"<iso>\|<id>"`; ordered `desc(finished_at), desc(id)`. | review finding (closed) — shipped | none — tie-paging integration-tested |
 | p04 review (Minor) | redaction.ts §snapshot (`pendingChoice = {seat,cells}`) | snapshot omitted `pendingChoice.placed` / `additionalRuns` | Snapshot `pendingChoice` now includes `placed` and (when present) `additionalRuns`, so a placer reconnecting mid-choice can rebuild the pending choice from a cold snapshot. | review finding (closed) — shipped | none |
 | p05-t02 | design.md §Internal Dependencies ("web depends on api's router types (type-only import)") / plan.md p05-t02 (`AppRouter` type-only from `@sequence/api`) | `AppRouter` importable from the package root | Added `export type { AppRouter } from './app-router.ts'` to `packages/api/src/index.ts` so `import type { AppRouter } from '@sequence/api'` resolves at the package root (the index previously exported only `PACKAGE_NAME`). Type-only re-export — no API runtime ships in the web bundle; `@sequence/api` moved to web `devDependencies` (p01 review minor). | implementation (shipped) | none — matches the multi-client contract surface |
-| p05-t05 | api `game.myGames` `MyGameCard` (`{…, mySeat}`) | Card carried only `mySeat` (no team/opponents/round) | Enhanced `MyGameCard` additively with `myTeam`, `opponents: string[]` (other players' display names via a `user` left-join), `round`, and a derived `won` flag, so the dashboard can render "vs Sarah, Ben", the round number, and W/L markers per the approved wireframe. Existing `lifecycle.test.ts` (asserts only `gameId` membership) unaffected. | implementation (shipped) — dashboard is the consumer | none — additive, no behavior change to existing fields |
+| p05-t05 | api `game.myGames` `MyGameCard` (`{…, mySeat}`) | Card carried only `mySeat` (no team/opponents/round) | Enhanced `MyGameCard` additively with `myTeam`, `opponents: string[]` (other players' display names via a `user` left-join), `round`, and tri-state `result: "win" \| "loss" \| "none"` so the dashboard can render "vs Sarah, Ben", the round number, and W/L/neutral markers per the approved wireframe and no-winner FFA concede semantics. Existing `lifecycle.test.ts` (asserts only `gameId` membership) unaffected. | implementation (shipped) — dashboard is the consumer | none — additive, no behavior change to existing fields |
 | p05-t08 (carried fix, filed `fix(p04-t13)`) | rules-and-flows ("their team takes the recorded loss") — run-1 outstanding item (`head-to-head.ts:57`) | `headToHead` scored a no-winner FFA concede as a loss for BOTH users (`won=false → loss`), inconsistent with `myRecord`'s conceder-only-loss semantics | `headToHead` now left-joins the `GameConceded` event: a `winner_team`-null game counts as a loss vs the opponent ONLY when MY team conceded; otherwise it is excluded (not a decided head-to-head result) — matching `myRecord`. New integration test (`headToHead scores a no-winner FFA concede only against the conceder`) added; full history suite (8 tests) green vs the Neon test branch. | implementation (shipped) | none — closes a run-1 carried item |
 
 ## Test Results
@@ -453,7 +485,7 @@ Track test execution during implementation.
 | p02   | 132 (13 files; post-review fixes) | 132 | 0 | n/a |
 | p03   | 34 api after review fixes (9 env + 7 guest + 7 rate-limit unit + 11 integration [4 auth + 7 middleware]; +7 game-logic salvage = 41 root) | 34 api / 41 root | 0 | n/a |
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
-| p05   | 304 root / 42 files (web component+unit: auth-form 7, dashboard-view 5 + expiry-countdown 4, create-game-form 6 + timer-options 4, join-view 6, history-view 5; +1 api head-to-head carried-fix integration) | 304 | 0 | n/a |
+| p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | -         | -      | -      | -        |
 | p07   | -         | -      | -      | -        |
 
