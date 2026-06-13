@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p07-t04
+oat_current_task_id: p07-t05
 oat_generated: false
 ---
 
@@ -353,7 +353,7 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** in progress at p07-t04
+**Status:** in progress at p07-t05
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -400,12 +400,30 @@ Production smoke for p07-t03 passed: root page 200, `/game/prod-smoke` 200,
 cross-origin signup/login session cookies (`SameSite=None`, `Secure`,
 `HttpOnly`) round-tripped through `health.me`.
 
+p07-t04 is complete. Production smoke passed for API health, WS upgrade,
+cross-origin auth cookies, guest cookie round-trip, automated local
+pass-and-play at a 375px viewport, two-browser realtime move/concede, and the
+Neon/Vercel/Railway hobby-tier audit. The forged-XFF rate-limit check initially
+failed under `TRUST_PROXY=1` plus IP-keyed anonymous invite throttling, so
+production was changed to `TRUST_PROXY=false` and anonymous `game.preview` /
+`game.join` now share one limiter bucket. After redeploy
+`12949411-5cfa-4c42-89b7-f6861a9e50f2`, the 31st rotated-XFF preview request
+returned `429`.
+
+NFR2 remains open. Functional move broadcast passed, but production latency
+probes did not meet the ~500ms target: two-browser remote render observed
+`3846ms`; direct browser `game.makeMove` fetch observed `2553ms`; direct Node
+`game.makeMove` fetch with the same session cookie observed `2548ms`. Health
+and public preview are materially faster, so the current evidence points at
+DB-backed authenticated game routes rather than a broken deploy. Operator
+handoff must call this out as a performance follow-up.
+
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
 | p07-t02 | Railway deploy                      | completed | `3896a8e` |
 | p07-t03 | Vercel deploy                       | completed | `9bbcf76`, `57227bc` |
-| p07-t04 | Production smoke + checks           | pending | -      |
+| p07-t04 | Production smoke + checks           | completed | `13fba71`, `b36afa6`, `953139f` |
 | p07-t05 | Operator handoff notes              | pending | -      |
 
 ---
@@ -419,6 +437,36 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 7 — 2026-06-13 16:20
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 continued, 0 passed, 0 failed, 0 stopped (p07 in progress)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | p07-t04 completed | not run | 0/2 | production smoke recorded; XFF limiter hardening deployed; NFR2 latency remains an operator follow-up; continuing at p07-t05 |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Deployment targets: Railway API `https://sequence-api-production-8687.up.railway.app`; Vercel web alias `https://sequence-cyan.vercel.app`.
+
+#### Outstanding Items
+
+- **Operator handoff pending:** document how to test each FR, current limitations, and the NFR2 performance follow-up.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 6 — 2026-06-13 15:49
 
@@ -656,7 +704,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t08/t09 | plan.md p03-t08 ("reset via `drizzle-kit push` + truncate") | Per-run push + per-test truncate is sufficient for isolation | Added a **Postgres session advisory lock** held per integration test file, serializing the two integration files against the one shared test branch | The vitest **workspace** runner (root `pnpm test`) runs the API's integration files in parallel workers; both `TRUNCATE` shared Better Auth tables, so an unguarded interleave caused a nondeterministic FK failure (`linkAccount` 500) when run together. The per-project `fileParallelism:false` is not honored under the workspace; the advisory lock makes correctness independent of scheduling. | implementation (shipped) | none — root `pnpm test` is green and stable across repeated runs |
 | p03 review (M2) | implementation.md p03-t03 deviation row (covered only `user`-ref columns) | `games.rematch_of` left without a DB-level FK | Added a real self-FK `rematch_of REFERENCES games(id) ON DELETE SET NULL` (migration `0002_petite_sentinel.sql`) | `rematch_of` references the api-owned `games` table, so the Better-Auth migration-ordering rationale that justifies plain-text user refs does not apply; the p04-t12 expiry sweep could otherwise leave dangling pointers. Applied to the test branch (verified, no drift). | implementation (shipped) | none — supersedes the gap noted against the p03-t03 row |
 | p03 review (I1) | review p03 finding I1 (`SameSite=Lax` cross-site cookies) | Better Auth session cookie hard-coded `SameSite=Lax`; guest cookie same | Production defaults now resolve to `SameSite=None; Secure` for Better Auth session cookies and the `sequence_guest` cookie. Local dev remains `SameSite=Lax` / non-secure. `AUTH_COOKIE_SAME_SITE=lax` is an explicit escape hatch only for a shared-registrable-domain deploy; `AUTH_COOKIE_SECURE` can override secure handling. | p07 deploy target is Vercel(web) -> Railway(api), a cross-site credentialed flow; `Lax` would drop cookies on tRPC fetches and WS upgrades. Guest-token cookies need the same treatment as session cookies for anonymous invite players. | implementation (p07-t01) | p07-t03/t04 must still prove cross-origin signup/login and guest join against deployed URLs |
-| p03 review M3 / p07 dispatch | p03 re-review M3 (`TRUST_PROXY` boolean trusts leftmost XFF) | `TRUST_PROXY` parsed as boolean; production default was boolean `true` | `TRUST_PROXY` accepts booleans or numeric hop counts; production default is numeric `1`. `.env.example` documents `TRUST_PROXY=1` for Railway. | Fastify boolean trustProxy can trust a client-spoofable leftmost XFF value if Railway appends; one trusted hop is the safer Railway default while retaining explicit boolean override for verified topologies. | implementation (p07-t01) | p07-t04 should include a Railway forged-XFF/rate-limit spot check if public API URL is available |
+| p03 review M3 / p07 dispatch | p03 re-review M3 (`TRUST_PROXY` boolean trusts leftmost XFF) | `TRUST_PROXY` parsed as boolean; production default was boolean `true` | `TRUST_PROXY` accepts booleans or numeric hop counts, but the final production default is `false`. Anonymous `game.preview` / `game.join` traffic shares one limiter bucket instead of keying by IP. `.env.example` documents `TRUST_PROXY=false`. | Railway production smoke showed `TRUST_PROXY=1` plus IP-keyed anonymous throttling could be bypassed with rotating forged `X-Forwarded-For` values. Since neither XFF nor observed edge/socket IPs were stable enough for this public limiter, the MVP chooses the conservative shared anonymous budget and leaves proxy trust opt-in only after edge overwrite behavior is verified. | implementation (p07-t04) | none for invite-code throttling; future optimization can revisit per-IP buckets only after proxy behavior is verified |
 | p04-t01 | design.md §Data Models (`board` jsonb "100 cells `{chip?,lockedBy?}`"; `sequences` "team, cells, order"; `pending_choice`) | `board` as a 100-element array; `sequences` rows carry `order`; `pending_choice = {seat,runLength,cells}` | `board` serialized as a **sparse object keyed by position code** (`{ '1AC': {chip,lockedBy} }`); `sequences` carry `{id,team,cells}` (no `order` — `nextSequenceId` column tracks issue order); `pending_choice` expanded to `{seat,team,placed,cells,additionalRuns?}`; added `games.next_sequence_id` column + migration `0003`. The game-logic `Board` is a `Map<Position,BoardCell>` keyed by string codes — a sparse object round-trips it exactly (empty cells absent), whereas a dense 100-array would need a fixed position↔index map and stores empties. `pending_choice` shape follows the p02 I1 delta (`additionalRuns`). | implementation (shipped) | none — round-trip integration-tested; design §Data Models jsonb shapes could note the object-keyed board |
 | p04-t01 (infra) | plan.md p03 ("integration tests run … with `DATABASE_URL_TEST`") | `packages/api/vitest.config.ts` `loadEnv()` reads a package-local `.env` | Also loads the **monorepo-root** `.env` explicitly (`../../.env`) — the gitignored secrets live at root (worktree-init copies them there), so the package-local-only load left `DATABASE_URL_TEST` unset and every integration `describe` skipped. | Without this the entire p04 integration suite silently skipped. A package-local `.env` still wins if present. | implementation (shipped) | none |
 | p04-t09 (infra) | plan.md p03-t01 / package.json (`start: node src/server.ts`) | `node src/server.ts` runs the API at boot | `start`/`dev` use `node --experimental-transform-types`; p07 Dockerfile starts the API through `pnpm --filter @sequence/api start`, preserving the same flag | Node 24's default strip-only TS mode cannot run **constructor parameter properties** (used by `TimerService`, `PresenceTracker`, `VersionConflictError`); `--experimental-transform-types` transpiles them. Verified by booting the server for the Bruno run and by p07 container `/health`. | implementation (shipped) | none |
@@ -687,7 +735,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke | 30 focused + 383 root + Docker/migrate/health; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployment `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn` READY; auth smoke passed | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke | 30 focused + 383 root + Docker/migrate/health; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2` | NFR2 latency target not met by production probes (`game.makeMove` direct Node fetch `2548ms` vs ~500ms target); Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check | n/a |
 
 ## Final Summary (for PR/docs)
 
