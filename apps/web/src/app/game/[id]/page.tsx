@@ -15,6 +15,7 @@ import {
   type GameStreamItem,
   type GameViewState,
 } from './components/game-state.ts';
+import { GameBoard } from './components/GameBoard/GameBoard.tsx';
 import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 
 type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
@@ -103,6 +104,16 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           ))}
         </div>
       </Card>
+
+      <section className="flex justify-center">
+        <GameBoard
+          board={state.board}
+          winningCells={state.sequences
+            .filter((sequence) => sequence.team === state.winnerTeam)
+            .flatMap((sequence) => sequence.cells)}
+          pendingChoiceCells={state.pendingChoice?.cells}
+        />
+      </section>
     </main>
   );
 }
