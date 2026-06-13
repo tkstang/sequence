@@ -142,6 +142,23 @@ describe('game route view state', () => {
     expect(screenForState(state)).toBe('game-over');
   });
 
+  it('preserves GameConceded team attribution', () => {
+    const state = applyStreamItem(
+      applyStreamItem(null, {
+        kind: 'snapshot',
+        snapshot: snapshot({ status: 'active' }),
+      }),
+      {
+        kind: 'event',
+        event: event('GameConceded', { team: 2 }, 2),
+      },
+    );
+
+    expect(state?.status).toBe('finished');
+    expect(state?.endReason).toBe('concede');
+    expect(state?.concededTeam).toBe(2);
+  });
+
   it('preserves pending choice metadata for chained selections', () => {
     const state = applyStreamItem(
       applyStreamItem(null, {

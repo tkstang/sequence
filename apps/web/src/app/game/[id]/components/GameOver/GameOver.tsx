@@ -9,6 +9,7 @@ import type { SnapshotPlayer } from '../game-state.ts';
 export interface GameOverProps {
   winnerTeam?: number | null;
   endReason?: string | null;
+  concededTeam?: number | null;
   players: readonly SnapshotPlayer[];
   isRematching?: boolean;
   onRematch: () => void;
@@ -23,6 +24,7 @@ function resultTitle(winnerTeam?: number | null, endReason?: string | null) {
 export function GameOver({
   winnerTeam,
   endReason,
+  concededTeam,
   players,
   isRematching = false,
   onRematch,
@@ -43,6 +45,11 @@ export function GameOver({
         {winners.length > 0 ? (
           <p className="mt-1 text-sm font-medium text-black/60">
             {winners.map((player) => player.name).join(', ')}
+          </p>
+        ) : null}
+        {endReason === 'concede' && concededTeam ? (
+          <p className="text-team-red mt-1 text-sm font-bold">
+            Team {concededTeam} conceded
           </p>
         ) : null}
       </div>

@@ -59,4 +59,18 @@ describe('<GameOver>', () => {
     expect(screen.getByText('Game conceded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /rematch/i })).toBeDisabled();
   });
+
+  it('renders conceded team attribution', () => {
+    render(
+      <GameOver
+        winnerTeam={1}
+        endReason="concede"
+        concededTeam={2}
+        players={players}
+        onRematch={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Team 2 conceded')).toBeInTheDocument();
+  });
 });

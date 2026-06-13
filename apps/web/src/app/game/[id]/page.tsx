@@ -11,6 +11,7 @@ import { Badge } from '@/components/badge.tsx';
 import { Card } from '@/components/card.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 
+import { ActiveGameControls } from './components/ActiveGameControls/ActiveGameControls.tsx';
 import { CardHand } from './components/CardHand/CardHand.tsx';
 import {
   buildChipRemovalMove,
@@ -54,6 +55,7 @@ import {
 type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
 type PlayerCount = 2 | 3 | 4 | 6;
+type RecoveryCursor = { seq: number; offset: 0 | 1 };
 
 function reducer(
   state: GameViewState | null,
@@ -70,7 +72,25 @@ function asPlayerCount(count: number): PlayerCount {
   return count === 3 || count === 4 || count === 6 ? count : 2;
 }
 
-function GameRoutePlaceholder({ state }: { state: GameViewState }) {
+function isConflictError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'data' in error &&
+    typeof error.data === 'object' &&
+    error.data !== null &&
+    'code' in error.data &&
+    error.data.code === 'CONFLICT'
+  );
+}
+
+function GameRoutePlaceholder({
+  state,
+  onConflictRecovery,
+}: {
+  state: GameViewState;
+  onConflictRecovery: () => void;
+}) {
   const trpc = useTRPC();
   const router = useRouter();
   const { toasts, pushToast, dismissToast } = useToastQueue();
@@ -123,10 +143,13 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   }
 
   function notifyGameError(error: unknown) {
+    if (isConflictError(error)) onConflictRecovery();
     pushToast({
       tone: 'error',
       title: 'Move blocked',
-      detail: ruleViolationMessage(error),
+      detail: isConflictError(error)
+        ? 'Game changed. Refreshing state.'
+        : ruleViolationMessage(error),
     });
   }
 
@@ -171,6 +194,41 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           title: 'Rematch unavailable',
           detail: ruleViolationMessage(error),
         }),
+    }),
+  );
+  const saveAndExit = useMutation(
+    trpc.game.saveAndExit.mutationOptions({
+      onSuccess: () => {
+        pushToast({ tone: 'success', title: 'Game saved' });
+        window.setTimeout(() => router.push('/dashboard'), 350);
+      },
+      onError: (error) => {
+        if (isConflictError(error)) onConflictRecovery();
+        pushToast({
+          tone: 'error',
+          title: 'Save failed',
+          detail: isConflictError(error)
+            ? 'Game changed. Refreshing state.'
+            : ruleViolationMessage(error),
+        });
+      },
+    }),
+  );
+  const concede = useMutation(
+    trpc.game.concede.mutationOptions({
+      onSuccess: () => {
+        pushToast({ tone: 'success', title: 'Game conceded' });
+      },
+      onError: (error) => {
+        if (isConflictError(error)) onConflictRecovery();
+        pushToast({
+          tone: 'error',
+          title: 'Concede failed',
+          detail: isConflictError(error)
+            ? 'Game changed. Refreshing state.'
+            : ruleViolationMessage(error),
+        });
+      },
     }),
   );
   const pendingChoiceKey = state.pendingChoice
@@ -315,6 +373,15 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         </div>
       </Card>
 
+      {!gameFinished && !handoffVisible ? (
+        <ActiveGameControls
+          isSaving={saveAndExit.isPending}
+          isConceding={concede.isPending}
+          onSaveAndExit={() => saveAndExit.mutate({ gameId: state.gameId })}
+          onConcede={() => concede.mutate({ gameId: state.gameId })}
+        />
+      ) : null}
+
       <section className="flex justify-center">
         <GameBoard
           board={state.board}
@@ -362,6 +429,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         <GameOver
           winnerTeam={state.winnerTeam}
           endReason={state.endReason}
+          concededTeam={state.concededTeam}
           players={state.players}
           isRematching={rematch.isPending}
           onRematch={() => rematch.mutate({ gameId: state.gameId })}
@@ -469,6 +537,9 @@ export default function GamePage() {
   const [state, dispatch] = useReducer(reducer, null);
   const [connectionState, setConnectionState] =
     useState<ConnectionState>('connecting');
+  const [recoveryCursor, setRecoveryCursor] = useState<RecoveryCursor | null>(
+    null,
+  );
   const setTeam = useMutation(trpc.game.setTeam.mutationOptions());
   const kick = useMutation(trpc.game.kick.mutationOptions());
   const randomizeTeams = useMutation(
@@ -478,7 +549,15 @@ export default function GamePage() {
 
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
-      { gameId },
+      recoveryCursor
+        ? {
+            gameId,
+            lastEventId: Math.max(
+              0,
+              recoveryCursor.seq - recoveryCursor.offset,
+            ),
+          }
+        : { gameId },
       {
         onStarted: () => setConnectionState('live'),
         onData: (item) => {
@@ -527,7 +606,16 @@ export default function GamePage() {
           }}
         />
       ) : state ? (
-        <GameRoutePlaceholder state={state} />
+        <GameRoutePlaceholder
+          state={state}
+          onConflictRecovery={() =>
+            setRecoveryCursor((current) => ({
+              seq: state.lastSeq,
+              offset:
+                current?.seq === state.lastSeq && current.offset === 0 ? 1 : 0,
+            }))
+          }
+        />
       ) : (
         <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
           Loading game…

@@ -48,6 +48,7 @@ export interface GameSnapshotView {
   pendingChoice?: PendingChoiceView;
   winner?: Team;
   winnerTeam?: Team | null;
+  concededTeam?: Team | null;
   endReason?: string | null;
   expiresAt?: string | null;
   turnDeadlineAt?: string | null;
@@ -195,6 +196,7 @@ export function stateFromSnapshot(snapshot: GameSnapshotView): GameViewState {
   return {
     ...snapshot,
     winnerTeam: snapshot.winnerTeam ?? snapshot.winner ?? null,
+    concededTeam: snapshot.concededTeam ?? null,
     endReason: snapshot.endReason ?? null,
     expiresAt: snapshot.expiresAt ?? null,
     turnDeadlineAt: snapshot.turnDeadlineAt ?? null,
@@ -425,7 +427,12 @@ export function applyGameEvent(
       };
     }
     case 'GameConceded': {
-      return { ...state, status: 'finished', endReason: 'concede' };
+      return {
+        ...state,
+        status: 'finished',
+        endReason: 'concede',
+        concededTeam: asTeam(payload.team) ?? state.concededTeam,
+      };
     }
     case 'GameSaved': {
       return { ...state, status: 'saved' };
