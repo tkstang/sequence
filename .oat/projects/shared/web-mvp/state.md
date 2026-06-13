@@ -1,6 +1,6 @@
 ---
 oat_current_task: null
-oat_last_commit: 694b40e
+oat_last_commit: acbdec9
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,7 +27,7 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-13T16:23:08.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-13T17:01:25.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -39,7 +39,7 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — implementation tasks complete; final review/HiLL pending (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p07 implementation tasks complete; Railway API and Vercel web deployments are live, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, and NFR2 latency remains an operator follow-up.
+Implementation — implementation tasks complete; p07 review-fix complete, re-review pending (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p07 implementation tasks complete; Railway API and Vercel web deployments are live, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, and NFR2 now passes after the p07 review-fix latency work.
 
 ## Artifacts
 
@@ -55,7 +55,7 @@ Implementation — implementation tasks complete; final review/HiLL pending (Run
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
 - ✓ Plan complete (73 tasks; artifact review passed)
-- ⧗ Implementation tasks complete (73/73 tasks; p01-p06 ✓ reviewed; p07 complete; final p07 review/HiLL pending)
+- ⧗ Implementation tasks complete (73/73 tasks; p01-p06 ✓ reviewed; p07 review-fix complete; p07 re-review/HiLL pending)
 
 ## Blockers
 
@@ -63,4 +63,4 @@ Implementation — implementation tasks complete; final review/HiLL pending (Run
 
 ## Next Milestone
 
-Run final p07 review, then stop at the configured final HiLL checkpoint with NFR2 called out as an open performance follow-up.
+Run p07 re-review, then stop at the configured final HiLL checkpoint if it passes.

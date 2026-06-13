@@ -25,6 +25,10 @@
   - `WEB_ORIGIN` redeploy: `9629e69f-3f80-4971-b616-619c4faa08dd`
   - `TRUST_PROXY=false` redeploy: `95589e4e-9361-4672-a64f-0909bd8b3379`
   - Invite limiter hardening redeploy: `12949411-5cfa-4c42-89b7-f6861a9e50f2`
+  - Server-timing smoke redeploy: `6645cbaf-5a0d-4021-894d-ad30e8f4baa3`
+  - Move hot-path optimization redeploy: `ebb55666-f046-45a1-b5cc-ba63c50cf2f8`
+  - Session-cache latency redeploy: `85e343cd-993c-4e72-8ab3-5bae24c55061`
+- Current replica placement: one replica in `us-east4-eqdc4a`; previous `sfo` replica removed with `railway scale`
 - Predeploy migrations: passed (`drizzle-kit migrate`)
 - Healthcheck: passed (`GET /health` returned `{"status":"ok"}`)
 - WebSocket upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc` opened)
@@ -96,7 +100,7 @@ Deployment note:
 - Guest join cookie round-trip: passed; guest cookie was `SameSite=None`, `Secure`, `HttpOnly`
 - Local pass-and-play full game: passed in an automated 375px browser viewport; real physical phone not performed
 - Two-browser realtime game: passed; move broadcast observed and two-browser concede reached final state
-- Move-to-broadcast latency spot-check: functional broadcast passed, but the latency target is not met by current production probes. Observed values: two-browser remote render `3846ms`; direct browser `game.makeMove` fetch `2553ms`; direct Node `game.makeMove` fetch with the same session cookie `2548ms`. API health from this machine was roughly `0.76s-0.84s`; public `game.preview` settled near `0.50s`; authenticated `health.me` settled near `0.63s-0.70s`. Treat NFR2 as an open production performance follow-up, not passed.
+- Move-to-broadcast latency spot-check: passed after review fix. Pre-fix probes were `2548ms-3846ms` total client time and `1780.3ms` server time. The fix moved the Railway API replica to `us-east4-eqdc4a`, collapsed `game.makeMove` DB work from many sequential round trips into one load plus one atomic write/event CTE, and added a short invalidation-backed Better Auth session-user cache for gameplay requests. Post-fix production smoke returned `Server-Timing: app;dur=24.4` (`X-Sequence-Server-Duration-Ms: 24.4`) for a successful `game.makeMove`; total client round-trip from this machine was `865ms`, dominated by network/Railway edge rather than server processing.
 - 375px mobile pass: passed in an automated Pixel 5 / 375px viewport; real physical phone not performed
 - Forged-XFF invite rate-limit check: passed after limiter hardening; 31st rotated-header `game.preview` request returned `429`
 - Neon/Vercel/Railway tier audit: passed for MVP architecture; one Vercel Hobby project, one Railway API service, external Neon direct Postgres URL, no Railway database/buckets/volumes, and no paid-tier-only dependency was added
@@ -136,7 +140,7 @@ Use disposable email/password accounts for manual testing. Email/password auth i
 | ID | Current status | Operator note |
 | --- | --- | --- |
 | NFR1 | Passed by automated unit/integration coverage | Crafted illegal moves and private-hand redaction are covered in the API/game-logic suites. |
-| NFR2 | Open follow-up | Current production probes did not meet the ~500ms target for DB-backed game mutations. Re-test after performance work; do not treat this NFR as passed yet. |
+| NFR2 | Passed after review fix | Production `game.makeMove` server timing was `24.4ms` after region correction, move hot-path CTE optimization, and session lookup caching. |
 | NFR3 | Passed in automated 375px viewport | A real phone pass was not performed; run one before broader playtesting. |
 | NFR4 | Passed by `@sequence/game-logic` tests | Run `pnpm --filter @sequence/game-logic test` for the rules suite. |
 | NFR5 | Passed for current repo/deploy posture | No secrets are recorded in this handoff. Keep env values in Railway/Vercel only and revoke the legacy GCP service key if still active. |
@@ -145,7 +149,7 @@ Use disposable email/password accounts for manual testing. Email/password auth i
 
 ## Known Limitations
 
-- Production NFR2 is not met by current probes. The likely next investigation is authenticated DB-backed route latency: session lookup, `gamePlayerProcedure`, `loadGameState`, per-seat hand updates, and event append all perform sequential database work.
+- End-to-end client round-trip from this local machine to the Railway public URL is still much higher than server processing time because requests traverse Railway edge/network paths. NFR2 is measured with server timing because the requirement is server processing/broadcast under about 500ms.
 - The 375px production pass used an automated Pixel 5 viewport, not a physical phone.
 - Social OAuth is not configured. Email/password works without social provider env vars.
 - Anonymous invite preview/join is intentionally protected by one shared anonymous bucket. This prevents forged-XFF bypasses on Railway but means anonymous invite bursts can throttle all anonymous preview/join traffic on the single API instance.
@@ -156,4 +160,3 @@ Use disposable email/password accounts for manual testing. Email/password auth i
 - Revoke the legacy GCP service key if not already done.
 - Configure social OAuth only when desired; email/password works without social provider env vars.
 - Keep `AUTH_COOKIE_SAME_SITE=lax` only for a shared registrable-domain deployment. For Vercel-to-Railway cross-site hosting, keep `none`.
-- Investigate and reduce production authenticated game-route latency before claiming NFR2 complete.
