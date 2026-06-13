@@ -16,8 +16,8 @@ export interface GameOverProps {
 }
 
 function resultTitle(winnerTeam?: number | null, endReason?: string | null) {
-  if (winnerTeam) return `Team ${winnerTeam} wins`;
   if (endReason === 'concede') return 'Game conceded';
+  if (winnerTeam) return `Team ${winnerTeam} wins`;
   return 'Game over';
 }
 

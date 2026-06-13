@@ -423,7 +423,7 @@ export function applyGameEvent(
         ...state,
         status: 'finished',
         winnerTeam: team ?? state.winnerTeam,
-        endReason: 'win',
+        endReason: state.endReason === 'concede' ? 'concede' : 'win',
       };
     }
     case 'GameConceded': {

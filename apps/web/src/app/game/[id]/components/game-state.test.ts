@@ -159,6 +159,26 @@ describe('game route view state', () => {
     expect(state?.concededTeam).toBe(2);
   });
 
+  it('keeps concede end reason when a two-team concede also emits GameWon', () => {
+    let state = applyStreamItem(null, {
+      kind: 'snapshot',
+      snapshot: snapshot({ status: 'active' }),
+    });
+    state = applyStreamItem(state, {
+      kind: 'event',
+      event: event('GameConceded', { team: 2 }, 2),
+    });
+    state = applyStreamItem(state, {
+      kind: 'event',
+      event: event('GameWon', { team: 1 }, 3),
+    });
+
+    expect(state?.status).toBe('finished');
+    expect(state?.winnerTeam).toBe(1);
+    expect(state?.endReason).toBe('concede');
+    expect(state?.concededTeam).toBe(2);
+  });
+
   it('preserves pending choice metadata for chained selections', () => {
     const state = applyStreamItem(
       applyStreamItem(null, {

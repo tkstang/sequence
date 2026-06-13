@@ -71,6 +71,7 @@ describe('<GameOver>', () => {
       />,
     );
 
+    expect(screen.getByText('Game conceded')).toBeInTheDocument();
     expect(screen.getByText('Team 2 conceded')).toBeInTheDocument();
   });
 });
