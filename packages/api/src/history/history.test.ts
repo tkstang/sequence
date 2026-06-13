@@ -274,4 +274,58 @@ describeIntegration('history (integration)', () => {
     expect(res.ok).toBe(true);
     if (res.ok) expect((res.data as unknown[]).length).toBe(0);
   });
+
+  it('headToHead scores a no-winner FFA concede only against the conceder (matches myRecord)', async () => {
+    // 3-team FFA: A (t1), B (t2), C (t3). C concedes → no winner_team.
+    // myRecord semantics: only C takes the loss; A and B record neither.
+    // So head-to-head must NOT count this game as a loss for A or B against
+    // each other (the prior bug scored it a loss for BOTH). From C's side, the
+    // concede is a loss versus each registered opponent.
+    const a = await signUp('A');
+    const b = await signUp('B');
+    const c = await signUp('C');
+    const gameId = randomUUID();
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: a.userId,
+      playerCount: 3,
+      mode: 'tap',
+      status: 'finished',
+      winnerTeam: null,
+      endReason: 'concede',
+      finishedAt: new Date(),
+    });
+    await h.db.insert(gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: a.userId, isCreator: true },
+      { gameId, seat: 1, team: 2, userId: b.userId },
+      { gameId, seat: 2, team: 3, userId: c.userId },
+    ]);
+    await h.db.insert(h.schema.gameEvents).values({
+      gameId,
+      seq: 1,
+      type: 'GameConceded',
+      payload: { type: 'GameConceded', team: 3 }, // C conceded
+    });
+
+    // A's head-to-head: the no-winner concede is not a decided result for A, so
+    // A has zero recorded head-to-head games (B is excluded entirely).
+    const resA = await h.query('history.headToHead', undefined, a.cookie);
+    expect(resA.ok).toBe(true);
+    if (resA.ok) expect((resA.data as unknown[]).length).toBe(0);
+
+    // C conceded → a loss against each registered opponent (A and B).
+    const resC = await h.query('history.headToHead', undefined, c.cookie);
+    expect(resC.ok).toBe(true);
+    if (!resC.ok) return;
+    const dataC = resC.data as {
+      wins: number;
+      losses: number;
+      games: number;
+    }[];
+    expect(dataC).toHaveLength(2);
+    for (const row of dataC) {
+      expect(row).toMatchObject({ wins: 0, losses: 1, games: 1 });
+    }
+  });
 });
