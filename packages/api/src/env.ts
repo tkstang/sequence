@@ -28,11 +28,23 @@ export const envSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   // Trust the edge proxy's `X-Forwarded-For` when resolving `request.ip`.
-  // Railway (and most PaaS) terminate TLS at a trusted edge proxy, so this MUST
-  // be on in production for per-IP rate limiting to key on the real client.
-  // Off by default so a direct/non-proxied deploy cannot be spoofed via XFF;
-  // resolved per env below with a prod-sane default. Accepts `true`/`false`/`1`/`0`.
+  // Prefer a numeric hop count on Railway (`TRUST_PROXY=1`) so a client cannot
+  // spoof the leftmost XFF value if the edge appends instead of overwrites.
+  // `true` remains available for verified shared-domain/proxy topologies.
   TRUST_PROXY: z
+    .string()
+    .regex(/^(true|false|0|[1-9]\d*)$/)
+    .transform((v) => {
+      if (v === 'true') return true;
+      if (v === 'false' || v === '0') return false;
+      return Number(v);
+    })
+    .optional(),
+  // Cookie mode for Better Auth sessions and guest tokens. Production defaults
+  // to SameSite=None; Secure for cross-site Vercel -> Railway credentialed
+  // requests. Set `lax` only when web and API share one registrable site.
+  AUTH_COOKIE_SAME_SITE: z.enum(['lax', 'none']).optional(),
+  AUTH_COOKIE_SECURE: z
     .enum(['true', 'false', '1', '0'])
     .transform((v) => v === 'true' || v === '1')
     .optional(),

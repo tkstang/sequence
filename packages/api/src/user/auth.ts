@@ -4,6 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { type Database, createDb } from '../db/client.ts';
 import * as schema from '../db/schema/index.ts';
 import { type Env, getEnv } from '../env.ts';
+import { resolveAuthCookieAttributes } from './cookie-attributes.ts';
 
 /**
  * Build social-provider config, gated on env presence. A provider only
@@ -31,13 +32,14 @@ function socialProviders(env: Env): Record<string, unknown> {
  * Construct a Better Auth instance over the given Drizzle database.
  *
  * Self-hosted on our Fastify server (not Neon Auth) so session cookies live on
- * our origin — required for same-cookie-jar WS upgrade auth. Cookies are
- * httpOnly + sameSite=lax; `secure` is enabled outside development.
+ * our origin — required for same-cookie-jar WS upgrade auth.
  *
  * @param db - Drizzle database (production or a test branch).
  * @param env - validated environment.
  */
 export function createAuth(db: Database, env: Env = getEnv()) {
+  const cookieAttributes = resolveAuthCookieAttributes(env);
+
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
@@ -52,15 +54,9 @@ export function createAuth(db: Database, env: Env = getEnv()) {
     socialProviders: socialProviders(env),
     advanced: {
       defaultCookieAttributes: {
-        httpOnly: true,
-        // NOTE (p07 obligation, review I1): `SameSite=Lax` does not ride
-        // cross-site Vercel(web)->Railway(api) requests, so credentialed tRPC
-        // calls and the WS upgrade arrive anonymous in prod. The cross-site
-        // cookie strategy (SameSite=None;Secure, or a shared registrable
-        // domain) is decided in p07-t02/t03 where the deploy domains are known;
-        // local dev is same-site (localhost:3000<->3001) and unaffected.
-        sameSite: 'lax',
-        secure: env.NODE_ENV !== 'development',
+        httpOnly: cookieAttributes.httpOnly,
+        sameSite: cookieAttributes.sameSite,
+        secure: cookieAttributes.secure,
       },
     },
   });

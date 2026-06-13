@@ -17,6 +17,10 @@ import {
   router,
 } from '../trpc.ts';
 import { createAuth } from '../user/auth.ts';
+import {
+  resolveAuthCookieAttributes,
+  serializeGuestCookieAttributes,
+} from '../user/cookie-attributes.ts';
 import { acquireDbLock } from './db-lock.ts';
 
 /** The caller path carries no HTTP reply, so cookie-setting is a no-op. */
@@ -132,6 +136,9 @@ export async function createHarness(): Promise<Harness> {
   const lock = await acquireDbLock(env.DATABASE_URL);
   const { db, sql: client } = createDb(env.DATABASE_URL);
   const auth = createAuth(db, env);
+  const guestCookieAttributes = serializeGuestCookieAttributes(
+    resolveAuthCookieAttributes(env),
+  );
 
   const app = Fastify({ logger: false });
   app.get('/health', async () => ({ status: 'ok' }));
@@ -151,6 +158,7 @@ export async function createHarness(): Promise<Harness> {
         db,
         auth,
         guestSecret: env.BETTER_AUTH_SECRET,
+        guestCookieAttributes,
       }),
     },
   });
@@ -227,6 +235,7 @@ export async function createHarness(): Promise<Harness> {
           headers,
           ip: '127.0.0.1',
           guestSecret: env.BETTER_AUTH_SECRET,
+          guestCookieAttributes,
           setCookie: noopSetCookie,
         };
       });

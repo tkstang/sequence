@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p07-t01
+oat_current_task_id: p07-t02
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
-| Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
+| Phase 7: Deploy & handoff        | in_progress | 5     | 1/5       |
 
-**Total:** 68/73 tasks completed
+**Total:** 69/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -353,16 +353,32 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** pending
-**Started:** -
+**Status:** in_progress
+**Started:** 2026-06-13
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+p07-t01 local deploy artifacts are complete: API Dockerfile, Railway
+config-as-code, `.dockerignore`, production cookie strategy, and numeric
+trust-proxy support. The API image preserves the existing
+`node --experimental-transform-types` start path. Railway config uses the
+Dockerfile builder, predeploy `drizzle-kit migrate`, `/health` healthcheck,
+US East region, sleep disabled, and on-failure restart policy.
+
+**p07-t01 verification:** focused API config/join tests green (30 tests);
+root `pnpm typecheck`, `pnpm lint` (warnings only, pre-existing),
+`pnpm format:check`, and root `pnpm test` green (383 tests / 58 files);
+`docker build -f packages/api/Dockerfile -t sequence-api:p07 .` green;
+container booted against `DATABASE_URL_TEST` mapped to `DATABASE_URL` and
+served `/health`; Railway predeploy migration command passed against a
+disposable local Postgres. The same migrate command was also attempted against
+the existing Neon test branch and failed because that branch has been
+maintained with `drizzle-kit push` rather than migration history; production DB
+was not used.
 
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
-| p07-t01 | API Dockerfile + Railway config     | pending | -      |
+| p07-t01 | API Dockerfile + Railway config     | completed | `this` |
 | p07-t02 | Railway deploy                      | pending | -      |
 | p07-t03 | Vercel deploy                       | pending | -      |
 | p07-t04 | Production smoke + checks           | pending | -      |
@@ -524,10 +540,11 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t05/t08 | design.md §API ("context resolves … `{ user \| null, guest \| null }`") | Guest resolved into `ctx.guest` at context-build time | Guest identity is resolved **lazily in `gamePlayerProcedure`** (which knows the target `gameId`), not at context build; `ctx.guest` stays null in p03 | A guest token is game-scoped, so it can only be verified once the target game is known — that is the per-procedure `gameId` input, not the bare request. `gamePlayerProcedure` reads the `sequence_guest` cookie, verifies the token for the requested game, and matches the stored hash. `guestSecret` is threaded through context for testability. | implementation (shipped) | none — matches the game-scoped guest model; integration-tested |
 | p03-t08/t09 | plan.md p03-t08 ("reset via `drizzle-kit push` + truncate") | Per-run push + per-test truncate is sufficient for isolation | Added a **Postgres session advisory lock** held per integration test file, serializing the two integration files against the one shared test branch | The vitest **workspace** runner (root `pnpm test`) runs the API's integration files in parallel workers; both `TRUNCATE` shared Better Auth tables, so an unguarded interleave caused a nondeterministic FK failure (`linkAccount` 500) when run together. The per-project `fileParallelism:false` is not honored under the workspace; the advisory lock makes correctness independent of scheduling. | implementation (shipped) | none — root `pnpm test` is green and stable across repeated runs |
 | p03 review (M2) | implementation.md p03-t03 deviation row (covered only `user`-ref columns) | `games.rematch_of` left without a DB-level FK | Added a real self-FK `rematch_of REFERENCES games(id) ON DELETE SET NULL` (migration `0002_petite_sentinel.sql`) | `rematch_of` references the api-owned `games` table, so the Better-Auth migration-ordering rationale that justifies plain-text user refs does not apply; the p04-t12 expiry sweep could otherwise leave dangling pointers. Applied to the test branch (verified, no drift). | implementation (shipped) | none — supersedes the gap noted against the p03-t03 row |
-| p03 review (I1) | review p03 finding I1 (`SameSite=Lax` cross-site cookies) | — | **Deliberately deferred to p07** | The cross-site cookie strategy (SameSite=None;Secure vs shared registrable domain) depends on the deploy domains decided in p07-t02/t03; local/p03/p04 testing is same-site and unaffected. A code comment at `user/auth.ts` cookie config flags the p07 obligation. | review finding (open) | Address in p07-t02/t03 with a cross-origin credentialed smoke assertion |
+| p03 review (I1) | review p03 finding I1 (`SameSite=Lax` cross-site cookies) | Better Auth session cookie hard-coded `SameSite=Lax`; guest cookie same | Production defaults now resolve to `SameSite=None; Secure` for Better Auth session cookies and the `sequence_guest` cookie. Local dev remains `SameSite=Lax` / non-secure. `AUTH_COOKIE_SAME_SITE=lax` is an explicit escape hatch only for a shared-registrable-domain deploy; `AUTH_COOKIE_SECURE` can override secure handling. | p07 deploy target is Vercel(web) -> Railway(api), a cross-site credentialed flow; `Lax` would drop cookies on tRPC fetches and WS upgrades. Guest-token cookies need the same treatment as session cookies for anonymous invite players. | implementation (p07-t01) | p07-t03/t04 must still prove cross-origin signup/login and guest join against deployed URLs |
+| p03 review M3 / p07 dispatch | p03 re-review M3 (`TRUST_PROXY` boolean trusts leftmost XFF) | `TRUST_PROXY` parsed as boolean; production default was boolean `true` | `TRUST_PROXY` accepts booleans or numeric hop counts; production default is numeric `1`. `.env.example` documents `TRUST_PROXY=1` for Railway. | Fastify boolean trustProxy can trust a client-spoofable leftmost XFF value if Railway appends; one trusted hop is the safer Railway default while retaining explicit boolean override for verified topologies. | implementation (p07-t01) | p07-t04 should include a Railway forged-XFF/rate-limit spot check if public API URL is available |
 | p04-t01 | design.md §Data Models (`board` jsonb "100 cells `{chip?,lockedBy?}`"; `sequences` "team, cells, order"; `pending_choice`) | `board` as a 100-element array; `sequences` rows carry `order`; `pending_choice = {seat,runLength,cells}` | `board` serialized as a **sparse object keyed by position code** (`{ '1AC': {chip,lockedBy} }`); `sequences` carry `{id,team,cells}` (no `order` — `nextSequenceId` column tracks issue order); `pending_choice` expanded to `{seat,team,placed,cells,additionalRuns?}`; added `games.next_sequence_id` column + migration `0003`. The game-logic `Board` is a `Map<Position,BoardCell>` keyed by string codes — a sparse object round-trips it exactly (empty cells absent), whereas a dense 100-array would need a fixed position↔index map and stores empties. `pending_choice` shape follows the p02 I1 delta (`additionalRuns`). | implementation (shipped) | none — round-trip integration-tested; design §Data Models jsonb shapes could note the object-keyed board |
 | p04-t01 (infra) | plan.md p03 ("integration tests run … with `DATABASE_URL_TEST`") | `packages/api/vitest.config.ts` `loadEnv()` reads a package-local `.env` | Also loads the **monorepo-root** `.env` explicitly (`../../.env`) — the gitignored secrets live at root (worktree-init copies them there), so the package-local-only load left `DATABASE_URL_TEST` unset and every integration `describe` skipped. | Without this the entire p04 integration suite silently skipped. A package-local `.env` still wins if present. | implementation (shipped) | none |
-| p04-t09 (infra) | plan.md p03-t01 / package.json (`start: node src/server.ts`) | `node src/server.ts` runs the API at boot | `start`/`dev` use `node --experimental-transform-types` | Node 24's default strip-only TS mode cannot run **constructor parameter properties** (used by `TimerService`, `PresenceTracker`, `VersionConflictError`); `--experimental-transform-types` transpiles them. Verified by booting the server for the Bruno run. | implementation (shipped) | p07 Dockerfile must use the same flag (or a build step) for the prod boot |
+| p04-t09 (infra) | plan.md p03-t01 / package.json (`start: node src/server.ts`) | `node src/server.ts` runs the API at boot | `start`/`dev` use `node --experimental-transform-types`; p07 Dockerfile starts the API through `pnpm --filter @sequence/api start`, preserving the same flag | Node 24's default strip-only TS mode cannot run **constructor parameter properties** (used by `TimerService`, `PresenceTracker`, `VersionConflictError`); `--experimental-transform-types` transpiles them. Verified by booting the server for the Bruno run and by p07 container `/health`. | implementation (shipped) | none |
 | p04-t14 (infra) | plan.md p03-t08 deviation (advisory lock serializes integration files) | The per-file Postgres advisory lock is sufficient under the workspace runner | Pinned the api vitest project to a **single fork** (`poolOptions.forks.singleFork`) + raised `hookTimeout` to 120s | With 14+ integration files now (vs p03's 2) plus the ~120s full-game e2e holding the advisory lock, queued harness `beforeAll`s (drizzle-push + boot) starved past the 60s hook timeout under the workspace's parallel workers, crashing `afterAll` on an undefined harness. A single fork makes the project's `fileParallelism:false` real; the advisory lock is now belt-and-suspenders. game-logic/web keep parallel pools. | implementation (shipped) | none — root `pnpm test` green (258 tests / 35 files) |
 | p04 review (Critical) | design.md §API (move inputs require `version`) / §Error Handling (recovery snapshot) | No client read path exposed `version` (snapshot/queries/broadcasts all omitted it) — makeMove uncallable over pure tRPC | **Design delta: `version` is now a client-facing field.** `GameSnapshot` carries the current `version`; the move engine + start-game stamp the post-commit `version` onto every broadcast event (global per-game, never redacted). A client reads it from the recovery snapshot and keeps it current from the live stream — no privileged DB read. `start-game` also returns `version`. | review finding (closed) — implementation is source of truth | design.md §API/§Error Handling should note `version` on the snapshot + event envelope; the full-game e2e now drives version blind (no DB reads) and bruno `game` has create-local + make-move |
 | p04 review (Important) | design.md §Data Flow (only the move engine version-guards `games`) | concede/saveAndExit/presence freeze+resume wrote `games.status` with no version predicate or bump | All lifecycle status writes route through new `persistLifecycleTransition` (same optimistic-concurrency predicate as `persistGameState`: `WHERE version=prev`, bump to `prev+1`, zero-row → CONFLICT). A concurrent move can no longer revert a concede/save/freeze (and vice-versa). | review finding (closed) — shipped | Race-tested (concede vs move: exactly one linearizes) |
@@ -555,7 +572,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | -         | -      | -      | -        |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres | 30 focused + 383 root + Docker/migrate/health | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
 
 ## Final Summary (for PR/docs)
 

@@ -47,14 +47,17 @@ describe('parseEnv', () => {
     expect(env.TRUST_PROXY).toBeUndefined();
   });
 
-  it('parses TRUST_PROXY truthy/falsey strings to a boolean', () => {
+  it('parses TRUST_PROXY strings to booleans or numeric hop counts', () => {
     expect(
       parseEnv({ ...base, TRUST_PROXY: 'true' } as NodeJS.ProcessEnv)
         .TRUST_PROXY,
     ).toBe(true);
     expect(
       parseEnv({ ...base, TRUST_PROXY: '1' } as NodeJS.ProcessEnv).TRUST_PROXY,
-    ).toBe(true);
+    ).toBe(1);
+    expect(
+      parseEnv({ ...base, TRUST_PROXY: '2' } as NodeJS.ProcessEnv).TRUST_PROXY,
+    ).toBe(2);
     expect(
       parseEnv({ ...base, TRUST_PROXY: 'false' } as NodeJS.ProcessEnv)
         .TRUST_PROXY,
@@ -64,6 +67,25 @@ describe('parseEnv', () => {
     ).toBe(false);
   });
 
+  it('rejects unsupported TRUST_PROXY values', () => {
+    expect(() =>
+      parseEnv({ ...base, TRUST_PROXY: '-1' } as NodeJS.ProcessEnv),
+    ).toThrow(/TRUST_PROXY/);
+    expect(() =>
+      parseEnv({ ...base, TRUST_PROXY: 'yes' } as NodeJS.ProcessEnv),
+    ).toThrow(/TRUST_PROXY/);
+  });
+
+  it('parses deploy cookie overrides', () => {
+    const env = parseEnv({
+      ...base,
+      AUTH_COOKIE_SAME_SITE: 'none',
+      AUTH_COOKIE_SECURE: 'true',
+    } as NodeJS.ProcessEnv);
+    expect(env.AUTH_COOKIE_SAME_SITE).toBe('none');
+    expect(env.AUTH_COOKIE_SECURE).toBe(true);
+  });
+
   it('accepts a valid full environment', () => {
     const env = parseEnv({
       ...base,
@@ -71,10 +93,12 @@ describe('parseEnv', () => {
       WEB_ORIGIN: 'https://example.com',
       BETTER_AUTH_URL: 'https://api.example.com',
       DATABASE_URL_TEST: 'postgresql://user:pass@localhost:5432/test',
+      TRUST_PROXY: '1',
     } as NodeJS.ProcessEnv);
     expect(env.DATABASE_URL_TEST).toBe(
       'postgresql://user:pass@localhost:5432/test',
     );
     expect(env.WEB_ORIGIN).toBe('https://example.com');
+    expect(env.TRUST_PROXY).toBe(1);
   });
 });

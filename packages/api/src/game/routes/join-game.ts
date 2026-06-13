@@ -145,10 +145,10 @@ export function buildJoinRoute(limiter: RateLimiter) {
 
       const guestToken = 'token' in result ? result.token : undefined;
       if (typeof guestToken === 'string') {
-        // httpOnly, game-scoped cookie. SameSite/secure are finalized at deploy
-        // (p07); same-site for local/test. The raw token lives only here.
+        // httpOnly, game-scoped cookie. Same attributes as Better Auth session
+        // cookies so guest WS upgrades work in cross-site production deploys.
         ctx.setCookie(
-          `${GUEST_COOKIE_NAME}=${encodeURIComponent(guestToken)}; Path=/; HttpOnly; SameSite=Lax`,
+          `${GUEST_COOKIE_NAME}=${encodeURIComponent(guestToken)}; ${ctx.guestCookieAttributes}`,
         );
       }
       publishAppendedEvents(rooms, result.gameId, result.appended);

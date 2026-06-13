@@ -21,6 +21,10 @@ import { TimerService } from './game/TimerService.ts';
 import { rooms } from './shared/realtime/rooms.ts';
 import { createContextFactory } from './trpc.ts';
 import { type Auth, createAuth } from './user/auth.ts';
+import {
+  resolveAuthCookieAttributes,
+  serializeGuestCookieAttributes,
+} from './user/cookie-attributes.ts';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -56,12 +60,10 @@ export async function buildServer(
   const db = options.db ?? createDb(env.DATABASE_URL).db;
   const auth = options.auth ?? createAuth(db, env);
 
-  // Resolve client IPs from the edge proxy's `X-Forwarded-For`. Railway sits
-  // behind a trusted edge proxy, so without this `request.ip` is the proxy
-  // address and per-IP rate limiting collapses to one shared bucket. Env-gated
-  // (`TRUST_PROXY`); defaults on in production, off elsewhere so a direct,
-  // non-proxied deploy is not spoofable via a forged XFF header.
-  const trustProxy = env.TRUST_PROXY ?? env.NODE_ENV === 'production';
+  const trustProxy = resolveTrustProxy(env);
+  const guestCookieAttributes = serializeGuestCookieAttributes(
+    resolveAuthCookieAttributes(env),
+  );
 
   const app = Fastify({
     // Pino is Fastify's built-in logger. No hands/deck/PII ever logged.
@@ -140,6 +142,7 @@ export async function buildServer(
       db,
       auth,
       guestSecret: env.BETTER_AUTH_SECRET,
+      guestCookieAttributes,
     }),
     // ~20s ping satisfies tRPC liveness and neutralizes Railway WS idle drops.
     keepAlive: { enabled: true, pingMs: 20_000, pongWaitMs: 5_000 },
@@ -199,6 +202,17 @@ export async function buildServer(
   });
 
   return app;
+}
+
+/**
+ * Fastify trustProxy policy for deployed and local environments.
+ *
+ * Railway production defaults to one trusted edge hop. A boolean `true` trusts
+ * every XFF hop and can key rate limits on a spoofed leftmost value when an edge
+ * appends, so operators should only set it after verifying proxy behavior.
+ */
+export function resolveTrustProxy(env: Env): boolean | number {
+  return env.TRUST_PROXY ?? (env.NODE_ENV === 'production' ? 1 : false);
 }
 
 /**

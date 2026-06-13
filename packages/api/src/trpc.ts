@@ -47,6 +47,8 @@ export interface Context {
   ip: string;
   /** HMAC secret for verifying guest tokens (the app's `BETTER_AUTH_SECRET`). */
   guestSecret: string;
+  /** Serialized attributes for guest-token cookies. */
+  guestCookieAttributes: string;
   /**
    * Append a `Set-Cookie` header on the HTTP response (used by `join` to issue
    * the game-scoped guest cookie). A no-op on the WS transport (no reply
@@ -60,6 +62,8 @@ export interface CreateContextDeps {
   auth: Auth;
   /** Defaults to `env.BETTER_AUTH_SECRET`. */
   guestSecret: string;
+  /** Serialized attributes for guest-token cookies. */
+  guestCookieAttributes: string;
 }
 
 /**
@@ -73,6 +77,7 @@ export function createContextFactory({
   db,
   auth,
   guestSecret,
+  guestCookieAttributes,
 }: CreateContextDeps) {
   return async function createContext({
     req,
@@ -113,6 +118,7 @@ export function createContextFactory({
       headers,
       ip,
       guestSecret,
+      guestCookieAttributes,
       setCookie,
     };
   };
