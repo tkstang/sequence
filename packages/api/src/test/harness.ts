@@ -19,6 +19,11 @@ import {
 import { createAuth } from '../user/auth.ts';
 import { acquireDbLock } from './db-lock.ts';
 
+/** The caller path carries no HTTP reply, so cookie-setting is a no-op. */
+function noopSetCookie(): void {
+  /* no-op: the caller path doesn't carry an HTTP reply */
+}
+
 /**
  * Integration-test harness.
  *
@@ -214,9 +219,6 @@ export async function createHarness(): Promise<Harness> {
               name: session.user.name,
             }
           : null;
-        const setCookie = (): void => {
-          /* no-op: the caller path doesn't carry an HTTP reply */
-        };
         return {
           user,
           guest: null,
@@ -225,7 +227,7 @@ export async function createHarness(): Promise<Harness> {
           headers,
           ip: '127.0.0.1',
           guestSecret: env.BETTER_AUTH_SECRET,
-          setCookie,
+          setCookie: noopSetCookie,
         };
       });
     },
