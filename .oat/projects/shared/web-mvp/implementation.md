@@ -31,7 +31,7 @@ oat_generated: false
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
-| Phase 6: Game UI                 | completed (review fixes applied; awaiting re-review) | 13 | 13/13 |
+| Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
 **Total:** 68/73 tasks completed
@@ -296,7 +296,7 @@ Lifecycle-broadcast version stamping remains deferred to p06.
 
 ## Phase 6: Game UI (p06)
 
-**Status:** completed (review fixes applied; awaiting re-review)
+**Status:** complete — review passed (`reviews/p06-review-2026-06-13.md`, fail -> fixes -> re-review pass)
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -379,6 +379,39 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 3 — 2026-06-13 05:49
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 executed, 1 passed, 0 failed, 0 stopped (p07 pending)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p06   | DONE_WITH_CONCERNS (advisory only) | fail -> pass (re-review) | 1/2 | sequential on-branch; fixes closed lifecycle controls, browser coverage, 6p randomize, replay version recovery, and concede attribution |
+
+#### Parallel Groups
+
+- p06: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p06 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Dispatch: p06 review effort_axis=selected:xhigh via Codex `oat-reviewer-xhigh`; initial verdict fail.
+- Dispatch: p06 fix effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Dispatch: p06 re-review effort_axis=selected:xhigh via Codex `oat-reviewer-xhigh`; verdict pass.
+
+#### Outstanding Items
+
+- **Verification reliability:** root `pnpm test` remains vulnerable to a transient Neon `CONNECTION_ENDED` timeout in the API full-game e2e; the isolated rerun passed and p06-focused verification passed.
+- **Carried to p07 (deploy bucket):** I1 — SameSite=Lax breaks cross-site prod auth; M3 — boolean trustProxy keys on leftmost XFF; p07 should decide cookie/domain strategy and verify Railway forwarded-IP behavior.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 2 — 2026-06-13 02:55
 

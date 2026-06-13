@@ -1,6 +1,6 @@
 ---
-oat_current_task: p06-t01
-oat_last_commit: 412f97d
+oat_current_task: p07-t01
+oat_last_commit: 66312d6
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,7 +27,7 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-13T02:55:26.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-13T05:49:02.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -39,7 +39,7 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — **in progress** (Run 1/2, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p05 complete (all reviews passed; p04 and p05 after 1 fix iteration). Current task: p06-t01.
+Implementation — **in progress** (Run 1/3, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p06 complete (all reviews passed; p04, p05, and p06 after 1 fix iteration). Current task: p07-t01.
 
 ## Artifacts
 
@@ -55,7 +55,7 @@ Implementation — **in progress** (Run 1/2, Tier 1 subagents). 7 phases / 73 ta
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
 - ✓ Plan complete (73 tasks; artifact review passed)
-- ⧗ Implementation in progress (55/73 tasks; p01-p05 ✓ reviewed; current: p06-t01)
+- ⧗ Implementation in progress (68/73 tasks; p01-p06 ✓ reviewed; current: p07-t01)
 
 ## Blockers
 
@@ -63,4 +63,4 @@ None
 
 ## Next Milestone
 
-p06 (game UI, 13 tasks) → p07. HiLL pause + auto lifecycle review after p07.
+p07 (deploy & handoff, 5 tasks). HiLL pause + auto lifecycle review after p07.
