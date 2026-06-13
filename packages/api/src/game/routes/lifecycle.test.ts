@@ -91,7 +91,11 @@ describeIntegration('save / concede / myGames (integration)', () => {
 
   it('saveAndExit moves the game to saved with a 1-week expiry', async () => {
     const { host, gameId } = await activeGame();
-    const res = await h.mutate('game.saveAndExit', { gameId }, host.cookie);
+    const res = await h.mutate(
+      'game.saveAndExit',
+      { gameId, version: 2 },
+      host.cookie,
+    );
     expect(res.ok).toBe(true);
     const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
     expect(row?.status).toBe('saved');
@@ -103,14 +107,22 @@ describeIntegration('save / concede / myGames (integration)', () => {
 
   it('a non-local game with a guest seat cannot be saved (FR10)', async () => {
     const { host, gameId } = await activeGame({ guestSeat: true });
-    const res = await h.mutate('game.saveAndExit', { gameId }, host.cookie);
+    const res = await h.mutate(
+      'game.saveAndExit',
+      { gameId, version: 2 },
+      host.cookie,
+    );
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('BAD_REQUEST');
   });
 
   it('a local game CAN be saved even with a named opponent (FR16)', async () => {
     const { host, gameId } = await activeGame({ guestSeat: true, local: true });
-    const res = await h.mutate('game.saveAndExit', { gameId }, host.cookie);
+    const res = await h.mutate(
+      'game.saveAndExit',
+      { gameId, version: 2 },
+      host.cookie,
+    );
     expect(res.ok).toBe(true);
     const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
     expect(row?.status).toBe('saved');
@@ -163,7 +175,7 @@ describeIntegration('save / concede / myGames (integration)', () => {
         { gameId, version: 1, move: { type: 'place', ...move } },
         host.cookie,
       ),
-      h.mutate('game.concede', { gameId }, joiner!.cookie),
+      h.mutate('game.concede', { gameId, version: 1 }, joiner!.cookie),
     ]);
 
     const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
@@ -190,7 +202,11 @@ describeIntegration('save / concede / myGames (integration)', () => {
   it('concede finishes the game, records the loss, and sets the other team winner', async () => {
     const { joiner, gameId } = await activeGame();
     // Seat 1 (team 2) concedes → team 1 wins.
-    const res = await h.mutate('game.concede', { gameId }, joiner!.cookie);
+    const res = await h.mutate(
+      'game.concede',
+      { gameId, version: 2 },
+      joiner!.cookie,
+    );
     expect(res.ok).toBe(true);
     const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
     expect(row?.status).toBe('finished');
@@ -203,7 +219,11 @@ describeIntegration('save / concede / myGames (integration)', () => {
     const { joiner, gameId } = await activeGame();
     const { sub, unsubscribe } = rooms.subscribe(gameId);
 
-    const res = await h.mutate('game.concede', { gameId }, joiner!.cookie);
+    const res = await h.mutate(
+      'game.concede',
+      { gameId, version: 2 },
+      joiner!.cookie,
+    );
     expect(res.ok).toBe(true);
 
     const event = await Promise.race([

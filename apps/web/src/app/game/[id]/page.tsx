@@ -377,8 +377,12 @@ function GameRoutePlaceholder({
         <ActiveGameControls
           isSaving={saveAndExit.isPending}
           isConceding={concede.isPending}
-          onSaveAndExit={() => saveAndExit.mutate({ gameId: state.gameId })}
-          onConcede={() => concede.mutate({ gameId: state.gameId })}
+          onSaveAndExit={() =>
+            saveAndExit.mutate({ gameId: state.gameId, version: state.version })
+          }
+          onConcede={() =>
+            concede.mutate({ gameId: state.gameId, version: state.version })
+          }
         />
       ) : null}
 

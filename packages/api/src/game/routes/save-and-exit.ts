@@ -24,7 +24,12 @@ const SAVED_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
  * FR10). LOCAL games CAN save — the creator's account owns persistence (FR16).
  */
 export const saveAndExitRoute = gamePlayerProcedure
-  .input(z.object({ gameId: z.string().uuid() }))
+  .input(
+    z.object({
+      gameId: z.string().uuid(),
+      version: z.number().int().nonnegative(),
+    }),
+  )
   .mutation(async ({ ctx, input }) => {
     try {
       const result = await ctx.db.transaction(async (tx) => {
@@ -60,7 +65,7 @@ export const saveAndExitRoute = gamePlayerProcedure
         const version = await persistLifecycleTransition(
           tx,
           input.gameId,
-          game.version,
+          input.version,
           {
             status: 'saved',
             expiresAt: new Date(Date.now() + SAVED_EXPIRY_MS),

@@ -24,7 +24,12 @@ import {
  * (`winner_team` stays null — the conceding team simply loses). Broadcasts.
  */
 export const concedeRoute = gamePlayerProcedure
-  .input(z.object({ gameId: z.string().uuid() }))
+  .input(
+    z.object({
+      gameId: z.string().uuid(),
+      version: z.number().int().nonnegative(),
+    }),
+  )
   .mutation(async ({ ctx, input }) => {
     const concedingTeam = ctx.seat.team;
 
@@ -59,7 +64,7 @@ export const concedeRoute = gamePlayerProcedure
         const version = await persistLifecycleTransition(
           tx,
           input.gameId,
-          game.version,
+          input.version,
           {
             status: 'finished',
             endReason: 'concede',
