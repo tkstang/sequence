@@ -22,7 +22,12 @@ import type { Database } from '../db/client.ts';
 import { gamePlayers } from '../db/schema/game-players.ts';
 import { games } from '../db/schema/games.ts';
 import type { RoomRegistry } from '../shared/realtime/rooms.ts';
-import { type AppendedEvent, appendEvents } from './state-mapping.ts';
+import {
+  type AppendedEvent,
+  appendEvents,
+  persistLifecycleTransition,
+  VersionConflictError,
+} from './state-mapping.ts';
 import type { TimerService } from './TimerService.ts';
 
 const FROZEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
@@ -84,27 +89,37 @@ export class PresenceTracker {
       .where(and(eq(gamePlayers.gameId, gameId), eq(gamePlayers.seat, seat)));
 
     const [game] = await this.deps.db
-      .select({ status: games.status })
+      .select({ status: games.status, version: games.version })
       .from(games)
       .where(eq(games.id, gameId))
       .limit(1);
     if (!game) return;
 
     // Only an active game freezes on a drop (a saved/frozen game stays put).
-    if (game.status === 'active' && canTransition('active', 'frozen')) {
-      await this.deps.timers.pause(gameId);
-      await this.deps.db
-        .update(games)
-        .set({
+    if (game.status !== 'active' || !canTransition('active', 'frozen')) return;
+
+    // Freeze under the version guard in one transaction with the event append:
+    // if a move committed concurrently (bumping the version), the freeze loses
+    // cleanly rather than clobbering the move's row. The next heartbeat lapse
+    // re-evaluates, so a genuinely-departed player still freezes the game.
+    let appended: AppendedEvent[];
+    try {
+      appended = await this.deps.db.transaction(async (tx) => {
+        await persistLifecycleTransition(tx, gameId, game.version, {
           status: 'frozen',
           expiresAt: new Date(this.now() + FROZEN_EXPIRY_MS),
-        })
-        .where(eq(games.id, gameId));
-      const appended = await this.deps.db.transaction((tx) =>
-        appendEvents(tx, gameId, [{ type: 'PlayerDisconnected', seat }]),
-      );
-      this.publishAppended(gameId, appended);
+        });
+        return appendEvents(tx, gameId, [{ type: 'PlayerDisconnected', seat }]);
+      });
+    } catch (err) {
+      if (err instanceof VersionConflictError) return; // a move won the race
+      throw err;
     }
+
+    // Pause the timer only after the freeze commits (so a lost race doesn't
+    // leave a paused timer on a still-active game).
+    await this.deps.timers.pause(gameId);
+    this.publishAppended(gameId, appended);
   }
 
   /**
@@ -134,14 +149,12 @@ export class PresenceTracker {
 
     if (!canTransition(game.status, 'active')) return;
 
-    await this.deps.db
-      .update(games)
-      .set({ status: 'active', expiresAt: null })
-      .where(eq(games.id, gameId));
-
-    // Resume the (paused) timer from its stored remainder.
-    await this.deps.timers.resume(gameId, game.version);
-
+    // Resume under the version guard, in one transaction with the event append.
+    // A frozen/saved game has no concurrent move writer, but guarding keeps the
+    // lifecycle writes uniform with the move protocol and bumps the version that
+    // the resumed timer arms against.
+    let resumedVersion: number;
+    let appended: AppendedEvent[];
     const events =
       game.timerSeconds !== null
         ? ([
@@ -149,9 +162,28 @@ export class PresenceTracker {
             { type: 'TimerResumed' as const },
           ] as const)
         : ([{ type: 'PlayerReconnected' as const }] as const);
-    const appended = await this.deps.db.transaction((tx) =>
-      appendEvents(tx, gameId, [...events]),
-    );
+    try {
+      const result = await this.deps.db.transaction(async (tx) => {
+        const nextVersion = await persistLifecycleTransition(
+          tx,
+          gameId,
+          game.version,
+          { status: 'active', expiresAt: null },
+        );
+        const rows = await appendEvents(tx, gameId, [...events]);
+        return { nextVersion, rows };
+      });
+      resumedVersion = result.nextVersion;
+      appended = result.rows;
+    } catch (err) {
+      if (err instanceof VersionConflictError) return; // racing write won
+      throw err;
+    }
+
+    // Resume the (paused) timer from its stored remainder, armed on the new
+    // post-resume version so a forfeit guards against the right row.
+    await this.deps.timers.resume(gameId, resumedVersion);
+
     this.publishAppended(gameId, appended);
   }
 

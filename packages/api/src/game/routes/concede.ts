@@ -7,7 +7,11 @@ import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
-import { appendEvents } from '../state-mapping.ts';
+import {
+  appendEvents,
+  persistLifecycleTransition,
+  VersionConflictError,
+} from '../state-mapping.ts';
 
 /**
  * `game.concede(gameId)` — any participant may concede (FR11).
@@ -22,45 +26,53 @@ export const concedeRoute = gamePlayerProcedure
   .mutation(async ({ ctx, input }) => {
     const concedingTeam = ctx.seat.team;
 
-    const appended = await ctx.db.transaction(async (tx) => {
-      const [game] = await tx
-        .select()
-        .from(games)
-        .where(eq(games.id, input.gameId))
-        .limit(1);
-      if (!game) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (!canTransition(game.status, 'finished')) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: `cannot concede from ${game.status}`,
-        });
-      }
+    let appended;
+    try {
+      appended = await ctx.db.transaction(async (tx) => {
+        const [game] = await tx
+          .select()
+          .from(games)
+          .where(eq(games.id, input.gameId))
+          .limit(1);
+        if (!game) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (!canTransition(game.status, 'finished')) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `cannot concede from ${game.status}`,
+          });
+        }
 
-      // The distinct teams in the game; a single other team wins (2-team only).
-      const teamRows = await tx
-        .select({ team: gamePlayers.team })
-        .from(gamePlayers)
-        .where(eq(gamePlayers.gameId, input.gameId));
-      const teams = [...new Set(teamRows.map((r) => r.team))];
-      const others = teams.filter((t) => t !== concedingTeam);
-      const winnerTeam = others.length === 1 ? others[0]! : null;
+        // The distinct teams in the game; a single other team wins (2-team only).
+        const teamRows = await tx
+          .select({ team: gamePlayers.team })
+          .from(gamePlayers)
+          .where(eq(gamePlayers.gameId, input.gameId));
+        const teams = [...new Set(teamRows.map((r) => r.team))];
+        const others = teams.filter((t) => t !== concedingTeam);
+        const winnerTeam = others.length === 1 ? others[0]! : null;
 
-      await tx
-        .update(games)
-        .set({
+        // Version-guarded: a concurrently-committed move bumped the version and
+        // makes this transition lose cleanly as CONFLICT (and vice-versa), so a
+        // concede can never be silently reverted by a racing move.
+        await persistLifecycleTransition(tx, input.gameId, game.version, {
           status: 'finished',
           endReason: 'concede',
           winnerTeam,
           finishedAt: new Date(),
-        })
-        .where(eq(games.id, input.gameId));
+        });
 
-      const events: { type: string; team?: number }[] = [
-        { type: 'GameConceded', team: concedingTeam },
-      ];
-      if (winnerTeam) events.push({ type: 'GameWon', team: winnerTeam });
-      return appendEvents(tx, input.gameId, events);
-    });
+        const events: { type: string; team?: number }[] = [
+          { type: 'GameConceded', team: concedingTeam },
+        ];
+        if (winnerTeam) events.push({ type: 'GameWon', team: winnerTeam });
+        return appendEvents(tx, input.gameId, events);
+      });
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+      }
+      throw err;
+    }
 
     for (const ev of appended) {
       rooms.publish(input.gameId, {

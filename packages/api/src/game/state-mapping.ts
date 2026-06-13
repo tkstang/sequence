@@ -246,6 +246,41 @@ export async function persistGameState(
 }
 
 // ---------------------------------------------------------------------------
+// Version-guarded lifecycle transitions
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply a status/lifecycle write to the `games` row under the SAME
+ * optimistic-concurrency version guard the move engine uses: the UPDATE only
+ * matches when `version === prevVersion`, and it bumps `version` to
+ * `prevVersion + 1`. A concurrent committed move (which already bumped the
+ * version) makes this match zero rows → {@link VersionConflictError}, so a
+ * concede / save / freeze / resume can never be silently clobbered by — or
+ * silently clobber — a racing move. Returns the new version.
+ *
+ * `set` carries the lifecycle-specific columns (status, endReason, winnerTeam,
+ * expiresAt, finishedAt, …); `version` + `updatedAt` are applied here.
+ */
+export async function persistLifecycleTransition(
+  tx: Tx,
+  gameId: string,
+  prevVersion: number,
+  set: Partial<typeof games.$inferInsert>,
+): Promise<number> {
+  const nextVersion = prevVersion + 1;
+  const updated = await tx
+    .update(games)
+    .set({ ...set, version: nextVersion, updatedAt: new Date() })
+    .where(and(eq(games.id, gameId), eq(games.version, prevVersion)))
+    .returning({ id: games.id });
+
+  if (updated.length === 0) {
+    throw new VersionConflictError(prevVersion, gameId);
+  }
+  return nextVersion;
+}
+
+// ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
 
