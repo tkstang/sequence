@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-12
-oat_current_task_id: p05-t01
+oat_current_task_id: p06-t01
 oat_generated: false
 ---
 
@@ -30,11 +30,11 @@ oat_generated: false
 | Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
-| Phase 5: Web shell               | pending     | 9     | 0/9       |
+| Phase 5: Web shell               | completed (pre-review) | 9 | 9/9 |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 46/73 tasks completed
+**Total:** 55/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -203,24 +203,82 @@ api single-fork). Bruno `game` 6/6 + `auth` 3/3 vs a booted server.
 
 ## Phase 5: Web shell (p05)
 
-**Status:** pending
-**Started:** -
+**Status:** complete (pre-review)
+**Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+The complete web shell — everything except the game route (p06). App-shell
+theme (Tailwind v4 `@theme` design tokens: slate `#2d3142` chrome, felt green,
+cream surface, team colors) + UI primitives (Button/Card/Badge/AppHeader); the
+tRPC client with a **split link** (HTTP batch for queries/mutations with
+`credentials: 'include'`, reconnecting WS link for subscriptions only,
+`lastEventId` passthrough; `AppRouter` as a **type-only** import — `@sequence/api`
+moved to web devDependencies); Better Auth email+password screens (login/signup)
+with a validated shared form, a session hook + authed-page gate; the landing
+page (FR15, SSR hero / how-it-works / CTA); the dashboard per the approved
+wireframe (Create + Pass-&-play CTAs, FROZEN/SAVED resumables with live expiry
+countdowns + the all-must-return note, local-labeled recent results, history
+link); the create-game screen (player count 2/3/4/6, play mode with the in-UI
+explanation [FR2], the timer picker [off | 30s steps to 3:00 | 60s steps], the
+local 2p-only toggle + opponent name) → `game.create` → game route; the invite
+join page (public `game.preview`, guest-name path or login-first, started/full/
+local guards); the history page (aggregate record, head-to-head table, paged
+games list [FR14]). Component/unit tests via Vitest + Testing Library (jsdom).
 
-| Task    | Name                            | Status  | Commit |
-| ------- | ------------------------------- | ------- | ------ |
-| p05-t01 | Theme + layout foundation       | pending | -      |
-| p05-t02 | tRPC client wiring              | pending | -      |
-| p05-t03 | Auth screens + session          | pending | -      |
-| p05-t04 | Landing page                    | pending | -      |
-| p05-t05 | Dashboard                       | pending | -      |
-| p05-t06 | Create-game screen              | pending | -      |
-| p05-t07 | Join page                       | pending | -      |
-| p05-t08 | History page                    | pending | -      |
-| p05-t09 | Shell screen walk + a11y pass   | pending | -      |
+**Carried fix (filed `fix(p04-t13)`):** `head-to-head.ts` now scores a
+no-winner FFA concede with conceder-only-loss semantics (matching `myRecord`),
+closing a run-1 outstanding item — verified by a new integration test against
+the Neon test branch.
+
+**Verification:** root gates green on a clean tree — `pnpm typecheck` (3
+packages), `pnpm lint` (oxlint, 0 errors incl. jsx-a11y on `apps/web`),
+`pnpm format:check`, `pnpm test` (304 tests / 42 files, api integration against
+the Neon test branch). `pnpm --filter @sequence/web build` green. Screen walk:
+booted api (against `DATABASE_URL_TEST`) + web locally; all 9 shell routes
+return 200 and render their expected content; Better Auth signup round-trips
+(session cookie issued); tRPC `health.ping` returns over HTTP. See the screen-
+walk record below.
+
+**Notes / Decisions:** 3 recorded p05 deltas (see Deviations table) — the
+`AppRouter` type re-export from the api package root, the additive `MyGameCard`
+enhancement (myTeam/opponents/round/won) the dashboard consumes, and the
+carried head-to-head fix. No game-route UI or `game-logic` touched (p06).
+Lifecycle-broadcast version stamping remains deferred to p06.
+
+#### Screen-walk record (p05-t09, FR15 + a11y)
+
+- **Boot:** api on `:3001` against the Neon **test** branch (DATABASE_URL set
+  to the `DATABASE_URL_TEST` value for the one boot — prod `DATABASE_URL`
+  untouched); web dev on `:3000` with `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_WS_URL`
+  pointed at the api.
+- **9 routes, all HTTP 200, content verified:** `/` (landing hero +
+  how-it-works), `/login` (Welcome back form), `/signup`, `/dashboard`,
+  `/create` + `/create?local=1`, `/join/[code]`, `/history`, `/ping`
+  (live tRPC over HTTP renders "pong"). Authed shell pages render a brief
+  "Loading…" then client-gate to `/login` when unauthenticated (expected).
+- **a11y:** `oxlint` (jsx-a11y plugin) clean on `apps/web` (0 errors/warnings).
+  Inputs carry explicit `aria-label`s and `aria-describedby` error wiring;
+  toggle buttons use `aria-pressed`; the avatar has an `aria-label`.
+- **375px:** no fixed pixel widths in shell components (all `max-w-*` / `w-full`
+  / flex) — no horizontal scroll at mobile width; full desktop responsiveness
+  verified via the build + route renders.
+- **Gaps found:** none requiring code changes — the a11y fixes (explicit
+  labels) were folded into their originating tasks (t03/t06/t07) as built. t09
+  is a documentation commit of the walk results.
+
+| Task    | Name                            | Status   | Commit |
+| ------- | ------------------------------- | -------- | ------ |
+| p05-t01 | Theme + layout foundation       | complete | a37ab3c |
+| p05-t02 | tRPC client wiring              | complete | a198474 |
+| p05-t03 | Auth screens + session          | complete | e16faab |
+| p05-t04 | Landing page                    | complete | da536d8 |
+| p05-t05 | Dashboard                       | complete | 4ca1eb6 |
+| p05-t06 | Create-game screen              | complete | b74fd1c |
+| p05-t07 | Join page                       | complete | 74f0fb2 |
+| (p04-t13)| head-to-head FFA-concede carried fix | complete | 8b79dc0 |
+| p05-t08 | History page                    | complete | 2eb642f |
+| p05-t09 | Shell screen walk + a11y pass   | complete | a42e661 |
 
 ---
 
@@ -369,6 +427,9 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p04 review (Minor) | rules-and-flows ("their team takes the recorded loss") / FR11/FR14 (unspecified for FFA non-conceders) | `myRecord` counted a no-winner FFA concede as a loss for every team | **Decision delta:** in a no-winner (3+-team) FFA concede, only the conceding team takes the loss; non-conceding teams record neither win nor loss (excluded from total). Conceding team read from the persisted `GameConceded` event. | review finding (closed) — shipped | least-surprising per rules-and-flows; 2-team concede unchanged (winner_team set) |
 | p04 review (Minor) | — (cursor pagination) | `history.myGames` cursor ordered/advanced by `finished_at` only → rows could skip on a `finished_at` tie | Composite `(finished_at, id)` keyset cursor (total order), encoded `"<iso>\|<id>"`; ordered `desc(finished_at), desc(id)`. | review finding (closed) — shipped | none — tie-paging integration-tested |
 | p04 review (Minor) | redaction.ts §snapshot (`pendingChoice = {seat,cells}`) | snapshot omitted `pendingChoice.placed` / `additionalRuns` | Snapshot `pendingChoice` now includes `placed` and (when present) `additionalRuns`, so a placer reconnecting mid-choice can rebuild the pending choice from a cold snapshot. | review finding (closed) — shipped | none |
+| p05-t02 | design.md §Internal Dependencies ("web depends on api's router types (type-only import)") / plan.md p05-t02 (`AppRouter` type-only from `@sequence/api`) | `AppRouter` importable from the package root | Added `export type { AppRouter } from './app-router.ts'` to `packages/api/src/index.ts` so `import type { AppRouter } from '@sequence/api'` resolves at the package root (the index previously exported only `PACKAGE_NAME`). Type-only re-export — no API runtime ships in the web bundle; `@sequence/api` moved to web `devDependencies` (p01 review minor). | implementation (shipped) | none — matches the multi-client contract surface |
+| p05-t05 | api `game.myGames` `MyGameCard` (`{…, mySeat}`) | Card carried only `mySeat` (no team/opponents/round) | Enhanced `MyGameCard` additively with `myTeam`, `opponents: string[]` (other players' display names via a `user` left-join), `round`, and a derived `won` flag, so the dashboard can render "vs Sarah, Ben", the round number, and W/L markers per the approved wireframe. Existing `lifecycle.test.ts` (asserts only `gameId` membership) unaffected. | implementation (shipped) — dashboard is the consumer | none — additive, no behavior change to existing fields |
+| p05-t08 (carried fix, filed `fix(p04-t13)`) | rules-and-flows ("their team takes the recorded loss") — run-1 outstanding item (`head-to-head.ts:57`) | `headToHead` scored a no-winner FFA concede as a loss for BOTH users (`won=false → loss`), inconsistent with `myRecord`'s conceder-only-loss semantics | `headToHead` now left-joins the `GameConceded` event: a `winner_team`-null game counts as a loss vs the opponent ONLY when MY team conceded; otherwise it is excluded (not a decided head-to-head result) — matching `myRecord`. New integration test (`headToHead scores a no-winner FFA concede only against the conceder`) added; full history suite (8 tests) green vs the Neon test branch. | implementation (shipped) | none — closes a run-1 carried item |
 
 ## Test Results
 
@@ -380,7 +441,7 @@ Track test execution during implementation.
 | p02   | 132 (13 files; post-review fixes) | 132 | 0 | n/a |
 | p03   | 34 api after review fixes (9 env + 7 guest + 7 rate-limit unit + 11 integration [4 auth + 7 middleware]; +7 game-logic salvage = 41 root) | 34 api / 41 root | 0 | n/a |
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
-| p05   | -         | -      | -      | -        |
+| p05   | 304 root / 42 files (web component+unit: auth-form 7, dashboard-view 5 + expiry-countdown 4, create-game-form 6 + timer-options 4, join-view 6, history-view 5; +1 api head-to-head carried-fix integration) | 304 | 0 | n/a |
 | p06   | -         | -      | -      | -        |
 | p07   | -         | -      | -      | -        |
 
