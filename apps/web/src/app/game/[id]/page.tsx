@@ -37,6 +37,10 @@ import {
   toggleChoiceCell,
 } from './components/GameBoard/components/SequenceChoice.tsx';
 import { GameBoard } from './components/GameBoard/GameBoard.tsx';
+import {
+  HandoffScreen,
+  visibleHandForSeat,
+} from './components/HandoffScreen/HandoffScreen.tsx';
 import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 import { PlayerRail } from './components/PlayerRail/PlayerRail.tsx';
 
@@ -77,7 +81,6 @@ function ReconnectingOverlay({ state }: { state: ConnectionState }) {
 
 function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const trpc = useTRPC();
-  const screen = screenForState(state);
   const connected = state.players.filter((p) => p.connected).length;
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
     null,
@@ -89,9 +92,47 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const [choiceCells, setChoiceCells] = useState<Position[]>(
     initialChoiceSelection(state.pendingChoice),
   );
+  const [revealedSeat, setRevealedSeat] = useState(
+    state.local ? state.currentSeat : state.mySeat,
+  );
+  const [handoffTargetSeat, setHandoffTargetSeat] = useState<number | null>(
+    null,
+  );
+  const handoffVisible =
+    state.local && state.status === 'active' && handoffTargetSeat !== null;
+  const activeSeat = state.local
+    ? (handoffTargetSeat ?? state.currentSeat)
+    : state.mySeat;
+  const activeHand = visibleHandForSeat({
+    local: state.local,
+    localHands: state.localHands,
+    fallbackHand: state.hand,
+    seat: activeSeat,
+    veiled: handoffVisible,
+  });
+  const screen = screenForState(state, handoffVisible);
+
+  function revealHandoff() {
+    setRevealedSeat(activeSeat);
+    setHandoffTargetSeat(null);
+  }
+
+  function showLocalHandoffAfterTurn(result: {
+    events?: readonly { type: string; seat?: number }[];
+  }) {
+    if (!state.local) return;
+    const turnAdvanced = result.events?.find(
+      (event) => event.type === 'TurnAdvanced',
+    );
+    if (turnAdvanced?.seat !== undefined) {
+      setHandoffTargetSeat(turnAdvanced.seat);
+    }
+  }
+
   const makeMove = useMutation(
     trpc.game.makeMove.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (result) => {
+        showLocalHandoffAfterTurn(result);
         setSelectedCardIndex(null);
         setDragIntent(null);
         setDragHoverPosition(null);
@@ -108,7 +149,10 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   );
   const chooseSequenceCells = useMutation(
     trpc.game.chooseSequenceCells.mutationOptions({
-      onSuccess: () => setChoiceCells([]),
+      onSuccess: (result) => {
+        showLocalHandoffAfterTurn(result);
+        setChoiceCells([]);
+      },
     }),
   );
   const pendingChoiceKey = state.pendingChoice
@@ -119,24 +163,43 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   useEffect(() => {
     setChoiceCells(initialChoiceSelection(state.pendingChoice));
   }, [pendingChoiceKey, state.pendingChoice]);
+  useEffect(() => {
+    if (!state.local || state.status !== 'active') {
+      setHandoffTargetSeat(null);
+      setRevealedSeat(state.currentSeat);
+      return;
+    }
+    if (state.currentSeat !== revealedSeat && handoffTargetSeat === null) {
+      setHandoffTargetSeat(state.currentSeat);
+    }
+  }, [
+    handoffTargetSeat,
+    revealedSeat,
+    state.currentSeat,
+    state.local,
+    state.status,
+  ]);
   const myTeam =
-    state.teams[state.mySeat] ??
-    state.players.find((player) => player.seat === state.mySeat)?.team ??
+    state.teams[activeSeat] ??
+    state.players.find((player) => player.seat === activeSeat)?.team ??
     1;
   const pendingChoice = state.pendingChoice;
-  const canMakeBoardMove = pendingChoice === undefined;
+  const canMakeBoardMove = pendingChoice === undefined && !handoffVisible;
   const tapSelection =
     state.mode === 'tap' && canMakeBoardMove
       ? createTapSelection({
-          hand: state.hand,
+          hand: activeHand,
           board: state.board,
           team: myTeam,
           selectedIndex: selectedCardIndex,
         })
       : null;
   const defaultModeDeadCards =
-    state.mode === 'tap' ? deadCardIndexes(state.hand, state.board) : [];
-  const choosingSequence = pendingChoice?.seat === state.mySeat;
+    state.mode === 'tap' ? deadCardIndexes(activeHand, state.board) : [];
+  const choosingSequence = pendingChoice?.seat === activeSeat;
+  const activePlayerName =
+    state.players.find((player) => player.seat === activeSeat)?.name ??
+    `Seat ${activeSeat + 1}`;
   const choiceActorName =
     state.players.find((player) => player.seat === pendingChoice?.seat)?.name ??
     `Seat ${(pendingChoice?.seat ?? 0) + 1}`;
@@ -163,7 +226,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
     }
     if (dragIntent.kind === 'turnInDeadCard') {
       const card = buildDeadCardTurnIn(
-        state.hand,
+        activeHand,
         state.board,
         dragIntent.index,
       );
@@ -293,6 +356,14 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         />
       ) : null}
 
+      {handoffVisible ? (
+        <HandoffScreen
+          playerName={activePlayerName}
+          lastMoveLabel={state.lastMove?.label}
+          onReveal={revealHandoff}
+        />
+      ) : null}
+
       {dragMode ? (
         <section className="mx-auto flex w-full max-w-[min(94vw,680px)] items-center justify-between gap-3">
           <button
@@ -332,22 +403,26 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         </section>
       ) : null}
 
-      <CardHand
-        hand={state.hand}
-        mode={state.mode}
-        selectedIndex={selectedCardIndex}
-        deadCardIndexes={defaultModeDeadCards}
-        onSelectCard={(_, index) =>
-          setSelectedCardIndex((current) => (current === index ? null : index))
-        }
-        onCardDragStart={
-          dragMode
-            ? (card, index) =>
-                setDragIntent({ kind: 'turnInDeadCard', card, index })
-            : undefined
-        }
-        onCardDragEnd={clearDrag}
-      />
+      {!handoffVisible ? (
+        <CardHand
+          hand={activeHand}
+          mode={state.mode}
+          selectedIndex={selectedCardIndex}
+          deadCardIndexes={defaultModeDeadCards}
+          onSelectCard={(_, index) =>
+            setSelectedCardIndex((current) =>
+              current === index ? null : index,
+            )
+          }
+          onCardDragStart={
+            dragMode
+              ? (card, index) =>
+                  setDragIntent({ kind: 'turnInDeadCard', card, index })
+              : undefined
+          }
+          onCardDragEnd={clearDrag}
+        />
+      ) : null}
     </main>
   );
 }
