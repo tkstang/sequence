@@ -14,14 +14,14 @@ import { callerIsCreator } from './set-team.ts';
 
 /**
  * Legal distinct-team counts per player count (mirrors game-logic create-game).
- * 6p may be 3v3 (2 teams) or 2x3 (3 teams) — randomize defaults to the lower
- * team count (3v3) for 6p; the creator can still hand-sort to 2x3 via setTeam.
+ * 6p may be 3v3 (2 teams) or 2x3 (3 teams) in the engine. The p06 web lobby
+ * exposes the approved 3-team shape, so randomize follows that UI: 3 teams of 2.
  */
 const TEAM_COUNT: Readonly<Record<number, number>> = {
   2: 2,
   3: 3,
   4: 2,
-  6: 2,
+  6: 3,
 };
 
 /**

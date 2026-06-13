@@ -54,6 +54,26 @@ describeIntegration('lobby operations (integration)', () => {
     return { creator, gameId, inviteCode, joiners };
   }
 
+  async function fullLobby(playerCount: 2 | 3 | 4 | 6) {
+    const creator = await signUp('Creator');
+    const created = await h.mutate(
+      'game.create',
+      { playerCount, mode: 'tap' },
+      creator.cookie,
+    );
+    if (!created.ok) throw new Error('create failed');
+    const { gameId, inviteCode } = created.data as {
+      gameId: string;
+      inviteCode: string;
+    };
+    for (let seat = 1; seat < playerCount; seat++) {
+      const u = await signUp(`P${seat}`);
+      const res = await h.mutate('game.join', { inviteCode }, u.cookie);
+      if (!res.ok) throw new Error('join failed');
+    }
+    return { creator, gameId };
+  }
+
   it('a player sets their own team (self-sort)', async () => {
     const { gameId, joiners } = await lobbyWithJoiners(['Bob']);
     const bob = joiners[0]!;
@@ -168,6 +188,33 @@ describeIntegration('lobby operations (integration)', () => {
     for (let i = 1; i < teams.length; i++) {
       expect(teams[i]).not.toBe(teams[i - 1]);
     }
+  });
+
+  it('randomize keeps a 6-player web lobby startable as 3 teams of 2', async () => {
+    const { creator, gameId } = await fullLobby(6);
+    const randomized = await h.mutate(
+      'game.randomizeTeams',
+      { gameId },
+      creator.cookie,
+    );
+    expect(randomized.ok).toBe(true);
+
+    const players = await h.db
+      .select()
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, gameId))
+      .orderBy(gamePlayers.seat);
+    const teams = players.map((p) => p.team);
+    expect(new Set(teams).size).toBe(3);
+    for (const team of [1, 2, 3]) {
+      expect(teams.filter((candidate) => candidate === team)).toHaveLength(2);
+    }
+    for (let i = 1; i < teams.length; i++) {
+      expect(teams[i]).not.toBe(teams[i - 1]);
+    }
+
+    const started = await h.mutate('game.start', { gameId }, creator.cookie);
+    expect(started.ok).toBe(true);
   });
 
   it('non-creator randomize is FORBIDDEN', async () => {
