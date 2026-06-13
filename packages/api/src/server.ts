@@ -19,7 +19,7 @@ import { PresenceTracker, setPresenceHook } from './game/presence.ts';
 import { startSweepInterval } from './game/sweep.ts';
 import { TimerService } from './game/TimerService.ts';
 import { rooms } from './shared/realtime/rooms.ts';
-import { createContextFactory } from './trpc.ts';
+import { clearSessionUserCache, createContextFactory } from './trpc.ts';
 import { type Auth, createAuth } from './user/auth.ts';
 import {
   resolveAuthCookieAttributes,
@@ -140,6 +140,9 @@ export async function buildServer(
     async handler(request, reply) {
       const webRequest = toWebRequest(request, env);
       const webResponse = await auth.handler(webRequest);
+      if (request.method !== 'GET') {
+        clearSessionUserCache();
+      }
       return sendWebResponse(reply, webResponse);
     },
   });

@@ -66,6 +66,48 @@ export interface CreateContextDeps {
   guestCookieAttributes: string;
 }
 
+const SESSION_CACHE_TTL_MS = 10_000;
+
+interface CachedSessionUser {
+  expiresAt: number;
+  user: SessionUser;
+}
+
+const sessionUserCache = new Map<string, CachedSessionUser>();
+
+export function clearSessionUserCache(): void {
+  sessionUserCache.clear();
+}
+
+async function resolveSessionUser(
+  auth: Auth,
+  headers: Headers,
+): Promise<SessionUser | null> {
+  const cookie = headers.get('cookie');
+  if (!cookie) return null;
+
+  const cached = sessionUserCache.get(cookie);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.user;
+  if (cached) sessionUserCache.delete(cookie);
+
+  const session = await auth.api.getSession({ headers });
+  const user: SessionUser | null = session?.user
+    ? {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+      }
+    : null;
+  if (user) {
+    sessionUserCache.set(cookie, {
+      user,
+      expiresAt: now + SESSION_CACHE_TTL_MS,
+    });
+  }
+  return user;
+}
+
 /**
  * Build the per-request context factory bound to a db + auth instance.
  *
@@ -84,15 +126,7 @@ export function createContextFactory({
     res,
   }: CreateFastifyContextOptions): Promise<Context> {
     const headers = fromNodeHeaders(req.headers);
-    const session = await auth.api.getSession({ headers });
-
-    const user: SessionUser | null = session?.user
-      ? {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.name,
-        }
-      : null;
+    const user = await resolveSessionUser(auth, headers);
 
     const ip = resolveClientIp(req);
 
