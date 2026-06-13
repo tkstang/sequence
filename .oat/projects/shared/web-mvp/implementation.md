@@ -1,12 +1,9 @@
 ---
 oat_status: in_progress
 oat_ready_for: null
-oat_blockers:
-  - task_id: p07-t02
-    reason: "Railway deploy target is not linked; no .railway metadata or Railway project/service/environment IDs are available for non-interactive deploy."
-    since: 2026-06-13
+oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p07-t02
+oat_current_task_id: p07-t03
 oat_generated: false
 ---
 
@@ -35,9 +32,9 @@ oat_generated: false
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
-| Phase 7: Deploy & handoff        | blocked     | 5     | 1/5       |
+| Phase 7: Deploy & handoff        | in progress | 5     | 2/5       |
 
-**Total:** 69/73 tasks completed
+**Total:** 70/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -356,7 +353,7 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** blocked at p07-t02
+**Status:** in progress at p07-t03
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -379,16 +376,21 @@ the existing Neon test branch and failed because that branch has been
 maintained with `drizzle-kit push` rather than migration history; production DB
 was not used.
 
-p07-t02 is blocked before deploy. A non-secret handoff skeleton was created at
-`handoff.md`; local checks found tokens present but no `railway`/`vercel` CLI in
-PATH, no `.railway/` link, no Railway project/service/environment IDs, no
-`.vercel/` link, and no Vercel org/project IDs. Non-interactive deployment
-cannot safely proceed without the linked Railway target.
+p07-t02 is complete. Railway project `sequence`, environment `production`, and
+service `sequence-api` were linked through explicit IDs. Required API variables
+were set without printing secret values; a stale local `RAILWAY_TOKEN` was
+unset so the freshly authenticated Railway OAuth session owned the deploy. The
+API deployed as Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` at
+`https://sequence-api-production-8687.up.railway.app`. Railway logs confirmed
+the predeploy migration completed, `/health` returned `{"status":"ok"}`, and a
+Node 24 WebSocket client opened `wss://sequence-api-production-8687.up.railway.app/trpc`.
+`WEB_ORIGIN` is currently the expected Vercel origin `https://sequence.vercel.app`
+and must be corrected during p07-t03 if Vercel assigns a different URL.
 
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
-| p07-t02 | Railway deploy                      | blocked (handoff skeleton) | `375c365` |
+| p07-t02 | Railway deploy                      | completed | `3896a8e` |
 | p07-t03 | Vercel deploy                       | pending | -      |
 | p07-t04 | Production smoke + checks           | pending | -      |
 | p07-t05 | Operator handoff notes              | pending | -      |
@@ -404,6 +406,37 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 5 — 2026-06-13 15:36
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 continued, 0 passed, 0 failed, 0 stopped (p07 in progress)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | p07-t02 completed | not run | 0/2 | sequential on-branch; Railway API deployed, migrations applied, health and WS verified; continuing at p07-t03 |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Deployment target: Railway project `sequence`, environment `production`, service `sequence-api`.
+
+#### Outstanding Items
+
+- **Vercel pending:** web project is not linked yet; p07-t03 must deploy the Next app and update Railway `WEB_ORIGIN` if the assigned Vercel URL differs from `https://sequence.vercel.app`.
+- **Smoke pending:** cross-origin auth, guest join, pass-and-play, two-browser realtime, latency, mobile-375, tier audit, and forged-XFF rate-limit check remain for p07-t03/p07-t04.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 4 — 2026-06-13 06:12
 
@@ -611,7 +644,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 prerequisite probe + handoff skeleton | 30 focused + 383 root + Docker/migrate/health; blocker recorded | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs | 30 focused + 383 root + Docker/migrate/health; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
 
 ## Final Summary (for PR/docs)
 

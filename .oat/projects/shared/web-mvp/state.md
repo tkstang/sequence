@@ -1,10 +1,7 @@
 ---
-oat_current_task: p07-t02
-oat_last_commit: 375c365
-oat_blockers:
-  - task_id: p07-t02
-    reason: "Railway deploy target is not linked; no railway CLI, .railway metadata, or Railway project/service/environment IDs are available for non-interactive deploy."
-    since: 2026-06-13
+oat_current_task: p07-t03
+oat_last_commit: 3896a8e
+oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
 oat_parent: null # optional child-only coordination parent slug
@@ -30,7 +27,7 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-13T06:12:46.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-13T15:36:46.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -42,7 +39,7 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — **blocked** at p07-t02 (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p06 complete (all reviews passed; p04, p05, and p06 after 1 fix iteration). p07-t01 complete; current blocker is the unlinked Railway deploy target.
+Implementation — in progress at p07-t03 (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p06 complete (all reviews passed; p04, p05, and p06 after 1 fix iteration). p07-t01 and p07-t02 complete; Railway API deployment is live and verified; next task is Vercel web deployment.
 
 ## Artifacts
 
@@ -58,12 +55,12 @@ Implementation — **blocked** at p07-t02 (Run 1/4, Tier 1 subagents). 7 phases 
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
 - ✓ Plan complete (73 tasks; artifact review passed)
-- ⧗ Implementation blocked (69/73 tasks; p01-p06 ✓ reviewed; p07-t01 complete; current: p07-t02)
+- ⧗ Implementation in progress (70/73 tasks; p01-p06 ✓ reviewed; p07-t01/p07-t02 complete; current: p07-t03)
 
 ## Blockers
 
-- p07-t02: Railway deploy target is not linked; no `railway` CLI, `.railway/` metadata, or Railway project/service/environment IDs are available for non-interactive deploy.
+- None
 
 ## Next Milestone
 
-Link Railway/Vercel deploy targets, then resume p07-t02.
+Deploy the Vercel web app and verify cross-origin auth against the Railway API.
