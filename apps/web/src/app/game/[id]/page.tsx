@@ -11,6 +11,11 @@ import { useTRPC } from '@/lib/trpc/client.ts';
 
 import { CardHand } from './components/CardHand/CardHand.tsx';
 import {
+  buildTapMove,
+  createTapSelection,
+  deadCardIndexes,
+} from './components/controllers/tap-controller.ts';
+import {
   applyStreamItem,
   screenForState,
   type GameStreamItem,
@@ -56,11 +61,32 @@ function ReconnectingOverlay({ state }: { state: ConnectionState }) {
 }
 
 function GameRoutePlaceholder({ state }: { state: GameViewState }) {
+  const trpc = useTRPC();
   const screen = screenForState(state);
   const connected = state.players.filter((p) => p.connected).length;
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
     null,
   );
+  const makeMove = useMutation(
+    trpc.game.makeMove.mutationOptions({
+      onSuccess: () => setSelectedCardIndex(null),
+    }),
+  );
+  const myTeam =
+    state.teams[state.mySeat] ??
+    state.players.find((player) => player.seat === state.mySeat)?.team ??
+    1;
+  const tapSelection =
+    state.mode === 'tap'
+      ? createTapSelection({
+          hand: state.hand,
+          board: state.board,
+          team: myTeam,
+          selectedIndex: selectedCardIndex,
+        })
+      : null;
+  const defaultModeDeadCards =
+    state.mode === 'tap' ? deadCardIndexes(state.hand, state.board) : [];
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 p-4">
@@ -115,10 +141,20 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
       <section className="flex justify-center">
         <GameBoard
           board={state.board}
+          validTargets={tapSelection?.validTargets}
           winningCells={state.sequences
             .filter((sequence) => sequence.team === state.winnerTeam)
             .flatMap((sequence) => sequence.cells)}
           pendingChoiceCells={state.pendingChoice?.cells}
+          onCellSelect={(position) => {
+            const move = buildTapMove(tapSelection, position);
+            if (!move) return;
+            makeMove.mutate({
+              gameId: state.gameId,
+              version: state.version,
+              move,
+            });
+          }}
         />
       </section>
 
@@ -126,7 +162,10 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         hand={state.hand}
         mode={state.mode}
         selectedIndex={selectedCardIndex}
-        onSelectCard={(_, index) => setSelectedCardIndex(index)}
+        deadCardIndexes={defaultModeDeadCards}
+        onSelectCard={(_, index) =>
+          setSelectedCardIndex((current) => (current === index ? null : index))
+        }
       />
     </main>
   );
