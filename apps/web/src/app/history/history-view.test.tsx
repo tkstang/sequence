@@ -15,7 +15,7 @@ function gameRow(overrides: Partial<HistoryGameRow> = {}): HistoryGameRow {
     winnerTeam: 1,
     endReason: 'win',
     myTeam: 1,
-    won: true,
+    result: 'win',
     ...overrides,
   };
 }
@@ -60,14 +60,33 @@ describe('<HistoryView>', () => {
         record={{ wins: 0, losses: 0, total: 0 }}
         headToHead={[]}
         games={[
-          gameRow({ gameId: 'a', won: true, local: true }),
-          gameRow({ gameId: 'b', won: false }),
+          gameRow({ gameId: 'a', result: 'win', local: true }),
+          gameRow({ gameId: 'b', result: 'loss' }),
         ]}
       />,
     );
     expect(screen.getByText('W')).toBeInTheDocument();
     expect(screen.getByText('L')).toBeInTheDocument();
     expect(screen.getByText(/Local game/i)).toBeInTheDocument();
+  });
+
+  it('shows no-result for a no-winner FFA non-conceder game', () => {
+    render(
+      <HistoryView
+        record={{ wins: 0, losses: 0, total: 0 }}
+        headToHead={[]}
+        games={[
+          gameRow({
+            gameId: 'neutral',
+            winnerTeam: null,
+            endReason: 'concede',
+            result: 'none',
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText(/no result/i)).toBeInTheDocument();
+    expect(screen.queryByText('L')).not.toBeInTheDocument();
   });
 
   it('shows a Load more button and fires onLoadMore', async () => {

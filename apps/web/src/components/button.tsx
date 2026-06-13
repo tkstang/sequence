@@ -24,6 +24,18 @@ const sizes: Record<ButtonSize, string> = {
   lg: 'px-5 py-3.5 text-base',
 };
 
+export function buttonClassName({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}) {
+  return `${base} ${variants[variant]} ${sizes[size]} ${className}`;
+}
+
 /** Shared button primitive across the shell (CTAs, form submits). */
 export function Button({
   variant = 'primary',
@@ -36,7 +48,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={buttonClassName({ variant, size, className })}
       {...rest}
     >
       {children}

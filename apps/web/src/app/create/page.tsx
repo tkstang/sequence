@@ -4,8 +4,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
-import { AppHeader } from '@/components/app-header.tsx';
+import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
+import { useLogout } from '@/lib/use-logout.ts';
 import { useRequireSession } from '@/lib/use-session.ts';
 
 import { CreateGameForm } from './create-game-form.tsx';
@@ -35,6 +36,7 @@ export default function CreatePage() {
 
 function CreatePageInner() {
   const session = useRequireSession();
+  const { logout, isSigningOut } = useLogout();
   const router = useRouter();
   const params = useSearchParams();
   const trpc = useTRPC();
@@ -61,7 +63,11 @@ function CreatePageInner() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AppHeader />
+      <AuthenticatedHeader
+        userInitial={(session.user?.name ?? '?').charAt(0).toUpperCase()}
+        onLogout={logout}
+        isSigningOut={isSigningOut}
+      />
       <main className="mx-auto flex w-full max-w-md flex-col gap-6 p-4">
         <h1 className="text-2xl font-bold">New game</h1>
         <CreateGameForm

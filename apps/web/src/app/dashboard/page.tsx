@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { useTRPC } from '@/lib/trpc/client.ts';
+import { useLogout } from '@/lib/use-logout.ts';
 import { useRequireSession } from '@/lib/use-session.ts';
 
 import { DashboardView } from './dashboard-view.tsx';
@@ -14,6 +15,7 @@ import type { DashboardGame } from './dashboard-view.tsx';
  */
 export default function DashboardPage() {
   const session = useRequireSession();
+  const { logout, isSigningOut } = useLogout();
   const trpc = useTRPC();
   const myGames = useQuery({
     ...trpc.game.myGames.queryOptions(),
@@ -33,6 +35,8 @@ export default function DashboardPage() {
   return (
     <DashboardView
       userInitial={(session.user?.name ?? '?').charAt(0).toUpperCase()}
+      onLogout={logout}
+      isSigningOut={isSigningOut}
       resumables={(data?.resumables ?? []) as DashboardGame[]}
       recents={(data?.recents ?? []) as DashboardGame[]}
       isLoading={myGames.isPending}

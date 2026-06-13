@@ -2,8 +2,9 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
-import { AppHeader } from '@/components/app-header.tsx';
+import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
+import { useLogout } from '@/lib/use-logout.ts';
 import { useRequireSession } from '@/lib/use-session.ts';
 
 import { HistoryView } from './history-view.tsx';
@@ -19,6 +20,7 @@ import type {
  */
 export default function HistoryPage() {
   const session = useRequireSession();
+  const { logout, isSigningOut } = useLogout();
   const trpc = useTRPC();
 
   const record = useQuery({
@@ -54,7 +56,11 @@ export default function HistoryPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AppHeader />
+      <AuthenticatedHeader
+        userInitial={(session.user?.name ?? '?').charAt(0).toUpperCase()}
+        onLogout={logout}
+        isSigningOut={isSigningOut}
+      />
       <HistoryView
         record={record.data as RecordSummary | undefined}
         headToHead={(headToHead.data ?? []) as HeadToHeadRow[]}

@@ -27,7 +27,7 @@ export interface HistoryGameRow {
   winnerTeam: number | null;
   endReason: string | null;
   myTeam: number;
-  won: boolean;
+  result: 'win' | 'loss' | 'none';
 }
 
 export interface HistoryViewProps {
@@ -135,7 +135,13 @@ export function HistoryView({
                 key={g.gameId}
                 className="flex items-center gap-2 text-sm text-black/70"
               >
-                <Badge tone={g.won ? 'win' : 'loss'}>{g.won ? 'W' : 'L'}</Badge>
+                {g.result === 'win' ? (
+                  <Badge tone="win">W</Badge>
+                ) : g.result === 'loss' ? (
+                  <Badge tone="loss">L</Badge>
+                ) : (
+                  <Badge tone="neutral">No result</Badge>
+                )}
                 <span>
                   {g.local ? 'Local game' : `${g.playerCount}-player`} ·{' '}
                   {g.mode} mode

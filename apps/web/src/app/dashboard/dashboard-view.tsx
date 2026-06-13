@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 
-import { AppHeader } from '@/components/app-header.tsx';
+import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { Badge } from '@/components/badge.tsx';
-import { Button } from '@/components/button.tsx';
+import { buttonClassName } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
 
 import { ExpiryCountdown } from './expiry-countdown.tsx';
@@ -25,11 +25,13 @@ export interface DashboardGame {
   mySeat: number;
   myTeam: number;
   opponents: string[];
-  won: boolean;
+  result: 'win' | 'loss' | 'none';
 }
 
 export interface DashboardViewProps {
   userInitial: string;
+  onLogout: () => void;
+  isSigningOut?: boolean;
   resumables: DashboardGame[];
   recents: DashboardGame[];
   isLoading?: boolean;
@@ -70,9 +72,17 @@ function ResumableCard({ game }: { game: DashboardGame }) {
 }
 
 function ResultRow({ game }: { game: DashboardGame }) {
+  const badge =
+    game.result === 'win' ? (
+      <Badge tone="win">W</Badge>
+    ) : game.result === 'loss' ? (
+      <Badge tone="loss">L</Badge>
+    ) : (
+      <Badge tone="neutral">No result</Badge>
+    );
   return (
     <div className="flex items-center gap-2 text-sm text-black/70">
-      <Badge tone={game.won ? 'win' : 'loss'}>{game.won ? 'W' : 'L'}</Badge>
+      {badge}
       <span>
         {describeOpponents(game)}
         {game.endReason === 'concede' ? ' · concede' : ''}
@@ -92,34 +102,36 @@ function ResultRow({ game }: { game: DashboardGame }) {
  */
 export function DashboardView({
   userInitial,
+  onLogout,
+  isSigningOut = false,
   resumables,
   recents,
   isLoading = false,
 }: DashboardViewProps) {
   return (
     <div className="flex min-h-screen flex-col">
-      <AppHeader
-        right={
-          <span
-            className="bg-team-blue flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
-            aria-label="Your account"
-          >
-            {userInitial}
-          </span>
-        }
+      <AuthenticatedHeader
+        userInitial={userInitial}
+        onLogout={onLogout}
+        isSigningOut={isSigningOut}
       />
 
       <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4">
         <section className="flex flex-col gap-2">
-          <Link href="/create" className="block">
-            <Button size="lg" className="w-full">
-              + Create game
-            </Button>
+          <Link
+            href="/create"
+            className={buttonClassName({ size: 'lg', className: 'w-full' })}
+          >
+            + Create game
           </Link>
-          <Link href="/create?local=1" className="block">
-            <Button variant="secondary" className="w-full">
-              🤝 Pass &amp; play (local)
-            </Button>
+          <Link
+            href="/create?local=1"
+            className={buttonClassName({
+              variant: 'secondary',
+              className: 'w-full',
+            })}
+          >
+            Pass &amp; play (local)
           </Link>
         </section>
 
