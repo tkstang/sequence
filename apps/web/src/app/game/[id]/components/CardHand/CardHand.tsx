@@ -2,7 +2,7 @@
 
 import type { Card } from '@sequence/game-logic';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, type DragEvent } from 'react';
 
 import { cardAssetPath } from '../GameBoard/GameBoard.utils.ts';
 
@@ -12,6 +12,8 @@ export interface CardHandProps {
   selectedIndex?: number | null;
   deadCardIndexes?: readonly number[];
   onSelectCard?: (card: Card, index: number) => void;
+  onCardDragStart?: (card: Card, index: number) => void;
+  onCardDragEnd?: () => void;
 }
 
 function cardCode(card: Card): string {
@@ -36,6 +38,8 @@ export function CardHand({
   selectedIndex = null,
   deadCardIndexes = [],
   onSelectCard,
+  onCardDragStart,
+  onCardDragEnd,
 }: CardHandProps) {
   const [raised, setRaised] = useState(false);
   const dead = new Set(deadCardIndexes);
@@ -63,17 +67,27 @@ export function CardHand({
           const code = cardCode(card);
           const selected = selectedIndex === index;
           const isDead = mode === 'tap' && dead.has(index);
+          const draggable = mode === 'drag' && onCardDragStart !== undefined;
+          const handleDragStart = (event: DragEvent<HTMLButtonElement>) => {
+            if (!draggable) return;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', code);
+            onCardDragStart?.(card, index);
+          };
           return (
             <button
               key={`${code}-${index}`}
               type="button"
               aria-label={`${code}${isDead ? ' dead card' : ''}`}
               aria-pressed={selected}
+              draggable={draggable}
               onClick={(event) => {
                 event.stopPropagation();
                 setRaised(true);
                 onSelectCard?.(card, index);
               }}
+              onDragStart={handleDragStart}
+              onDragEnd={onCardDragEnd}
               className={`relative -mx-1 h-[88px] w-[60px] shrink-0 rounded-md bg-white shadow-lg transition-transform sm:h-[118px] sm:w-[80px] ${
                 selected ? 'ring-team-green z-20 ring-2' : ''
               }`}

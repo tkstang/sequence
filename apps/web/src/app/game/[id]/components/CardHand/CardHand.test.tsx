@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -57,6 +57,41 @@ describe('<CardHand>', () => {
     expect(screen.getByRole('button', { name: 'AC' })).toHaveAttribute(
       'aria-pressed',
       'true',
+    );
+  });
+
+  it('emits drag callbacks for hard-mode card turn-in', () => {
+    const onCardDragStart = vi.fn();
+    const onCardDragEnd = vi.fn();
+    const { rerender } = render(
+      <CardHand
+        hand={hand}
+        mode="drag"
+        onCardDragStart={onCardDragStart}
+        onCardDragEnd={onCardDragEnd}
+      />,
+    );
+    const dataTransfer = { effectAllowed: '', setData: vi.fn() };
+    const card = screen.getByRole('button', { name: 'JS' });
+
+    fireEvent.dragStart(card, { dataTransfer });
+    fireEvent.dragEnd(card, { dataTransfer });
+
+    expect(card).toHaveAttribute('draggable', 'true');
+    expect(onCardDragStart).toHaveBeenCalledWith({ rank: 'J', suit: 'S' }, 1);
+    expect(onCardDragEnd).toHaveBeenCalled();
+
+    rerender(
+      <CardHand
+        hand={hand}
+        mode="tap"
+        onCardDragStart={onCardDragStart}
+        onCardDragEnd={onCardDragEnd}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'JS' })).toHaveAttribute(
+      'draggable',
+      'false',
     );
   });
 });

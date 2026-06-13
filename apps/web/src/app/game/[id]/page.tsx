@@ -1,8 +1,10 @@
 'use client';
 
+import type { Position } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
 import { useParams } from 'next/navigation';
+import type { DragEvent } from 'react';
 import { useReducer, useState } from 'react';
 
 import { Badge } from '@/components/badge.tsx';
@@ -10,6 +12,14 @@ import { Card } from '@/components/card.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 
 import { CardHand } from './components/CardHand/CardHand.tsx';
+import {
+  buildChipRemovalMove,
+  buildDeadCardTurnIn,
+  buildDragPlacementMove,
+  canDragChipForRemoval,
+  dragHoverTarget,
+  type DragIntent,
+} from './components/controllers/drag-controller.ts';
 import {
   buildTapMove,
   createTapSelection,
@@ -67,9 +77,25 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
     null,
   );
+  const [dragIntent, setDragIntent] = useState<DragIntent | null>(null);
+  const [dragHoverPosition, setDragHoverPosition] = useState<Position | null>(
+    null,
+  );
   const makeMove = useMutation(
     trpc.game.makeMove.mutationOptions({
-      onSuccess: () => setSelectedCardIndex(null),
+      onSuccess: () => {
+        setSelectedCardIndex(null);
+        setDragIntent(null);
+        setDragHoverPosition(null);
+      },
+    }),
+  );
+  const turnInDeadCard = useMutation(
+    trpc.game.turnInDeadCard.mutationOptions({
+      onSuccess: () => {
+        setDragIntent(null);
+        setDragHoverPosition(null);
+      },
     }),
   );
   const myTeam =
@@ -87,6 +113,43 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
       : null;
   const defaultModeDeadCards =
     state.mode === 'tap' ? deadCardIndexes(state.hand, state.board) : [];
+  const dragMode = state.mode === 'drag';
+  const clearDrag = () => {
+    setDragIntent(null);
+    setDragHoverPosition(null);
+  };
+  const submitMove = (move: ReturnType<typeof buildDragPlacementMove>) => {
+    if (!move) return;
+    makeMove.mutate({
+      gameId: state.gameId,
+      version: state.version,
+      move,
+    });
+  };
+  const handleDiscardDrop = (event: DragEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!dragMode || !dragIntent) return;
+    if (dragIntent.kind === 'removeChip') {
+      submitMove(
+        buildChipRemovalMove(state.board, dragIntent.position, myTeam),
+      );
+    }
+    if (dragIntent.kind === 'turnInDeadCard') {
+      const card = buildDeadCardTurnIn(
+        state.hand,
+        state.board,
+        dragIntent.index,
+      );
+      if (card) {
+        turnInDeadCard.mutate({
+          gameId: state.gameId,
+          version: state.version,
+          card,
+        });
+      }
+    }
+    clearDrag();
+  };
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 p-4">
@@ -142,21 +205,75 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         <GameBoard
           board={state.board}
           validTargets={tapSelection?.validTargets}
+          hoverPosition={
+            dragMode ? dragHoverTarget(dragIntent, dragHoverPosition) : null
+          }
           winningCells={state.sequences
             .filter((sequence) => sequence.team === state.winnerTeam)
             .flatMap((sequence) => sequence.cells)}
           pendingChoiceCells={state.pendingChoice?.cells}
+          canDragCell={(position) =>
+            dragMode && canDragChipForRemoval(state.board, position, myTeam)
+          }
           onCellSelect={(position) => {
             const move = buildTapMove(tapSelection, position);
-            if (!move) return;
-            makeMove.mutate({
-              gameId: state.gameId,
-              version: state.version,
-              move,
-            });
+            submitMove(move);
+          }}
+          onCellDragStart={(position) => {
+            if (!dragMode) return;
+            if (!canDragChipForRemoval(state.board, position, myTeam)) return;
+            setDragIntent({ kind: 'removeChip', position });
+          }}
+          onCellDragEnd={clearDrag}
+          onCellDragOver={(position) => {
+            if (!dragMode) return;
+            setDragHoverPosition(dragHoverTarget(dragIntent, position));
+          }}
+          onCellDrop={(position) => {
+            if (!dragMode || dragIntent?.kind !== 'place') return;
+            submitMove(buildDragPlacementMove(position));
           }}
         />
       </section>
+
+      {dragMode ? (
+        <section className="mx-auto flex w-full max-w-[min(94vw,680px)] items-center justify-between gap-3">
+          <button
+            type="button"
+            draggable
+            aria-label="Drag chip to board"
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'copyMove';
+              event.dataTransfer.setData('text/plain', 'chip');
+              setDragIntent({ kind: 'place' });
+            }}
+            onDragEnd={clearDrag}
+            className="border-team-blue bg-team-blue/10 text-team-blue flex min-h-12 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold"
+          >
+            <span
+              aria-hidden
+              className="bg-team-blue block h-7 w-7 rounded-full shadow-inner"
+            />
+            Play chip
+          </button>
+          <button
+            type="button"
+            aria-label="Discard"
+            data-active={
+              dragIntent?.kind === 'removeChip' ||
+              dragIntent?.kind === 'turnInDeadCard'
+            }
+            onDragOver={(event) => {
+              if (!dragIntent) return;
+              event.preventDefault();
+            }}
+            onDrop={handleDiscardDrop}
+            className="data-[active=true]:border-team-red data-[active=true]:bg-team-red/10 flex min-h-12 min-w-28 items-center justify-center rounded-lg border border-dashed border-black/25 px-4 py-2 text-sm font-bold text-black/60"
+          >
+            Discard
+          </button>
+        </section>
+      ) : null}
 
       <CardHand
         hand={state.hand}
@@ -166,6 +283,13 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         onSelectCard={(_, index) =>
           setSelectedCardIndex((current) => (current === index ? null : index))
         }
+        onCardDragStart={
+          dragMode
+            ? (card, index) =>
+                setDragIntent({ kind: 'turnInDeadCard', card, index })
+            : undefined
+        }
+        onCardDragEnd={clearDrag}
       />
     </main>
   );

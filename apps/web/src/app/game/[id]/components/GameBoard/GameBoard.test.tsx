@@ -1,5 +1,5 @@
 import type { Position } from '@sequence/game-logic';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -90,5 +90,37 @@ describe('<GameBoard>', () => {
     expect(onCellHover).toHaveBeenCalledWith('1AC');
     expect(onCellSelect).toHaveBeenCalledWith('1AC');
     expect(onCellHover).toHaveBeenLastCalledWith(null);
+  });
+
+  it('emits primitive cell positions for drag/drop gestures', () => {
+    const onCellDragStart = vi.fn();
+    const onCellDragEnd = vi.fn();
+    const onCellDragOver = vi.fn();
+    const onCellDrop = vi.fn();
+    render(
+      <GameBoard
+        board={{ '1AC': { chip: 2 } }}
+        canDragCell={(position) => position === '1AC'}
+        onCellDragStart={onCellDragStart}
+        onCellDragEnd={onCellDragEnd}
+        onCellDragOver={onCellDragOver}
+        onCellDrop={onCellDrop}
+      />,
+    );
+
+    const source = screen.getByLabelText(/AC 1AC/i);
+    const target = screen.getByLabelText(/KC 1KC/i);
+    const dataTransfer = { effectAllowed: '', setData: vi.fn() };
+    fireEvent.dragStart(source, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+    fireEvent.dragEnd(source, { dataTransfer });
+
+    expect(source).toHaveAttribute('draggable', 'true');
+    expect(onCellDragStart).toHaveBeenCalledWith('1AC');
+    expect(onCellDragOver).toHaveBeenCalledWith('1KC');
+    expect(onCellDrop).toHaveBeenCalledWith('1KC');
+    expect(onCellDragOver).toHaveBeenLastCalledWith(null);
+    expect(onCellDragEnd).toHaveBeenCalled();
   });
 });

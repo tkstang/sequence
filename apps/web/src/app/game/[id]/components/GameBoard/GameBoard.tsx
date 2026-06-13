@@ -13,8 +13,13 @@ export interface GameBoardProps {
   hoverPosition?: Position | null;
   pendingChoiceCells?: readonly Position[];
   winningCells?: readonly Position[];
+  canDragCell?: (position: Position) => boolean;
   onCellSelect?: (position: Position) => void;
   onCellHover?: (position: Position | null) => void;
+  onCellDragStart?: (position: Position) => void;
+  onCellDragEnd?: () => void;
+  onCellDragOver?: (position: Position | null) => void;
+  onCellDrop?: (position: Position) => void;
 }
 
 export function usePreloadCardAssets(enabled = true) {
@@ -33,8 +38,13 @@ export function GameBoard({
   hoverPosition = null,
   pendingChoiceCells = [],
   winningCells = [],
+  canDragCell,
   onCellSelect,
   onCellHover,
+  onCellDragStart,
+  onCellDragEnd,
+  onCellDragOver,
+  onCellDrop,
 }: GameBoardProps) {
   usePreloadCardAssets();
   const cells = useMemo(
@@ -67,8 +77,13 @@ export function GameBoard({
           lockedBy={cell.lockedBy}
           highlight={cell.highlight}
           winning={cell.winning}
+          draggable={canDragCell?.(cell.position) ?? false}
           onSelect={onCellSelect}
           onHover={onCellHover}
+          onDragStart={onCellDragStart}
+          onDragEnd={onCellDragEnd}
+          onDragOver={onCellDragOver}
+          onDrop={onCellDrop}
         />
       ))}
     </div>
