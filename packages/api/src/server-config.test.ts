@@ -9,13 +9,13 @@ const base = {
 };
 
 describe('server deployment config', () => {
-  it('defaults production trustProxy to one Railway edge hop', () => {
+  it('defaults production trustProxy off unless explicitly configured', () => {
     const env = parseEnv({
       ...base,
       NODE_ENV: 'production',
     } as NodeJS.ProcessEnv);
 
-    expect(resolveTrustProxy(env)).toBe(1);
+    expect(resolveTrustProxy(env)).toBe(false);
   });
 
   it('defaults local/test trustProxy off', () => {
@@ -24,7 +24,7 @@ describe('server deployment config', () => {
     expect(resolveTrustProxy(env)).toBe(false);
   });
 
-  it('honors an explicit trustProxy override', () => {
+  it('honors an explicit numeric trustProxy override', () => {
     const env = parseEnv({
       ...base,
       NODE_ENV: 'production',

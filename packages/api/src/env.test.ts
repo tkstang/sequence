@@ -42,7 +42,7 @@ describe('parseEnv', () => {
     expect(env.BETTER_AUTH_URL).toBe('http://localhost:3001');
   });
 
-  it('leaves TRUST_PROXY undefined when unset (factory applies the prod-sane default)', () => {
+  it('leaves TRUST_PROXY undefined when unset (server factory defaults proxy trust off)', () => {
     const env = parseEnv(base as NodeJS.ProcessEnv);
     expect(env.TRUST_PROXY).toBeUndefined();
   });

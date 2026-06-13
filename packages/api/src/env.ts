@@ -28,9 +28,10 @@ export const envSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   // Trust the edge proxy's `X-Forwarded-For` when resolving `request.ip`.
-  // Prefer a numeric hop count on Railway (`TRUST_PROXY=1`) so a client cannot
-  // spoof the leftmost XFF value if the edge appends instead of overwrites.
-  // `true` remains available for verified shared-domain/proxy topologies.
+  // Default production behavior is off because Railway forwarding was observed
+  // allowing forged XFF to rotate public rate-limit buckets with `TRUST_PROXY=1`.
+  // Use a numeric hop count only after verifying the edge overwrites client XFF.
+  // `true` remains available for verified private/shared proxy topologies.
   TRUST_PROXY: z
     .string()
     .regex(/^(true|false|0|[1-9]\d*)$/)

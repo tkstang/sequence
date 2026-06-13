@@ -207,12 +207,13 @@ export async function buildServer(
 /**
  * Fastify trustProxy policy for deployed and local environments.
  *
- * Railway production defaults to one trusted edge hop. A boolean `true` trusts
- * every XFF hop and can key rate limits on a spoofed leftmost value when an edge
- * appends, so operators should only set it after verifying proxy behavior.
+ * Production defaults to not trusting XFF. Railway was observed forwarding
+ * enough client-supplied XFF for `TRUST_PROXY=1` to let forged headers rotate
+ * public rate-limit buckets, so operators should only opt in after verifying
+ * their edge overwrites, rather than appends, client XFF.
  */
 export function resolveTrustProxy(env: Env): boolean | number {
-  return env.TRUST_PROXY ?? (env.NODE_ENV === 'production' ? 1 : false);
+  return env.TRUST_PROXY ?? false;
 }
 
 /**

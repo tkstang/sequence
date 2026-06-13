@@ -1,4 +1,5 @@
 import { createRateLimiter } from '../shared/rate-limit-middleware.ts';
+import type { Context } from '../trpc.ts';
 import { router } from '../trpc.ts';
 import { chooseSequenceCellsRoute } from './routes/choose-sequence-cells.ts';
 import { concedeRoute } from './routes/concede.ts';
@@ -22,13 +23,18 @@ import { turnInDeadCardRoute } from './routes/turn-in-dead-card.ts';
  * Routes are added per p04 task (create, join, start, makeMove, onGameEvent, …)
  * under `game/routes/`, file-per-route.
  *
- * `preview`/`join` are public and share one in-memory per-IP rate limiter
- * (the p03-t09 reusable limiter) to throttle invite-code enumeration. Keyed on
- * the resolved client IP (`ctx.ip`), now correct on the WS path too (I3).
+ * `preview`/`join` are public and share one in-memory anonymous rate limiter
+ * (the p03-t09 reusable limiter) to throttle invite-code enumeration. Production
+ * Railway smoke showed both XFF and edge/socket IPs are not stable enough to
+ * key this public bucket safely, so anonymous invite traffic intentionally
+ * shares one budget. Authenticated callers still key by user id.
  */
 export const joinPreviewLimiter = createRateLimiter({
   max: 30,
   windowMs: 60_000,
+  keyFromContext(ctx: Context) {
+    return ctx.user ? `user:${ctx.user.id}` : 'anonymous:join-preview';
+  },
 });
 
 export const gameRouter = router({

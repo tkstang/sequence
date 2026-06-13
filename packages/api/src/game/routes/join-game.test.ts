@@ -147,10 +147,12 @@ describeIntegration('game.preview / game.join (integration)', () => {
     if (!second.ok) expect(second.code).toBe('CONFLICT');
   });
 
-  it('preview and join are rate-limited (shared per-IP limiter)', async () => {
+  it('preview and join are rate-limited (shared anonymous limiter)', async () => {
     const { inviteCode } = await createGame();
     // The shared limiter is 30/min. Burst past it on preview and expect a 429
-    // (TOO_MANY_REQUESTS) before the window resets. All calls share one IP here.
+    // (TOO_MANY_REQUESTS) before the window resets. Anonymous preview/join
+    // traffic intentionally shares one bucket in production because proxy IP
+    // attribution was not stable enough on Railway.
     let limited = false;
     for (let i = 0; i < 40; i++) {
       const res = await h.query('game.preview', { inviteCode });
@@ -159,6 +161,27 @@ describeIntegration('game.preview / game.join (integration)', () => {
         break;
       }
     }
+    expect(limited).toBe(true);
+  });
+
+  it('rotating spoofed XFF headers cannot bypass the anonymous invite limiter', async () => {
+    const { inviteCode } = await createGame();
+    const input = encodeURIComponent(JSON.stringify({ inviteCode }));
+
+    let limited = false;
+    for (let i = 0; i < 40; i++) {
+      const res = await fetch(`${h.baseUrl}/trpc/game.preview?input=${input}`, {
+        headers: { 'x-forwarded-for': `203.0.113.${i}` },
+      });
+      const json = (await res.json()) as {
+        error?: { data?: { code?: string } };
+      };
+      if (json.error?.data?.code === 'TOO_MANY_REQUESTS') {
+        limited = true;
+        break;
+      }
+    }
+
     expect(limited).toBe(true);
   });
 });
