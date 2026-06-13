@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-12
-oat_current_task_id: p04-t01
+oat_current_task_id: p05-t01
 oat_generated: false
 ---
 
@@ -28,13 +28,13 @@ oat_generated: false
 | -------------------------------- | ----------- | ----- | --------- |
 | Phase 1: Foundation & Salvage    | completed (review passed) | 11 | 11/11 |
 | Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
-| Phase 3: API foundation          | completed (pre-review) | 10 | 10/10 |
-| Phase 4: Game domain             | pending     | 14    | 0/14      |
+| Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
+| Phase 4: Game domain             | completed (pre-review) | 14 | 14/14 |
 | Phase 5: Web shell               | pending     | 9     | 0/9       |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
 
-**Total:** 32/73 tasks completed
+**Total:** 46/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -150,29 +150,54 @@ zod (from p01) untouched; root `pnpm-lock.yaml` unchanged. Root gates green.
 
 ## Phase 4: Game domain — fully playable over the API (p04)
 
-**Status:** pending
-**Started:** -
+**Status:** complete (pre-review)
+**Started:** 2026-06-12
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
-_Pending._
+A complete game is playable over tRPC with no UI. GameState ↔ DB mapping
+(versioned persistence, sparse object board, per-game event seq); the full
+session lifecycle (create incl. local, preview/join with guest tokens, lobby
+team ops, start, save/concede/rematch/sweep); the authoritative move engine
+(load→reduce→persist[version guard]→broadcast, optimistic concurrency, typed
+rule violations); pending-choice + dead-card turn-in routes (chained
+additionalRuns resolved sequentially); persistent turn timers with forfeit +
+boot rehydration; room-scoped WS subscriptions with per-recipient redaction
+(NFR1) and snapshot-first recovery; presence-driven freeze/rejoin lifecycle;
+history aggregates + head-to-head. A scripted 2-player full game runs
+create→join→start→win→rematch over real HTTP (FR6 broadcast invariant
+asserted); the Bruno game collection covers the procedures. The design
+§Error Handling lifecycle table is fully covered by integration tests.
 
-| Task    | Name                                         | Status  | Commit |
-| ------- | -------------------------------------------- | ------- | ------ |
-| p04-t01 | GameState ↔ DB mapping (TDD)                 | pending | -      |
-| p04-t02 | create-game route (incl. local)              | pending | -      |
-| p04-t03 | preview + join routes                        | pending | -      |
-| p04-t04 | Lobby operations                             | pending | -      |
-| p04-t05 | start-game route                             | pending | -      |
-| p04-t06 | Realtime — rooms, redaction, subscription    | pending | -      |
-| p04-t07 | Move engine route                            | pending | -      |
-| p04-t08 | Pending choice + dead-card turn-in routes    | pending | -      |
-| p04-t09 | TimerService (TDD with fake timers)          | pending | -      |
-| p04-t10 | Presence — freeze / rejoin                   | pending | -      |
-| p04-t11 | save-and-exit, concede, my-games             | pending | -      |
-| p04-t12 | Rematch + expiry sweep                       | pending | -      |
-| p04-t13 | History domain                               | pending | -      |
-| p04-t14 | Bruno collection + scripted full game        | pending | -      |
+**Carried obligations addressed:** I3 (WS `ctx.ip` fallback via `resolveClientIp`
++ onRequest hook, regression-tested), p02-m6 (move engine ALWAYS stamps the
+authenticated seat on makeMove/chooseSequenceCells/turnInDeadCard), p02 deltas
+(server RNG passed explicitly; chained `additionalRuns` resolved sequentially;
+6p team count derived from seeds — 3v3 AND 2x3), p02-m4 (chained-additionalRuns
+reducer test added as `fix(p02-t09)`).
+
+**Verification:** api suite 125/125 green vs the Neon test branch (serial);
+root gates green on a clean tree — `pnpm typecheck` (all 3 packages),
+`pnpm lint` (0 errors), `pnpm format:check`, `pnpm test` (258 tests / 35 files,
+api single-fork). Bruno `game` 6/6 + `auth` 3/3 vs a booted server.
+
+| Task    | Name                                         | Status   | Commit  |
+| ------- | -------------------------------------------- | -------- | ------- |
+| p04-t01 | GameState ↔ DB mapping (TDD)                 | complete | d9e01a2 |
+| p04-t02 | create-game route (incl. local)              | complete | ce66113 |
+| p04-t03 | preview + join routes (+ I3)                  | complete | 7d84f75 |
+| p04-t04 | Lobby operations                             | complete | d38efdc |
+| p04-t05 | start-game route                             | complete | 4e90cce |
+| p04-t06 | Realtime — rooms, redaction, subscription    | complete | 2549f59 |
+| p04-t07 | Move engine route (+ p02-m6)                  | complete | b5e8c7e |
+| p04-t08 | Pending choice + dead-card turn-in routes    | complete | ca0fc16 |
+| (p02-m4)| chained additionalRuns reducer test          | complete | 8ccee89 |
+| p04-t09 | TimerService (TDD with fake timers)          | complete | 734ca0d |
+| p04-t10 | Presence — freeze / rejoin                   | complete | 5ff4f4c |
+| p04-t11 | save-and-exit, concede, my-games             | complete | 2bc9e8b |
+| p04-t12 | Rematch + expiry sweep                       | complete | 7f14269 |
+| p04-t13 | History domain                               | complete | 422d4c4 |
+| p04-t14 | Bruno collection + scripted full game        | complete | 048c69a (+7a8e893, ac2db17 fixes) |
 
 ---
 
@@ -333,6 +358,10 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t08/t09 | plan.md p03-t08 ("reset via `drizzle-kit push` + truncate") | Per-run push + per-test truncate is sufficient for isolation | Added a **Postgres session advisory lock** held per integration test file, serializing the two integration files against the one shared test branch | The vitest **workspace** runner (root `pnpm test`) runs the API's integration files in parallel workers; both `TRUNCATE` shared Better Auth tables, so an unguarded interleave caused a nondeterministic FK failure (`linkAccount` 500) when run together. The per-project `fileParallelism:false` is not honored under the workspace; the advisory lock makes correctness independent of scheduling. | implementation (shipped) | none — root `pnpm test` is green and stable across repeated runs |
 | p03 review (M2) | implementation.md p03-t03 deviation row (covered only `user`-ref columns) | `games.rematch_of` left without a DB-level FK | Added a real self-FK `rematch_of REFERENCES games(id) ON DELETE SET NULL` (migration `0002_petite_sentinel.sql`) | `rematch_of` references the api-owned `games` table, so the Better-Auth migration-ordering rationale that justifies plain-text user refs does not apply; the p04-t12 expiry sweep could otherwise leave dangling pointers. Applied to the test branch (verified, no drift). | implementation (shipped) | none — supersedes the gap noted against the p03-t03 row |
 | p03 review (I1) | review p03 finding I1 (`SameSite=Lax` cross-site cookies) | — | **Deliberately deferred to p07** | The cross-site cookie strategy (SameSite=None;Secure vs shared registrable domain) depends on the deploy domains decided in p07-t02/t03; local/p03/p04 testing is same-site and unaffected. A code comment at `user/auth.ts` cookie config flags the p07 obligation. | review finding (open) | Address in p07-t02/t03 with a cross-origin credentialed smoke assertion |
+| p04-t01 | design.md §Data Models (`board` jsonb "100 cells `{chip?,lockedBy?}`"; `sequences` "team, cells, order"; `pending_choice`) | `board` as a 100-element array; `sequences` rows carry `order`; `pending_choice = {seat,runLength,cells}` | `board` serialized as a **sparse object keyed by position code** (`{ '1AC': {chip,lockedBy} }`); `sequences` carry `{id,team,cells}` (no `order` — `nextSequenceId` column tracks issue order); `pending_choice` expanded to `{seat,team,placed,cells,additionalRuns?}`; added `games.next_sequence_id` column + migration `0003`. The game-logic `Board` is a `Map<Position,BoardCell>` keyed by string codes — a sparse object round-trips it exactly (empty cells absent), whereas a dense 100-array would need a fixed position↔index map and stores empties. `pending_choice` shape follows the p02 I1 delta (`additionalRuns`). | implementation (shipped) | none — round-trip integration-tested; design §Data Models jsonb shapes could note the object-keyed board |
+| p04-t01 (infra) | plan.md p03 ("integration tests run … with `DATABASE_URL_TEST`") | `packages/api/vitest.config.ts` `loadEnv()` reads a package-local `.env` | Also loads the **monorepo-root** `.env` explicitly (`../../.env`) — the gitignored secrets live at root (worktree-init copies them there), so the package-local-only load left `DATABASE_URL_TEST` unset and every integration `describe` skipped. | Without this the entire p04 integration suite silently skipped. A package-local `.env` still wins if present. | implementation (shipped) | none |
+| p04-t09 (infra) | plan.md p03-t01 / package.json (`start: node src/server.ts`) | `node src/server.ts` runs the API at boot | `start`/`dev` use `node --experimental-transform-types` | Node 24's default strip-only TS mode cannot run **constructor parameter properties** (used by `TimerService`, `PresenceTracker`, `VersionConflictError`); `--experimental-transform-types` transpiles them. Verified by booting the server for the Bruno run. | implementation (shipped) | p07 Dockerfile must use the same flag (or a build step) for the prod boot |
+| p04-t14 (infra) | plan.md p03-t08 deviation (advisory lock serializes integration files) | The per-file Postgres advisory lock is sufficient under the workspace runner | Pinned the api vitest project to a **single fork** (`poolOptions.forks.singleFork`) + raised `hookTimeout` to 120s | With 14+ integration files now (vs p03's 2) plus the ~120s full-game e2e holding the advisory lock, queued harness `beforeAll`s (drizzle-push + boot) starved past the 60s hook timeout under the workspace's parallel workers, crashing `afterAll` on an undefined harness. A single fork makes the project's `fileParallelism:false` real; the advisory lock is now belt-and-suspenders. game-logic/web keep parallel pools. | implementation (shipped) | none — root `pnpm test` green (258 tests / 35 files) |
 
 ## Test Results
 
@@ -343,7 +372,7 @@ Track test execution during implementation.
 | p01   | 7 (game-logic smoke + 6 board-map) | 7 | 0 | n/a |
 | p02   | 132 (13 files; post-review fixes) | 132 | 0 | n/a |
 | p03   | 34 api after review fixes (9 env + 7 guest + 7 rate-limit unit + 11 integration [4 auth + 7 middleware]; +7 game-logic salvage = 41 root) | 34 api / 41 root | 0 | n/a |
-| p04   | -         | -      | -      | -        |
+| p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | -         | -      | -      | -        |
 | p06   | -         | -      | -      | -        |
 | p07   | -         | -      | -      | -        |
