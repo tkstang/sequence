@@ -44,6 +44,12 @@ import {
 } from './components/HandoffScreen/HandoffScreen.tsx';
 import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 import { PlayerRail } from './components/PlayerRail/PlayerRail.tsx';
+import {
+  ConnectionBanner,
+  ruleViolationMessage,
+  ToastViewport,
+  useToastQueue,
+} from './components/toasts.tsx';
 
 type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
@@ -64,25 +70,10 @@ function asPlayerCount(count: number): PlayerCount {
   return count === 3 || count === 4 || count === 6 ? count : 2;
 }
 
-function ReconnectingOverlay({ state }: { state: ConnectionState }) {
-  if (state === 'live') return null;
-  return (
-    <div className="bg-slate/80 fixed inset-0 z-50 flex items-center justify-center p-4 text-white">
-      <div className="bg-slate rounded-lg px-5 py-4 text-center shadow-xl">
-        <p className="text-sm font-bold">
-          {state === 'error' ? 'Connection interrupted' : 'Reconnecting…'}
-        </p>
-        <p className="mt-1 text-xs text-white/70">
-          Your game state will resume from the server stream.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const trpc = useTRPC();
   const router = useRouter();
+  const { toasts, pushToast, dismissToast } = useToastQueue();
   const connected = state.players.filter((p) => p.connected).length;
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
     null,
@@ -131,35 +122,55 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
     }
   }
 
+  function notifyGameError(error: unknown) {
+    pushToast({
+      tone: 'error',
+      title: 'Move blocked',
+      detail: ruleViolationMessage(error),
+    });
+  }
+
   const makeMove = useMutation(
     trpc.game.makeMove.mutationOptions({
       onSuccess: (result) => {
         showLocalHandoffAfterTurn(result);
+        pushToast({ tone: 'success', title: 'Move played' });
         setSelectedCardIndex(null);
         setDragIntent(null);
         setDragHoverPosition(null);
       },
+      onError: notifyGameError,
     }),
   );
   const turnInDeadCard = useMutation(
     trpc.game.turnInDeadCard.mutationOptions({
       onSuccess: () => {
+        pushToast({ tone: 'success', title: 'Card swapped' });
         setDragIntent(null);
         setDragHoverPosition(null);
       },
+      onError: notifyGameError,
     }),
   );
   const chooseSequenceCells = useMutation(
     trpc.game.chooseSequenceCells.mutationOptions({
       onSuccess: (result) => {
         showLocalHandoffAfterTurn(result);
+        pushToast({ tone: 'success', title: 'Sequence locked' });
         setChoiceCells([]);
       },
+      onError: notifyGameError,
     }),
   );
   const rematch = useMutation(
     trpc.game.rematch.mutationOptions({
       onSuccess: (result) => router.push(`/game/${result.gameId}`),
+      onError: (error) =>
+        pushToast({
+          tone: 'error',
+          title: 'Rematch unavailable',
+          detail: ruleViolationMessage(error),
+        }),
     }),
   );
   const pendingChoiceKey = state.pendingChoice
@@ -442,6 +453,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           onCardDragEnd={clearDrag}
         />
       ) : null}
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }
@@ -518,7 +530,7 @@ export default function GamePage() {
         </main>
       )}
       {showOverlay ? (
-        <ReconnectingOverlay
+        <ConnectionBanner
           state={subscription.status === 'error' ? 'error' : connectionState}
         />
       ) : null}
