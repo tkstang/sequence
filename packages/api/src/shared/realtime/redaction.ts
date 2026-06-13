@@ -121,6 +121,7 @@ export interface GameSnapshot {
   };
   winner?: number;
   winnerTeam?: number | null;
+  concededTeam?: number | null;
   endReason?: string | null;
   expiresAt?: string | null;
   turnDeadlineAt?: string | null;
@@ -146,6 +147,7 @@ export interface SnapshotMetadata {
   local: boolean;
   players: SnapshotPlayer[];
   winnerTeam: number | null;
+  concededTeam?: number | null;
   endReason: string | null;
   expiresAt: Date | null;
   turnDeadlineAt: Date | null;
@@ -202,6 +204,7 @@ export function buildSnapshot(
     teams: [...state.teams],
     hand: [...(state.hands[recipientSeat] ?? [])],
     winnerTeam: metadata?.winnerTeam ?? state.winner ?? null,
+    concededTeam: metadata?.concededTeam ?? null,
     endReason: metadata?.endReason ?? null,
     expiresAt: metadata?.expiresAt?.toISOString() ?? null,
     turnDeadlineAt: metadata?.turnDeadlineAt?.toISOString() ?? null,

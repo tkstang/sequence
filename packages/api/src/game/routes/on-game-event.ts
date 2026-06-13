@@ -1,5 +1,5 @@
 import { tracked } from '@trpc/server';
-import { and, asc, eq, gt, max } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, max } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { user } from '../../db/schema/auth.ts';
@@ -39,7 +39,8 @@ const REPLAY_WINDOW = 500;
  *    full **redacted snapshot** (public state + the recipient's own hand), then
  *    the live stream;
  *  - a recent `lastEventId` → **gap replay** of missed events from
- *    `game_events`, then live.
+ *    `game_events`, then a current snapshot so clients recover `version`
+ *    before the next mutation.
  *
  * Every item is `tracked()` by its `seq` so the client resumes precisely.
  * Per-recipient redaction (NFR1) is applied to both replayed and live events.
@@ -81,6 +82,91 @@ export const onGameEventRoute = gamePlayerProcedure
 
       let lastSent = 0;
 
+      async function readCurrentSnapshot(): Promise<GameSnapshot> {
+        const [game] = await ctx.db
+          .select({
+            id: games.id,
+            inviteCode: games.inviteCode,
+            status: games.status,
+            version: games.version,
+            playerCount: games.playerCount,
+            mode: games.mode,
+            timerSeconds: games.timerSeconds,
+            local: games.local,
+            winnerTeam: games.winnerTeam,
+            endReason: games.endReason,
+            expiresAt: games.expiresAt,
+            turnDeadlineAt: games.turnDeadlineAt,
+            turnRemainingMs: games.turnRemainingMs,
+          })
+          .from(games)
+          .where(eq(games.id, gameId))
+          .limit(1);
+        const players = await ctx.db
+          .select({
+            seat: gamePlayers.seat,
+            team: gamePlayers.team,
+            userId: gamePlayers.userId,
+            guestName: gamePlayers.guestName,
+            isCreator: gamePlayers.isCreator,
+            connected: gamePlayers.connected,
+            userName: user.name,
+          })
+          .from(gamePlayers)
+          .leftJoin(user, eq(gamePlayers.userId, user.id))
+          .where(eq(gamePlayers.gameId, gameId))
+          .orderBy(asc(gamePlayers.seat));
+        let concededTeam: number | null = null;
+        if (game?.endReason === 'concede') {
+          const [conceded] = await ctx.db
+            .select({ payload: gameEvents.payload })
+            .from(gameEvents)
+            .where(
+              and(
+                eq(gameEvents.gameId, gameId),
+                eq(gameEvents.type, 'GameConceded'),
+              ),
+            )
+            .orderBy(desc(gameEvents.seq))
+            .limit(1);
+          const team = (conceded?.payload as { team?: unknown } | undefined)
+            ?.team;
+          concededTeam = typeof team === 'number' ? team : null;
+        }
+        const metadata: SnapshotMetadata | undefined = game
+          ? {
+              gameId: game.id,
+              inviteCode: game.inviteCode,
+              status: game.status,
+              playerCount: game.playerCount,
+              mode: game.mode,
+              timerSeconds: game.timerSeconds,
+              local: game.local,
+              winnerTeam: game.winnerTeam,
+              concededTeam,
+              endReason: game.endReason,
+              expiresAt: game.expiresAt,
+              turnDeadlineAt: game.turnDeadlineAt,
+              turnRemainingMs: game.turnRemainingMs,
+              players: players.map((p) => ({
+                seat: p.seat,
+                team: p.team,
+                name: p.guestName ?? p.userName ?? 'Player',
+                isCreator: p.isCreator,
+                isGuest: p.userId === null,
+                connected: p.connected,
+              })),
+            }
+          : undefined;
+        const state = await loadGameState(ctx.db, gameId);
+        return buildSnapshot(
+          state,
+          recipientSeat,
+          game?.version ?? 0,
+          metadata,
+        );
+      }
+
       const withinWindow =
         input.lastEventId !== undefined &&
         input.lastEventId <= currentMax &&
@@ -119,74 +205,17 @@ export const onGameEventRoute = gamePlayerProcedure
             event,
           } satisfies StreamItem);
         }
+        const snapshot = await readCurrentSnapshot();
+        lastSent = currentMax;
+        yield tracked(String(currentMax), {
+          kind: 'snapshot',
+          snapshot,
+        } satisfies StreamItem);
       } else {
         // Snapshot-first: a full redacted snapshot tagged at the current seq.
         // The current `version` rides the snapshot so a recovering client can
         // submit its next move without any privileged DB read (FR6).
-        const [game] = await ctx.db
-          .select({
-            id: games.id,
-            inviteCode: games.inviteCode,
-            status: games.status,
-            version: games.version,
-            playerCount: games.playerCount,
-            mode: games.mode,
-            timerSeconds: games.timerSeconds,
-            local: games.local,
-            winnerTeam: games.winnerTeam,
-            endReason: games.endReason,
-            expiresAt: games.expiresAt,
-            turnDeadlineAt: games.turnDeadlineAt,
-            turnRemainingMs: games.turnRemainingMs,
-          })
-          .from(games)
-          .where(eq(games.id, gameId))
-          .limit(1);
-        const players = await ctx.db
-          .select({
-            seat: gamePlayers.seat,
-            team: gamePlayers.team,
-            userId: gamePlayers.userId,
-            guestName: gamePlayers.guestName,
-            isCreator: gamePlayers.isCreator,
-            connected: gamePlayers.connected,
-            userName: user.name,
-          })
-          .from(gamePlayers)
-          .leftJoin(user, eq(gamePlayers.userId, user.id))
-          .where(eq(gamePlayers.gameId, gameId))
-          .orderBy(asc(gamePlayers.seat));
-        const metadata: SnapshotMetadata | undefined = game
-          ? {
-              gameId: game.id,
-              inviteCode: game.inviteCode,
-              status: game.status,
-              playerCount: game.playerCount,
-              mode: game.mode,
-              timerSeconds: game.timerSeconds,
-              local: game.local,
-              winnerTeam: game.winnerTeam,
-              endReason: game.endReason,
-              expiresAt: game.expiresAt,
-              turnDeadlineAt: game.turnDeadlineAt,
-              turnRemainingMs: game.turnRemainingMs,
-              players: players.map((p) => ({
-                seat: p.seat,
-                team: p.team,
-                name: p.guestName ?? p.userName ?? 'Player',
-                isCreator: p.isCreator,
-                isGuest: p.userId === null,
-                connected: p.connected,
-              })),
-            }
-          : undefined;
-        const state = await loadGameState(ctx.db, gameId);
-        const snapshot = buildSnapshot(
-          state,
-          recipientSeat,
-          game?.version ?? 0,
-          metadata,
-        );
+        const snapshot = await readCurrentSnapshot();
         lastSent = currentMax;
         yield tracked(String(currentMax), {
           kind: 'snapshot',

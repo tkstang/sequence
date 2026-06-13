@@ -1,12 +1,23 @@
 import { randomUUID } from 'node:crypto';
 
-import { createGame, createSeededRng } from '@sequence/game-logic';
+import {
+  createGame,
+  createSeededRng,
+  validPlacements,
+  type Card,
+  type GameState,
+  type Position,
+} from '@sequence/game-logic';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { LoggedEvent } from '../../shared/realtime/redaction.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
-import { appendEvents, persistGameState } from '../state-mapping.ts';
+import {
+  appendEvents,
+  loadGameState,
+  persistGameState,
+} from '../state-mapping.ts';
 import type { StreamItem } from './on-game-event.ts';
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
@@ -34,6 +45,19 @@ function asTuples(iterable: AsyncIterable<unknown>): AsyncIterator<Yielded> {
   return (iterable as AsyncIterable<Yielded>)[Symbol.asyncIterator]();
 }
 
+function legalMove(
+  state: GameState,
+  seat: number,
+): { card: Card; position: Position } {
+  const hand = state.hands[seat]!;
+  const team = state.teams[seat]!;
+  const placements = validPlacements(hand, state.board, team);
+  for (const [card, positions] of placements) {
+    if (positions.length > 0) return { card, position: positions[0]! };
+  }
+  throw new Error('no legal move for seat');
+}
+
 /** Pull `n` items from a subscription async iterable (with a timeout guard). */
 async function take(
   iterable: AsyncIterable<unknown>,
@@ -53,6 +77,26 @@ async function take(
   }
   await iterator.return?.();
   return out;
+}
+
+async function takeUntilSnapshot(
+  iterable: AsyncIterable<unknown>,
+): Promise<Yielded> {
+  const iterator = asTuples(iterable);
+  try {
+    for (;;) {
+      const result = await Promise.race([
+        iterator.next(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('subscription timeout')), 5000),
+        ),
+      ]);
+      if (result.done) throw new Error('subscription ended before snapshot');
+      if (dataOf(result.value).kind === 'snapshot') return result.value;
+    }
+  } finally {
+    await iterator.return?.();
+  }
 }
 
 describeIntegration('game.onGameEvent (integration)', () => {
@@ -75,6 +119,11 @@ describeIntegration('game.onGameEvent (integration)', () => {
       password: 'supersecret123',
       name: 'Host',
     });
+    const joiner = await h.signUp({
+      email: `opp-${randomUUID()}@example.com`,
+      password: 'supersecret123',
+      name: 'Opp',
+    });
     const gameId = randomUUID();
     await h.db.insert(h.schema.games).values({
       id: gameId,
@@ -88,7 +137,7 @@ describeIntegration('game.onGameEvent (integration)', () => {
     });
     await h.db.insert(h.schema.gamePlayers).values([
       { gameId, seat: 0, team: 1, userId: host.userId, isCreator: true },
-      { gameId, seat: 1, team: 2, guestName: 'Opp' },
+      { gameId, seat: 1, team: 2, userId: joiner.userId },
     ]);
     const state = createGame(
       { playerCount: 2, mode: 'tap', timerSeconds: null, local },
@@ -99,7 +148,7 @@ describeIntegration('game.onGameEvent (integration)', () => {
       createSeededRng(11),
     );
     await h.db.transaction((tx) => persistGameState(tx, gameId, state, 0));
-    return { host, gameId, state };
+    return { host, joiner, gameId, state };
   }
 
   it('subscribe without lastEventId emits a snapshot first (own hand only)', async () => {
@@ -228,6 +277,39 @@ describeIntegration('game.onGameEvent (integration)', () => {
     const items = await take(sub, 2);
     expect(items.map(idOf)).toEqual(['2', '3']);
     expect(items.every((i) => dataOf(i).kind === 'event')).toBe(true);
+  });
+
+  it('replay recovery sends a current snapshot version before the next mutation', async () => {
+    const { host, joiner, gameId, state } = await seedStartedGame();
+    const firstMove = legalMove(state, 0);
+    const moved = await h.mutate(
+      'game.makeMove',
+      { gameId, version: 1, move: { type: 'place', ...firstMove } },
+      host.cookie,
+    );
+    expect(moved.ok).toBe(true);
+
+    const sub = await h
+      .caller(joiner.cookie)
+      .game.onGameEvent({ gameId, lastEventId: 0 });
+    const snapshotYield = await takeUntilSnapshot(sub);
+    const snapshotData = dataOf(snapshotYield);
+    expect(snapshotData.kind).toBe('snapshot');
+    if (snapshotData.kind !== 'snapshot') return;
+    expect(snapshotData.snapshot.version).toBe(2);
+
+    const currentState = await loadGameState(h.db, gameId);
+    const nextMove = legalMove(currentState, 1);
+    const next = await h.mutate(
+      'game.makeMove',
+      {
+        gameId,
+        version: snapshotData.snapshot.version,
+        move: { type: 'place', ...nextMove },
+      },
+      joiner.cookie,
+    );
+    expect(next.ok).toBe(true);
   });
 
   it('a stale lastEventId beyond the window falls back to a snapshot', async () => {
