@@ -1,7 +1,8 @@
 ---
 oat_status: in_progress
 oat_ready_for: null
-oat_blockers: []
+oat_blockers:
+  - p07-t02 Railway deploy target is not linked; no .railway metadata or Railway project/service/environment IDs are available for non-interactive deploy.
 oat_last_updated: 2026-06-13
 oat_current_task_id: p07-t02
 oat_generated: false
@@ -376,10 +377,16 @@ the existing Neon test branch and failed because that branch has been
 maintained with `drizzle-kit push` rather than migration history; production DB
 was not used.
 
+p07-t02 is blocked before deploy. A non-secret handoff skeleton was created at
+`handoff.md`; local checks found tokens present but no `railway`/`vercel` CLI in
+PATH, no `.railway/` link, no Railway project/service/environment IDs, no
+`.vercel/` link, and no Vercel org/project IDs. Non-interactive deployment
+cannot safely proceed without the linked Railway target.
+
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
-| p07-t01 | API Dockerfile + Railway config     | completed | `this` |
-| p07-t02 | Railway deploy                      | pending | -      |
+| p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
+| p07-t02 | Railway deploy                      | blocked (handoff skeleton) | `this` |
 | p07-t03 | Vercel deploy                       | pending | -      |
 | p07-t04 | Production smoke + checks           | pending | -      |
 | p07-t05 | Operator handoff notes              | pending | -      |
@@ -572,7 +579,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres | 30 focused + 383 root + Docker/migrate/health | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 prerequisite probe + handoff skeleton | 30 focused + 383 root + Docker/migrate/health; blocker recorded | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
 
 ## Final Summary (for PR/docs)
 
