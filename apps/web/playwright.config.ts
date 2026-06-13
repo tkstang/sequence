@@ -1,4 +1,11 @@
+import { existsSync } from 'node:fs';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig, devices } from '@playwright/test';
+
+const rootEnv = fileURLToPath(new URL('../../.env', import.meta.url));
+if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const webUrl = 'http://127.0.0.1:3000';
@@ -42,7 +49,7 @@ export default defineConfig({
           reuseExistingServer: !process.env.CI,
         },
         {
-          command: `NEXT_PUBLIC_API_URL=${apiUrl} NEXT_PUBLIC_WS_URL=${wsUrl} pnpm --filter @sequence/web dev -- --hostname 127.0.0.1 --port 3000`,
+          command: `NEXT_PUBLIC_API_URL=${apiUrl} NEXT_PUBLIC_WS_URL=${wsUrl} pnpm --filter @sequence/web dev --hostname 127.0.0.1 --port 3000`,
           url: webUrl,
           timeout: 120_000,
           reuseExistingServer: !process.env.CI,
