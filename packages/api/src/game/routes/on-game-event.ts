@@ -2,12 +2,15 @@ import { tracked } from '@trpc/server';
 import { and, asc, eq, gt, max } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { user } from '../../db/schema/auth.ts';
 import { gameEvents } from '../../db/schema/game-events.ts';
+import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import {
   buildSnapshot,
   type GameSnapshot,
   type LoggedEvent,
+  type SnapshotMetadata,
   redactEvent,
 } from '../../shared/realtime/redaction.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
@@ -120,16 +123,69 @@ export const onGameEventRoute = gamePlayerProcedure
         // Snapshot-first: a full redacted snapshot tagged at the current seq.
         // The current `version` rides the snapshot so a recovering client can
         // submit its next move without any privileged DB read (FR6).
-        const [vrow] = await ctx.db
-          .select({ version: games.version })
+        const [game] = await ctx.db
+          .select({
+            id: games.id,
+            inviteCode: games.inviteCode,
+            status: games.status,
+            version: games.version,
+            playerCount: games.playerCount,
+            mode: games.mode,
+            timerSeconds: games.timerSeconds,
+            local: games.local,
+            winnerTeam: games.winnerTeam,
+            endReason: games.endReason,
+            expiresAt: games.expiresAt,
+            turnDeadlineAt: games.turnDeadlineAt,
+            turnRemainingMs: games.turnRemainingMs,
+          })
           .from(games)
           .where(eq(games.id, gameId))
           .limit(1);
+        const players = await ctx.db
+          .select({
+            seat: gamePlayers.seat,
+            team: gamePlayers.team,
+            userId: gamePlayers.userId,
+            guestName: gamePlayers.guestName,
+            isCreator: gamePlayers.isCreator,
+            connected: gamePlayers.connected,
+            userName: user.name,
+          })
+          .from(gamePlayers)
+          .leftJoin(user, eq(gamePlayers.userId, user.id))
+          .where(eq(gamePlayers.gameId, gameId))
+          .orderBy(asc(gamePlayers.seat));
+        const metadata: SnapshotMetadata | undefined = game
+          ? {
+              gameId: game.id,
+              inviteCode: game.inviteCode,
+              status: game.status,
+              playerCount: game.playerCount,
+              mode: game.mode,
+              timerSeconds: game.timerSeconds,
+              local: game.local,
+              winnerTeam: game.winnerTeam,
+              endReason: game.endReason,
+              expiresAt: game.expiresAt,
+              turnDeadlineAt: game.turnDeadlineAt,
+              turnRemainingMs: game.turnRemainingMs,
+              players: players.map((p) => ({
+                seat: p.seat,
+                team: p.team,
+                name: p.guestName ?? p.userName ?? 'Player',
+                isCreator: p.isCreator,
+                isGuest: p.userId === null,
+                connected: p.connected,
+              })),
+            }
+          : undefined;
         const state = await loadGameState(ctx.db, gameId);
         const snapshot = buildSnapshot(
           state,
           recipientSeat,
-          vrow?.version ?? 0,
+          game?.version ?? 0,
+          metadata,
         );
         lastSent = currentMax;
         yield tracked(String(currentMax), {

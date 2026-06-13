@@ -7,8 +7,10 @@ import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import {
   appendEvents,
+  type AppendedEvent,
   persistLifecycleTransition,
   VersionConflictError,
 } from '../state-mapping.ts';
@@ -26,9 +28,9 @@ export const concedeRoute = gamePlayerProcedure
   .mutation(async ({ ctx, input }) => {
     const concedingTeam = ctx.seat.team;
 
-    let appended;
+    let committed: { version: number; appended: AppendedEvent[] };
     try {
-      appended = await ctx.db.transaction(async (tx) => {
+      committed = await ctx.db.transaction(async (tx) => {
         const [game] = await tx
           .select()
           .from(games)
@@ -54,18 +56,24 @@ export const concedeRoute = gamePlayerProcedure
         // Version-guarded: a concurrently-committed move bumped the version and
         // makes this transition lose cleanly as CONFLICT (and vice-versa), so a
         // concede can never be silently reverted by a racing move.
-        await persistLifecycleTransition(tx, input.gameId, game.version, {
-          status: 'finished',
-          endReason: 'concede',
-          winnerTeam,
-          finishedAt: new Date(),
-        });
+        const version = await persistLifecycleTransition(
+          tx,
+          input.gameId,
+          game.version,
+          {
+            status: 'finished',
+            endReason: 'concede',
+            winnerTeam,
+            finishedAt: new Date(),
+          },
+        );
 
         const events: { type: string; team?: number }[] = [
           { type: 'GameConceded', team: concedingTeam },
         ];
         if (winnerTeam) events.push({ type: 'GameWon', team: winnerTeam });
-        return appendEvents(tx, input.gameId, events);
+        const appended = await appendEvents(tx, input.gameId, events);
+        return { version, appended };
       });
     } catch (err) {
       if (err instanceof VersionConflictError) {
@@ -74,13 +82,12 @@ export const concedeRoute = gamePlayerProcedure
       throw err;
     }
 
-    for (const ev of appended) {
-      rooms.publish(input.gameId, {
-        seq: ev.seq,
-        type: ev.type,
-        payload: ev.payload as unknown as Record<string, unknown>,
-      });
-    }
+    publishAppendedEvents(
+      rooms,
+      input.gameId,
+      committed.appended,
+      committed.version,
+    );
 
     return { status: 'finished' as const, concedingTeam };
   });

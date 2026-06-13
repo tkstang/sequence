@@ -187,4 +187,43 @@ describeIntegration('PresenceTracker (integration)', () => {
     expect(types).toContain('PlayerReconnected');
     expect(types).toContain('TimerResumed');
   });
+
+  it('published freeze/resume lifecycle events carry the bumped version', async () => {
+    const { presence, roomReg } = makeTracker();
+    const gameId = await seedGame({ status: 'active', timerSeconds: 30 });
+    await h.db
+      .update(games)
+      .set({ turnDeadlineAt: new Date(Date.now() + 20_000) })
+      .where(eq(games.id, gameId));
+    await presence.markConnected(gameId, 0);
+    await presence.markConnected(gameId, 1);
+    const { sub, unsubscribe } = roomReg.subscribe(gameId);
+
+    await presence.markDisconnected(gameId, 1);
+    const frozen = await Promise.race([
+      sub.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('freeze timeout')), 5000),
+      ),
+    ]);
+    const [frozenRow] = await h.db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, gameId));
+    await presence.markConnected(gameId, 1);
+    const reconnected = await Promise.race([
+      sub.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('resume timeout')), 5000),
+      ),
+    ]);
+    const [resumedRow] = await h.db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, gameId));
+    unsubscribe();
+
+    expect(frozen?.version).toBe(frozenRow?.version);
+    expect(reconnected?.version).toBe(resumedRow?.version);
+  });
 });

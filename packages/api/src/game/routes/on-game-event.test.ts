@@ -129,6 +129,28 @@ describeIntegration('game.onGameEvent (integration)', () => {
     }
   });
 
+  it('the recovery snapshot carries roster and settings metadata', async () => {
+    const { host, gameId } = await seedStartedGame();
+    const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
+    const [first] = await take(sub, 1);
+    const firstData = first ? dataOf(first) : undefined;
+    expect(firstData?.kind).toBe('snapshot');
+    if (firstData?.kind === 'snapshot') {
+      expect(firstData.snapshot).toMatchObject({
+        gameId,
+        playerCount: 2,
+        mode: 'tap',
+        local: false,
+        mySeat: 0,
+      });
+      expect(firstData.snapshot.players.map((p) => p.name)).toEqual([
+        'Host',
+        'Opp',
+      ]);
+      expect(firstData.snapshot.players[0]?.isCreator).toBe(true);
+    }
+  });
+
   it('a live broadcast event carries the post-commit version', async () => {
     const { host, gameId } = await seedStartedGame();
     const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
@@ -243,6 +265,38 @@ describeIntegration('game.onGameEvent (integration)', () => {
     expect(item.kind).toBe('event');
     if (item.kind === 'event') {
       expect(JSON.stringify(item.event)).not.toContain('"card"');
+    }
+    await iterator.return?.();
+  });
+
+  it('redacts a private HandUpdated for a non-owning subscriber', async () => {
+    const { host, gameId } = await seedStartedGame();
+    const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
+    const iterator = asTuples(sub);
+    await iterator.next(); // snapshot
+
+    rooms.publish(gameId, {
+      seq: 1,
+      type: 'HandUpdated',
+      payload: {
+        seat: 1,
+        hand: [
+          { rank: 'A', suit: 'C' },
+          { rank: 'K', suit: 'D' },
+        ],
+      },
+    });
+    const next = await Promise.race([
+      iterator.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 5000),
+      ),
+    ]);
+    const item = dataOf(next.value as Yielded);
+    expect(item.kind).toBe('event');
+    if (item.kind === 'event') {
+      expect(item.event.payload).toMatchObject({ seat: 1 });
+      expect(JSON.stringify(item.event)).not.toContain('hand');
     }
     await iterator.return?.();
   });

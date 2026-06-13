@@ -14,6 +14,8 @@
 
 import type { GameState } from '@sequence/game-logic';
 
+import type { GameMode, GameStatus } from '../../db/schema/games.ts';
+
 /** A persisted event as it leaves the log: a discriminated payload + its seq. */
 export interface LoggedEvent {
   seq: number;
@@ -35,10 +37,14 @@ export interface LoggedEvent {
  * recipient these are reduced to their public skeleton (the seat + type, no
  * card). The owning seat — and any local-game connection — sees them in full.
  */
-const PRIVATE_EVENT_TYPES = new Set(['CardDrawn', 'DeadCardSwapped']);
+const PRIVATE_EVENT_TYPES = new Set([
+  'CardDrawn',
+  'DeadCardSwapped',
+  'HandUpdated',
+]);
 
 /** Card-bearing fields stripped from a private event for non-owning seats. */
-const PRIVATE_FIELDS = ['card', 'drawn', 'discarded'] as const;
+const PRIVATE_FIELDS = ['card', 'drawn', 'discarded', 'hand'] as const;
 
 /**
  * Redact one logged event for `recipientSeat`. Returns the event unchanged when
@@ -78,7 +84,14 @@ export function redactEvent(
  * a local game every hand is included (the one connection owns them all).
  */
 export interface GameSnapshot {
+  gameId: string;
+  inviteCode: string;
   status: string;
+  playerCount: number;
+  mode: GameMode;
+  timerSeconds: number | null;
+  local: boolean;
+  mySeat: number;
   currentSeat: number;
   round: number;
   /**
@@ -92,6 +105,7 @@ export interface GameSnapshot {
   /** Position code → { chip?, lockedBy? }. */
   board: Record<string, { chip?: number; lockedBy?: number }>;
   sequences: { id: number; team: number; cells: string[] }[];
+  players: SnapshotPlayer[];
   /** Completed-sequence count per team (public). */
   teams: number[];
   /** The recipient's own hand (local games: every hand, indexed by seat). */
@@ -106,6 +120,36 @@ export interface GameSnapshot {
     additionalRuns?: string[][];
   };
   winner?: number;
+  winnerTeam?: number | null;
+  endReason?: string | null;
+  expiresAt?: string | null;
+  turnDeadlineAt?: string | null;
+  turnRemainingMs?: number | null;
+}
+
+export interface SnapshotPlayer {
+  seat: number;
+  team: number;
+  name: string;
+  isCreator: boolean;
+  isGuest: boolean;
+  connected: boolean;
+}
+
+export interface SnapshotMetadata {
+  gameId: string;
+  inviteCode: string;
+  status: GameStatus;
+  playerCount: number;
+  mode: GameMode;
+  timerSeconds: number | null;
+  local: boolean;
+  players: SnapshotPlayer[];
+  winnerTeam: number | null;
+  endReason: string | null;
+  expiresAt: Date | null;
+  turnDeadlineAt: Date | null;
+  turnRemainingMs: number | null;
 }
 
 /**
@@ -117,6 +161,7 @@ export function buildSnapshot(
   state: GameState,
   recipientSeat: number,
   version: number,
+  metadata?: SnapshotMetadata,
 ): GameSnapshot {
   const board: GameSnapshot['board'] = {};
   for (const [pos, cell] of state.board) {
@@ -127,7 +172,14 @@ export function buildSnapshot(
   }
 
   const snapshot: GameSnapshot = {
+    gameId: metadata?.gameId ?? '',
+    inviteCode: metadata?.inviteCode ?? '',
     status: state.status,
+    playerCount: metadata?.playerCount ?? state.settings.playerCount,
+    mode: metadata?.mode ?? state.settings.mode,
+    timerSeconds: metadata?.timerSeconds ?? state.settings.timerSeconds,
+    local: metadata?.local ?? state.settings.local,
+    mySeat: recipientSeat,
     currentSeat: state.currentSeat,
     round: state.round,
     version,
@@ -137,8 +189,23 @@ export function buildSnapshot(
       team: s.team,
       cells: [...s.cells],
     })),
+    players:
+      metadata?.players ??
+      state.teams.map((team, seat) => ({
+        seat,
+        team,
+        name: `Player ${seat + 1}`,
+        isCreator: seat === 0,
+        isGuest: false,
+        connected: false,
+      })),
     teams: [...state.teams],
     hand: [...(state.hands[recipientSeat] ?? [])],
+    winnerTeam: metadata?.winnerTeam ?? state.winner ?? null,
+    endReason: metadata?.endReason ?? null,
+    expiresAt: metadata?.expiresAt?.toISOString() ?? null,
+    turnDeadlineAt: metadata?.turnDeadlineAt?.toISOString() ?? null,
+    turnRemainingMs: metadata?.turnRemainingMs ?? null,
   };
 
   if (state.settings.local) {

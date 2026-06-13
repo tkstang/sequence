@@ -62,12 +62,47 @@ describe('redactEvent', () => {
     expect(redacted.payload).toMatchObject({ seat: 0 });
   });
 
+  it('strips a HandUpdated payload for non-owning seats', () => {
+    const update: LoggedEvent = {
+      seq: 10,
+      type: 'HandUpdated',
+      payload: {
+        seat: 1,
+        hand: [
+          { rank: 'A', suit: 'C' },
+          { rank: 'K', suit: 'D' },
+        ],
+      },
+    };
+    const redacted = redactEvent(update, 0, false);
+    expect(redacted.payload).not.toHaveProperty('hand');
+    expect(redacted.payload).toMatchObject({ seat: 1 });
+    expect(redactEvent(update, 1, false)).toEqual(update);
+  });
+
+  it('a local-game connection receives a HandUpdated payload intact', () => {
+    const update: LoggedEvent = {
+      seq: 11,
+      type: 'HandUpdated',
+      payload: { seat: 1, hand: [{ rank: 'A', suit: 'C' }] },
+    };
+    expect(redactEvent(update, 0, true)).toEqual(update);
+  });
+
   it('a local-game connection receives private events intact', () => {
     expect(redactEvent(cardDrawnForSeat1, 0, true)).toEqual(cardDrawnForSeat1);
   });
 
   it('NFR1: no event reaching a non-owning seat carries card data', () => {
     const events: LoggedEvent[] = [
+      {
+        seq: 0,
+        type: 'HandUpdated',
+        payload: {
+          seat: 1,
+          hand: [{ rank: 'Q', suit: 'S' }],
+        },
+      },
       {
         seq: 1,
         type: 'CardDrawn',
@@ -86,7 +121,9 @@ describe('redactEvent', () => {
     for (const e of events) {
       const redacted = redactEvent(e, 0, false);
       // Scan the serialized payload for any card-bearing key.
-      expect(JSON.stringify(redacted)).not.toMatch(/"(card|drawn|discarded)"/);
+      expect(JSON.stringify(redacted)).not.toMatch(
+        /"(card|drawn|discarded|hand)"/,
+      );
     }
   });
 });
@@ -139,6 +176,55 @@ describe('buildSnapshot', () => {
     // version is global per-game (not redacted) — identical for every seat.
     expect(buildSnapshot(state, 0, 7).version).toBe(7);
     expect(buildSnapshot(state, 1, 7).version).toBe(7);
+  });
+
+  it('carries public game metadata and roster without leaking private state', () => {
+    const state = activeGame();
+    const snap = buildSnapshot(state, 0, 2, {
+      gameId: 'game-1',
+      inviteCode: 'ABC123',
+      status: 'active',
+      playerCount: 2,
+      mode: 'tap',
+      timerSeconds: 60,
+      local: false,
+      winnerTeam: null,
+      endReason: null,
+      expiresAt: null,
+      turnDeadlineAt: new Date('2026-06-13T00:00:00.000Z'),
+      turnRemainingMs: null,
+      players: [
+        {
+          seat: 0,
+          team: 1,
+          name: 'Host',
+          isCreator: true,
+          isGuest: false,
+          connected: true,
+        },
+        {
+          seat: 1,
+          team: 2,
+          name: 'Guest',
+          isCreator: false,
+          isGuest: true,
+          connected: false,
+        },
+      ],
+    });
+
+    expect(snap).toMatchObject({
+      gameId: 'game-1',
+      inviteCode: 'ABC123',
+      playerCount: 2,
+      mode: 'tap',
+      timerSeconds: 60,
+      local: false,
+      mySeat: 0,
+    });
+    expect(snap.players.map((p) => p.name)).toEqual(['Host', 'Guest']);
+    expect(snap.turnDeadlineAt).toBe('2026-06-13T00:00:00.000Z');
+    expect(JSON.stringify(snap)).not.toContain('deck');
   });
 
   it('includes pendingChoice.placed and additionalRuns for a reconnecting placer', () => {

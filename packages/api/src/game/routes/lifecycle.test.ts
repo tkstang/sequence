@@ -12,6 +12,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { gameEvents, gamePlayers, games } from '../../db/schema/index.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
 import { persistGameState } from '../state-mapping.ts';
 
@@ -196,6 +197,29 @@ describeIntegration('save / concede / myGames (integration)', () => {
     expect(row?.endReason).toBe('concede');
     expect(row?.winnerTeam).toBe(1);
     expect(row?.finishedAt).toBeTruthy();
+  });
+
+  it('concede broadcasts the post-transition version', async () => {
+    const { joiner, gameId } = await activeGame();
+    const { sub, unsubscribe } = rooms.subscribe(gameId);
+
+    const res = await h.mutate('game.concede', { gameId }, joiner!.cookie);
+    expect(res.ok).toBe(true);
+
+    const event = await Promise.race([
+      sub.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('concede timeout')), 5000),
+      ),
+    ]);
+    const [row] = await h.db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, gameId));
+    unsubscribe();
+
+    expect(event?.type).toBe('GameConceded');
+    expect(event?.version).toBe(row?.version);
   });
 
   it('myGames returns the user resumables and recents', async () => {

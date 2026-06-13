@@ -6,8 +6,10 @@ import { z } from 'zod';
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import type { RateLimiter } from '../../shared/rate-limit-middleware.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { GUEST_COOKIE_NAME, publicProcedure } from '../../trpc.ts';
 import { hashToken, issueGuestToken } from '../../user/guest-tokens.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import { appendEvents } from '../state-mapping.ts';
 
 /** Result of a join: the seat the caller now occupies + whether they're a guest. */
@@ -40,7 +42,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
       }),
     )
     .mutation(async ({ ctx, input }): Promise<JoinResult> => {
-      return ctx.db.transaction(async (tx) => {
+      const result = await ctx.db.transaction(async (tx) => {
         const [game] = await tx
           .select()
           .from(games)
@@ -76,6 +78,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
               seat: existing.seat,
               team: existing.team,
               isGuest: false,
+              appended: [],
             };
           }
         }
@@ -99,7 +102,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
             team,
             userId: ctx.user.id,
           });
-          await appendEvents(tx, game.id, [
+          const appended = await appendEvents(tx, game.id, [
             {
               type: 'PlayerJoined',
               seat,
@@ -108,7 +111,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
               isGuest: false,
             },
           ]);
-          return { gameId: game.id, seat, team, isGuest: false };
+          return { gameId: game.id, seat, team, isGuest: false, appended };
         }
 
         // Anonymous → guest path requires a name.
@@ -127,7 +130,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
           guestName: input.guestName,
           guestTokenHash: hashToken(token),
         });
-        await appendEvents(tx, game.id, [
+        const appended = await appendEvents(tx, game.id, [
           {
             type: 'PlayerJoined',
             seat,
@@ -137,13 +140,23 @@ export function buildJoinRoute(limiter: RateLimiter) {
           },
         ]);
 
+        return { gameId: game.id, seat, team, isGuest: true, appended, token };
+      });
+
+      const guestToken = 'token' in result ? result.token : undefined;
+      if (typeof guestToken === 'string') {
         // httpOnly, game-scoped cookie. SameSite/secure are finalized at deploy
         // (p07); same-site for local/test. The raw token lives only here.
         ctx.setCookie(
-          `${GUEST_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax`,
+          `${GUEST_COOKIE_NAME}=${encodeURIComponent(guestToken)}; Path=/; HttpOnly; SameSite=Lax`,
         );
-
-        return { gameId: game.id, seat, team, isGuest: true };
-      });
+      }
+      publishAppendedEvents(rooms, result.gameId, result.appended);
+      return {
+        gameId: result.gameId,
+        seat: result.seat,
+        team: result.team,
+        isGuest: result.isGuest,
+      };
     });
 }

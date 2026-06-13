@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { gameEvents, gamePlayers } from '../../db/schema/index.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
@@ -195,5 +196,31 @@ describeIntegration('lobby operations (integration)', () => {
     const types = events.map((e) => e.type);
     expect(types).toContain('PlayerJoined');
     expect(types).toContain('TeamChanged');
+  });
+
+  it('publishes lobby events live to current room subscribers', async () => {
+    const { gameId, joiners } = await lobbyWithJoiners(['Bob']);
+    const { sub, unsubscribe } = rooms.subscribe(gameId);
+
+    await h.mutate(
+      'game.setTeam',
+      { gameId, targetSeat: joiners[0]!.seat, team: 1 },
+      joiners[0]!.cookie,
+    );
+
+    const event = await Promise.race([
+      sub.next(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('room timeout')), 5000),
+      ),
+    ]);
+    unsubscribe();
+
+    expect(event?.type).toBe('TeamChanged');
+    expect(event?.payload).toMatchObject({
+      type: 'TeamChanged',
+      seat: joiners[0]!.seat,
+      team: 1,
+    });
   });
 });

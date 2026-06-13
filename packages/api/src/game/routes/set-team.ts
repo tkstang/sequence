@@ -4,7 +4,9 @@ import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import { appendEvents, type Tx } from '../state-mapping.ts';
 
 /**
@@ -23,7 +25,7 @@ export const setTeamRoute = gamePlayerProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
-    return ctx.db.transaction(async (tx) => {
+    const result = await ctx.db.transaction(async (tx) => {
       const [game] = await tx
         .select()
         .from(games)
@@ -66,12 +68,14 @@ export const setTeamRoute = gamePlayerProcedure
           ),
         );
 
-      await appendEvents(tx, input.gameId, [
+      const appended = await appendEvents(tx, input.gameId, [
         { type: 'TeamChanged', seat: input.targetSeat, team: input.team },
       ]);
 
-      return { seat: input.targetSeat, team: input.team };
+      return { seat: input.targetSeat, team: input.team, appended };
     });
+    publishAppendedEvents(rooms, input.gameId, result.appended);
+    return { seat: result.seat, team: result.team };
   });
 
 /** True when the caller's seat is the game's creator. */

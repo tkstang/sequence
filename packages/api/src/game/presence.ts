@@ -22,6 +22,7 @@ import type { Database } from '../db/client.ts';
 import { gamePlayers } from '../db/schema/game-players.ts';
 import { games } from '../db/schema/games.ts';
 import type { RoomRegistry } from '../shared/realtime/rooms.ts';
+import { publishAppendedEvents } from './publish-events.ts';
 import {
   type AppendedEvent,
   appendEvents,
@@ -102,15 +103,26 @@ export class PresenceTracker {
     // if a move committed concurrently (bumping the version), the freeze loses
     // cleanly rather than clobbering the move's row. The next heartbeat lapse
     // re-evaluates, so a genuinely-departed player still freezes the game.
+    let frozenVersion: number;
     let appended: AppendedEvent[];
     try {
-      appended = await this.deps.db.transaction(async (tx) => {
-        await persistLifecycleTransition(tx, gameId, game.version, {
-          status: 'frozen',
-          expiresAt: new Date(this.now() + FROZEN_EXPIRY_MS),
-        });
-        return appendEvents(tx, gameId, [{ type: 'PlayerDisconnected', seat }]);
+      const result = await this.deps.db.transaction(async (tx) => {
+        const nextVersion = await persistLifecycleTransition(
+          tx,
+          gameId,
+          game.version,
+          {
+            status: 'frozen',
+            expiresAt: new Date(this.now() + FROZEN_EXPIRY_MS),
+          },
+        );
+        const rows = await appendEvents(tx, gameId, [
+          { type: 'PlayerDisconnected', seat },
+        ]);
+        return { nextVersion, rows };
       });
+      frozenVersion = result.nextVersion;
+      appended = result.rows;
     } catch (err) {
       if (err instanceof VersionConflictError) return; // a move won the race
       throw err;
@@ -119,7 +131,7 @@ export class PresenceTracker {
     // Pause the timer only after the freeze commits (so a lost race doesn't
     // leave a paused timer on a still-active game).
     await this.deps.timers.pause(gameId);
-    this.publishAppended(gameId, appended);
+    this.publishAppended(gameId, appended, frozenVersion);
   }
 
   /**
@@ -184,18 +196,16 @@ export class PresenceTracker {
     // post-resume version so a forfeit guards against the right row.
     await this.deps.timers.resume(gameId, resumedVersion);
 
-    this.publishAppended(gameId, appended);
+    this.publishAppended(gameId, appended, resumedVersion);
   }
 
   /** Publish appended lifecycle events to the room with their real DB seqs. */
-  private publishAppended(gameId: string, appended: AppendedEvent[]): void {
-    for (const ev of appended) {
-      this.deps.rooms.publish(gameId, {
-        seq: ev.seq,
-        type: ev.type,
-        payload: ev.payload as unknown as Record<string, unknown>,
-      });
-    }
+  private publishAppended(
+    gameId: string,
+    appended: AppendedEvent[],
+    version: number,
+  ): void {
+    publishAppendedEvents(this.deps.rooms, gameId, appended, version);
   }
 
   /** Drop all in-memory presence for a game (sweep/teardown). */

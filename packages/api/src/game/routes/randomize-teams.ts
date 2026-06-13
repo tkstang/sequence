@@ -5,7 +5,9 @@ import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import { createServerRng } from '../server-rng.ts';
 import { appendEvents } from '../state-mapping.ts';
 import { callerIsCreator } from './set-team.ts';
@@ -32,7 +34,7 @@ const TEAM_COUNT: Readonly<Record<number, number>> = {
 export const randomizeTeamsRoute = gamePlayerProcedure
   .input(z.object({ gameId: z.string().uuid() }))
   .mutation(async ({ ctx, input }) => {
-    return ctx.db.transaction(async (tx) => {
+    const result = await ctx.db.transaction(async (tx) => {
       const [game] = await tx
         .select()
         .from(games)
@@ -77,7 +79,9 @@ export const randomizeTeamsRoute = gamePlayerProcedure
         });
       }
 
-      await appendEvents(tx, input.gameId, events);
-      return { ok: true as const };
+      const appended = await appendEvents(tx, input.gameId, events);
+      return { ok: true as const, appended };
     });
+    publishAppendedEvents(rooms, input.gameId, result.appended);
+    return { ok: result.ok };
   });

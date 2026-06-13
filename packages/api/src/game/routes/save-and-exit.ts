@@ -5,7 +5,9 @@ import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import {
   appendEvents,
   persistLifecycleTransition,
@@ -25,7 +27,7 @@ export const saveAndExitRoute = gamePlayerProcedure
   .input(z.object({ gameId: z.string().uuid() }))
   .mutation(async ({ ctx, input }) => {
     try {
-      return await ctx.db.transaction(async (tx) => {
+      const result = await ctx.db.transaction(async (tx) => {
         const [game] = await tx
           .select()
           .from(games)
@@ -55,15 +57,29 @@ export const saveAndExitRoute = gamePlayerProcedure
 
         // Version-guarded so a concurrent move can't revert the save (and the
         // save can't clobber a move) — same optimistic-concurrency protocol.
-        await persistLifecycleTransition(tx, input.gameId, game.version, {
-          status: 'saved',
-          expiresAt: new Date(Date.now() + SAVED_EXPIRY_MS),
-        });
+        const version = await persistLifecycleTransition(
+          tx,
+          input.gameId,
+          game.version,
+          {
+            status: 'saved',
+            expiresAt: new Date(Date.now() + SAVED_EXPIRY_MS),
+          },
+        );
 
-        await appendEvents(tx, input.gameId, [{ type: 'GameSaved' }]);
+        const appended = await appendEvents(tx, input.gameId, [
+          { type: 'GameSaved' },
+        ]);
 
-        return { status: 'saved' as const };
+        return { status: 'saved' as const, version, appended };
       });
+      publishAppendedEvents(
+        rooms,
+        input.gameId,
+        result.appended,
+        result.version,
+      );
+      return { status: result.status };
     } catch (err) {
       if (err instanceof VersionConflictError) {
         throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });

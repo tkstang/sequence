@@ -4,7 +4,9 @@ import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
+import { rooms } from '../../shared/realtime/rooms.ts';
 import { gamePlayerProcedure } from '../../trpc.ts';
+import { publishAppendedEvents } from '../publish-events.ts';
 import { appendEvents } from '../state-mapping.ts';
 import { callerIsCreator } from './set-team.ts';
 
@@ -22,7 +24,7 @@ export const kickPlayerRoute = gamePlayerProcedure
     }),
   )
   .mutation(async ({ ctx, input }) => {
-    return ctx.db.transaction(async (tx) => {
+    const result = await ctx.db.transaction(async (tx) => {
       const [game] = await tx
         .select()
         .from(games)
@@ -58,10 +60,12 @@ export const kickPlayerRoute = gamePlayerProcedure
         .returning({ seat: gamePlayers.seat });
       if (deleted.length === 0) throw new TRPCError({ code: 'NOT_FOUND' });
 
-      await appendEvents(tx, input.gameId, [
+      const appended = await appendEvents(tx, input.gameId, [
         { type: 'PlayerKicked', seat: input.targetSeat },
       ]);
 
-      return { kickedSeat: input.targetSeat };
+      return { kickedSeat: input.targetSeat, appended };
     });
+    publishAppendedEvents(rooms, input.gameId, result.appended);
+    return { kickedSeat: result.kickedSeat };
   });

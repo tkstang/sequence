@@ -88,6 +88,11 @@ export const startGameRoute = gamePlayerProcedure
 
       const appended = await appendEvents(tx, input.gameId, [
         { type: 'GameStarted', currentSeat: state.currentSeat },
+        ...state.hands.map((hand, seat) => ({
+          type: 'HandUpdated' as const,
+          seat,
+          hand: [...hand],
+        })),
       ]);
 
       // Broadcast GameStarted to the room with the post-start version so any
