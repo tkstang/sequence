@@ -47,7 +47,7 @@ export function CardHand({
   return (
     <section
       aria-label="Your hand"
-      className={`relative mx-auto flex min-h-28 w-full max-w-[min(94vw,680px)] items-end justify-center overflow-visible px-3 pt-4 pb-2 transition-transform ${
+      className={`relative mx-auto flex min-h-24 w-full max-w-[min(94vw,680px)] items-end justify-center overflow-visible px-2 pt-4 pb-2 transition-transform sm:min-h-28 sm:px-3 ${
         raised ? 'translate-y-0' : 'translate-y-4'
       }`}
     >
@@ -88,7 +88,7 @@ export function CardHand({
               }}
               onDragStart={handleDragStart}
               onDragEnd={onCardDragEnd}
-              className={`relative -mx-1 h-[88px] w-[60px] shrink-0 rounded-md bg-white shadow-lg transition-transform sm:h-[118px] sm:w-[80px] ${
+              className={`relative -mx-1 h-[78px] w-[52px] shrink-0 rounded-md bg-white shadow-lg transition-transform sm:h-[118px] sm:w-[80px] ${
                 selected ? 'ring-team-green z-20 ring-2' : ''
               }`}
               style={{ transform: transformFor(index, hand.length, raised) }}
@@ -97,7 +97,7 @@ export function CardHand({
                 src={cardAssetPath(code)}
                 alt=""
                 fill
-                sizes="80px"
+                sizes="(min-width: 640px) 80px, 52px"
                 unoptimized
                 className="rounded-md object-cover"
               />

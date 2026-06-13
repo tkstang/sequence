@@ -104,8 +104,8 @@ export function PlayerRail({
   const counts = useMemo(() => sequenceCounts(sequences), [sequences]);
 
   return (
-    <header className="bg-slate flex flex-wrap items-center gap-2 rounded-lg p-2 text-white">
-      <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+    <header className="bg-slate flex flex-col items-stretch gap-2 rounded-lg p-2 text-white sm:flex-row sm:items-center">
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
         {players.map((player) => {
           const last = lastPlayedCards[player.seat];
           const active = player.seat === currentSeat;
@@ -141,7 +141,7 @@ export function PlayerRail({
         })}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
         <div className="rounded-lg bg-white/10 px-2 py-1 text-right">
           <div className="text-[0.62rem] font-bold tracking-wide text-white/45 uppercase">
             Round

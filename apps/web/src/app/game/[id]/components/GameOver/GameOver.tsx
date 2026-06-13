@@ -46,7 +46,7 @@ export function GameOver({
           </p>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           disabled={isRematching}
@@ -57,7 +57,7 @@ export function GameOver({
         </button>
         <Link
           href="/dashboard"
-          className="rounded-md border border-black/15 px-4 py-2 text-sm font-bold text-black/70"
+          className="rounded-md border border-black/15 px-4 py-2 text-center text-sm font-bold text-black/70"
         >
           Dashboard
         </Link>

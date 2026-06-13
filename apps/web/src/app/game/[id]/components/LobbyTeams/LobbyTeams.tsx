@@ -135,7 +135,7 @@ function TeamSlot({
         type="button"
         onClick={onJoin}
         disabled={isMutating}
-        className="min-h-12 flex-1 rounded-lg border border-dashed border-black/30 bg-white/60 px-2 py-2 text-center text-xs font-semibold text-black/45 disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-12 min-w-0 flex-1 rounded-lg border border-dashed border-black/30 bg-white/60 px-2 py-2 text-center text-xs font-semibold text-black/45 disabled:cursor-not-allowed disabled:opacity-50"
       >
         tap to join
       </button>
@@ -143,9 +143,9 @@ function TeamSlot({
   }
 
   return (
-    <div className="min-h-12 flex-1 rounded-lg border border-black/10 bg-white px-2 py-2 text-sm">
+    <div className="min-h-12 min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-2 text-sm">
       <div className="flex items-center gap-1.5">
-        <span className="truncate font-semibold">{player.name}</span>
+        <span className="min-w-0 truncate font-semibold">{player.name}</span>
         {player.isCreator ? <Badge tone="neutral">Host</Badge> : null}
         {player.seat === mySeat ? (
           <span className="text-xs text-black/40">you</span>
@@ -247,7 +247,7 @@ export function LobbyTeams({
                 />
                 {meta.name}
               </div>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 gap-2">
                 {slots.map((player, index) => (
                   <TeamSlot
                     key={player?.seat ?? `${team}-${index}`}

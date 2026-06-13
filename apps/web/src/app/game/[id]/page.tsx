@@ -262,7 +262,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 p-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-3 p-2 sm:gap-4 sm:p-4">
       <PlayerRail
         players={state.players}
         currentSeat={state.currentSeat}
@@ -288,7 +288,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           {state.players.map((player) => (
             <div
               key={player.seat}
-              className="bg-cream flex items-center gap-2 rounded-lg border border-black/10 p-2 text-sm"
+              className="bg-cream flex min-w-0 items-center gap-2 rounded-lg border border-black/10 p-2 text-sm"
             >
               <span
                 className="h-3 w-3 rounded-full"
@@ -302,9 +302,13 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
                 }}
                 aria-hidden
               />
-              <span className="font-medium">{player.name}</span>
+              <span className="min-w-0 truncate font-medium">
+                {player.name}
+              </span>
               {player.seat === state.currentSeat ? (
-                <span className="text-team-green text-xs font-bold">turn</span>
+                <span className="text-team-green shrink-0 text-xs font-bold">
+                  turn
+                </span>
               ) : null}
             </div>
           ))}
