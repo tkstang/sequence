@@ -11,7 +11,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { gamePlayers, games } from '../../db/schema/index.ts';
+import { gameEvents, gamePlayers, games } from '../../db/schema/index.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
 import { persistGameState } from '../state-mapping.ts';
 
@@ -247,10 +247,64 @@ describeIntegration('save / concede / myGames (integration)', () => {
     if (!res.ok) return;
     const data = res.data as {
       resumables: { gameId: string }[];
-      recents: { gameId: string }[];
+      recents: { gameId: string; result: string }[];
     };
     expect(data.resumables.map((g) => g.gameId)).toContain(savedId);
     expect(data.recents.map((g) => g.gameId)).toContain(finishedId);
+    expect(data.recents.find((g) => g.gameId === finishedId)?.result).toBe(
+      'win',
+    );
+  });
+
+  it('myGames marks no-winner FFA concede non-conceders as no result', async () => {
+    const a = await signUp('A');
+    const b = await signUp('B');
+    const c = await signUp('C');
+    const gameId = randomUUID();
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: a.userId,
+      playerCount: 3,
+      mode: 'tap',
+      status: 'finished',
+      winnerTeam: null,
+      endReason: 'concede',
+      finishedAt: new Date(),
+    });
+    await h.db.insert(gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: a.userId, isCreator: true },
+      { gameId, seat: 1, team: 2, userId: b.userId },
+      { gameId, seat: 2, team: 3, userId: c.userId },
+    ]);
+    await h.db.insert(gameEvents).values({
+      gameId,
+      seq: 1,
+      type: 'GameConceded',
+      payload: { type: 'GameConceded', team: 3 },
+    });
+
+    const resA = await h.query('game.myGames', undefined, a.cookie);
+    expect(resA.ok).toBe(true);
+    if (!resA.ok) return;
+    expect(
+      (
+        resA.data as {
+          recents: { gameId: string; result: string }[];
+        }
+      ).recents.find((g) => g.gameId === gameId)?.result,
+    ).toBe('none');
+
+    const resC = await h.query('game.myGames', undefined, c.cookie);
+    expect(resC.ok).toBe(true);
+    if (!resC.ok) return;
+    expect(
+      (
+        resC.data as {
+          recents: { gameId: string; result: string }[];
+        }
+      ).recents.find((g) => g.gameId === gameId)?.result,
+    ).toBe('loss');
   });
 
   it('myGames requires auth', async () => {

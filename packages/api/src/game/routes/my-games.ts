@@ -1,9 +1,12 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { user } from '../../db/schema/auth.ts';
+import { gameEvents } from '../../db/schema/game-events.ts';
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { authedProcedure } from '../../trpc.ts';
+
+export type GameResult = 'win' | 'loss' | 'none';
 
 /** A dashboard game card (resumable or recent). No private hand data. */
 export interface MyGameCard {
@@ -23,8 +26,29 @@ export interface MyGameCard {
   myTeam: number;
   /** Display names of the other players (opponents/teammates), seat order. */
   opponents: string[];
-  /** True when the user's team won (finished games only). */
-  won: boolean;
+  /** Tri-state result for finished games; no-winner FFA non-conceders are none. */
+  result: GameResult;
+}
+
+function concededTeamFromPayload(payload: unknown): number | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const team = (payload as { team?: unknown }).team;
+  return typeof team === 'number' ? team : null;
+}
+
+function resultForTeam(opts: {
+  winnerTeam: number | null;
+  endReason: string | null;
+  myTeam: number;
+  concededTeam: number | null;
+}): GameResult {
+  if (opts.winnerTeam !== null) {
+    return opts.winnerTeam === opts.myTeam ? 'win' : 'loss';
+  }
+  if (opts.endReason === 'concede' && opts.concededTeam === opts.myTeam) {
+    return 'loss';
+  }
+  return 'none';
 }
 
 /**
@@ -36,7 +60,7 @@ export interface MyGameCard {
  *  - `recents`: their most recent `finished` games (results strip).
  * Both are scoped to games where the user holds a seat. Each card carries the
  * user's seat+team, the other players' display names (for "vs …" labels), the
- * round, and a derived `won` flag — never any hands/deck.
+ * round, and a tri-state `result` — never any hands/deck.
  */
 export const myGamesRoute = authedProcedure.query(async ({ ctx }) => {
   // The user's seats → the games they participate in (+ their team).
@@ -86,6 +110,24 @@ export const myGamesRoute = authedProcedure.query(async ({ ctx }) => {
     opponentsByGame.set(p.gameId, list);
   }
 
+  const concededEvents = await ctx.db
+    .select({
+      gameId: gameEvents.gameId,
+      payload: gameEvents.payload,
+    })
+    .from(gameEvents)
+    .where(
+      and(
+        inArray(gameEvents.gameId, gameIds),
+        eq(gameEvents.type, 'GameConceded'),
+      ),
+    );
+  const concededTeamByGame = new Map<string, number>();
+  for (const event of concededEvents) {
+    const team = concededTeamFromPayload(event.payload);
+    if (team !== null) concededTeamByGame.set(event.gameId, team);
+  }
+
   const toCard = (g: (typeof rows)[number]): MyGameCard => {
     const mine = mineByGame.get(g.id) ?? { seat: 0, team: 1 };
     return {
@@ -103,7 +145,12 @@ export const myGamesRoute = authedProcedure.query(async ({ ctx }) => {
       mySeat: mine.seat,
       myTeam: mine.team,
       opponents: opponentsByGame.get(g.id) ?? [],
-      won: g.winnerTeam !== null && g.winnerTeam === mine.team,
+      result: resultForTeam({
+        winnerTeam: g.winnerTeam ?? null,
+        endReason: g.endReason ?? null,
+        myTeam: mine.team,
+        concededTeam: concededTeamByGame.get(g.id) ?? null,
+      }),
     };
   };
 

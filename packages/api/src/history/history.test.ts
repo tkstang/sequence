@@ -191,6 +191,57 @@ describeIntegration('history (integration)', () => {
     }
   });
 
+  it('history.myGames marks no-winner FFA concede non-conceders as no result', async () => {
+    const a = await signUp('A');
+    const b = await signUp('B');
+    const c = await signUp('C');
+    const gameId = randomUUID();
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: a.userId,
+      playerCount: 3,
+      mode: 'tap',
+      status: 'finished',
+      winnerTeam: null,
+      endReason: 'concede',
+      finishedAt: new Date(),
+    });
+    await h.db.insert(gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: a.userId, isCreator: true },
+      { gameId, seat: 1, team: 2, userId: b.userId },
+      { gameId, seat: 2, team: 3, userId: c.userId },
+    ]);
+    await h.db.insert(h.schema.gameEvents).values({
+      gameId,
+      seq: 1,
+      type: 'GameConceded',
+      payload: { type: 'GameConceded', team: 3 },
+    });
+
+    const resA = await h.query('history.myGames', { limit: 5 }, a.cookie);
+    expect(resA.ok).toBe(true);
+    if (!resA.ok) return;
+    expect(
+      (
+        resA.data as {
+          items: { gameId: string; result: string }[];
+        }
+      ).items.find((g) => g.gameId === gameId)?.result,
+    ).toBe('none');
+
+    const resC = await h.query('history.myGames', { limit: 5 }, c.cookie);
+    expect(resC.ok).toBe(true);
+    if (!resC.ok) return;
+    expect(
+      (
+        resC.data as {
+          items: { gameId: string; result: string }[];
+        }
+      ).items.find((g) => g.gameId === gameId)?.result,
+    ).toBe('loss');
+  });
+
   it('history.myGames does not skip rows when finished_at ties across a page', async () => {
     const a = await signUp('A');
     const b = await signUp('B');

@@ -1,6 +1,7 @@
-import { and, desc, eq, lt, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { gameEvents } from '../../db/schema/game-events.ts';
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { authedProcedure } from '../../trpc.ts';
@@ -11,6 +12,8 @@ import { authedProcedure } from '../../trpc.ts';
  * `finished_at` ties across a page boundary. Serialized as `"<iso>|<id>"`.
  */
 const CURSOR_SEP = '|';
+
+export type HistoryGameResult = 'win' | 'loss' | 'none';
 
 function encodeCursor(finishedAt: Date, id: string): string {
   return `${finishedAt.toISOString()}${CURSOR_SEP}${id}`;
@@ -36,7 +39,28 @@ export interface HistoryGame {
   winnerTeam: number | null;
   endReason: string | null;
   myTeam: number;
-  won: boolean;
+  result: HistoryGameResult;
+}
+
+function concededTeamFromPayload(payload: unknown): number | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const team = (payload as { team?: unknown }).team;
+  return typeof team === 'number' ? team : null;
+}
+
+function resultForTeam(opts: {
+  winnerTeam: number | null;
+  endReason: string | null;
+  myTeam: number;
+  concededTeam: number | null;
+}): HistoryGameResult {
+  if (opts.winnerTeam !== null) {
+    return opts.winnerTeam === opts.myTeam ? 'win' : 'loss';
+  }
+  if (opts.endReason === 'concede' && opts.concededTeam === opts.myTeam) {
+    return 'loss';
+  }
+  return 'none';
 }
 
 /**
@@ -95,6 +119,26 @@ export const historyMyGamesRoute = authedProcedure
 
     const hasMore = rows.length > input.limit;
     const page = rows.slice(0, input.limit);
+    const pageIds = page.map((r) => r.gameId);
+    const concededTeamByGame = new Map<string, number>();
+    if (pageIds.length > 0) {
+      const concededEvents = await ctx.db
+        .select({
+          gameId: gameEvents.gameId,
+          payload: gameEvents.payload,
+        })
+        .from(gameEvents)
+        .where(
+          and(
+            inArray(gameEvents.gameId, pageIds),
+            eq(gameEvents.type, 'GameConceded'),
+          ),
+        );
+      for (const event of concededEvents) {
+        const team = concededTeamFromPayload(event.payload);
+        if (team !== null) concededTeamByGame.set(event.gameId, team);
+      }
+    }
     const items: HistoryGame[] = page.map((r) => ({
       gameId: r.gameId,
       finishedAt: r.finishedAt?.toISOString() ?? null,
@@ -104,7 +148,12 @@ export const historyMyGamesRoute = authedProcedure
       winnerTeam: r.winnerTeam ?? null,
       endReason: r.endReason ?? null,
       myTeam: r.myTeam,
-      won: r.winnerTeam !== null && r.winnerTeam === r.myTeam,
+      result: resultForTeam({
+        winnerTeam: r.winnerTeam ?? null,
+        endReason: r.endReason ?? null,
+        myTeam: r.myTeam,
+        concededTeam: concededTeamByGame.get(r.gameId) ?? null,
+      }),
     }));
 
     const last = hasMore && page.length > 0 ? page[page.length - 1]! : null;
