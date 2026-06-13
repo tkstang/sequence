@@ -2,7 +2,9 @@
 oat_status: in_progress
 oat_ready_for: null
 oat_blockers:
-  - p07-t02 Railway deploy target is not linked; no .railway metadata or Railway project/service/environment IDs are available for non-interactive deploy.
+  - task_id: p07-t02
+    reason: "Railway deploy target is not linked; no .railway metadata or Railway project/service/environment IDs are available for non-interactive deploy."
+    since: 2026-06-13
 oat_last_updated: 2026-06-13
 oat_current_task_id: p07-t02
 oat_generated: false
@@ -33,7 +35,7 @@ oat_generated: false
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
-| Phase 7: Deploy & handoff        | in_progress | 5     | 1/5       |
+| Phase 7: Deploy & handoff        | blocked     | 5     | 1/5       |
 
 **Total:** 69/73 tasks completed
 
@@ -354,7 +356,7 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** in_progress
+**Status:** blocked at p07-t02
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -386,7 +388,7 @@ cannot safely proceed without the linked Railway target.
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
-| p07-t02 | Railway deploy                      | blocked (handoff skeleton) | `this` |
+| p07-t02 | Railway deploy                      | blocked (handoff skeleton) | `375c365` |
 | p07-t03 | Vercel deploy                       | pending | -      |
 | p07-t04 | Production smoke + checks           | pending | -      |
 | p07-t05 | Operator handoff notes              | pending | -      |
@@ -402,6 +404,36 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 4 — 2026-06-13 06:12
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 started, 0 passed, 0 failed, 1 stopped
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | BLOCKED at p07-t02 | not run | 0/2 | stopped; p07-t01 committed and p07-t02 handoff skeleton committed |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+
+#### Outstanding Items
+
+- **Blocking:** Railway deploy target is not linked. The repo has no `.railway/` metadata and no `RAILWAY_PROJECT_ID`, `RAILWAY_SERVICE_ID`, or `RAILWAY_ENVIRONMENT_ID`; `railway` CLI is not installed in `PATH`. Vercel is also not linked and `vercel` CLI is absent.
+- **Ready local artifacts:** API Dockerfile, Railway config, production cookie/proxy hardening, and `handoff.md` skeleton are committed.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 3 — 2026-06-13 05:49
 
