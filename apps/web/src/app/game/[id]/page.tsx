@@ -3,11 +3,13 @@
 import type { Position } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import type { DragEvent } from 'react';
 import { useEffect, useReducer, useState } from 'react';
 
 import { Badge } from '@/components/badge.tsx';
+import { buttonClassName } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 
@@ -81,6 +83,72 @@ function isConflictError(error: unknown): boolean {
     error.data !== null &&
     'code' in error.data &&
     error.data.code === 'CONFLICT'
+  );
+}
+
+function trpcErrorCode(error: unknown): string | undefined {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'data' in error &&
+    typeof error.data === 'object' &&
+    error.data !== null &&
+    'code' in error.data &&
+    typeof error.data.code === 'string'
+  ) {
+    return error.data.code;
+  }
+  return undefined;
+}
+
+function GameLoadError({
+  gameId,
+  errorCode,
+}: {
+  gameId: string;
+  errorCode?: string;
+}) {
+  const isAuthzError =
+    errorCode === 'UNAUTHORIZED' || errorCode === 'FORBIDDEN';
+  const loginHref = `/login?next=${encodeURIComponent(`/game/${gameId}`)}`;
+
+  return (
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <section className="flex w-full max-w-md flex-col gap-4 text-center">
+        <div>
+          <h1 className="text-2xl font-bold">Game unavailable</h1>
+          <p className="mt-2 text-sm text-black/60">
+            {isAuthzError
+              ? 'Log in with the account that created or joined this game.'
+              : 'The game stream could not start. Try again in a moment.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          {isAuthzError ? (
+            <Link
+              href={loginHref}
+              className={buttonClassName({ variant: 'primary' })}
+            >
+              Log in
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={buttonClassName({ variant: 'primary' })}
+            >
+              Retry
+            </button>
+          )}
+          <Link
+            href="/dashboard"
+            className={buttonClassName({ variant: 'secondary' })}
+          >
+            Dashboard
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -581,6 +649,8 @@ export default function GamePage() {
 
   const showOverlay =
     connectionState !== 'live' || subscription.status === 'error';
+  const subscriptionErrorCode = trpcErrorCode(subscription.error);
+  const showInitialLoadError = !state && subscription.status === 'error';
   const isMutating =
     setTeam.isPending ||
     kick.isPending ||
@@ -620,12 +690,14 @@ export default function GamePage() {
             }))
           }
         />
+      ) : showInitialLoadError ? (
+        <GameLoadError gameId={gameId} errorCode={subscriptionErrorCode} />
       ) : (
         <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
           Loading game…
         </main>
       )}
-      {showOverlay ? (
+      {showOverlay && !showInitialLoadError ? (
         <ConnectionBanner
           state={subscription.status === 'error' ? 'error' : connectionState}
         />
