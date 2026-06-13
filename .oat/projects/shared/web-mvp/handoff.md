@@ -1,6 +1,6 @@
 # web-mvp Deployment Handoff
 
-**Status:** Railway API deployed; Vercel web deploy pending
+**Status:** Railway API and Vercel web deployed; production smoke in progress
 **Last updated:** 2026-06-13
 **No secrets are recorded here.**
 
@@ -20,7 +20,9 @@
 - Environment: `production`
 - Service: `sequence-api`
 - Public API URL: `https://sequence-api-production-8687.up.railway.app`
-- Deployment ID: `016512d9-afef-4204-b9e6-11fb1b74a9d6`
+- Deployment IDs:
+  - Initial deploy: `016512d9-afef-4204-b9e6-11fb1b74a9d6`
+  - `WEB_ORIGIN` redeploy: `9629e69f-3f80-4971-b616-619c4faa08dd`
 - Predeploy migrations: passed (`drizzle-kit migrate`)
 - Healthcheck: passed (`GET /health` returned `{"status":"ok"}`)
 - WebSocket upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc` opened)
@@ -29,7 +31,7 @@ Notes:
 
 - Railway CLI auth was via local OAuth. A stale local `RAILWAY_TOKEN` from `.env` was explicitly unset during deployment because it did not have access to the new project.
 - `DATABASE_URL` was sourced from local `.env` after checking it was distinct from `DATABASE_URL_TEST`, did not contain `pooler`, and did not look like a test URL. The value was never printed or recorded.
-- `WEB_ORIGIN` is currently set to `https://sequence.vercel.app` as the expected web origin. Update it after p07-t03 if Vercel assigns a different production URL.
+- `WEB_ORIGIN` was updated to the actual Vercel production alias `https://sequence-cyan.vercel.app` and Railway was redeployed successfully.
 
 ## Railway API Env Checklist
 
@@ -62,12 +64,25 @@ Completed on 2026-06-13:
 
 ## Vercel Web Env Checklist
 
-Set on the Vercel web project:
+Set on the Vercel web project `sequence`:
 
-- `NEXT_PUBLIC_API_URL=https://<api-host>`
-- `NEXT_PUBLIC_WS_URL=wss://<api-host>`
+- `NEXT_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app`
+- `NEXT_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app`
 
-The web project root should be `apps/web`, with workspace-aware install/build from the monorepo root.
+Vercel project settings:
+
+- Project: `sequence`
+- Project ID: `prj_n0X1Xk6YS1Efwnd45l3EfKfy5lmr`
+- Root directory: `apps/web`
+- Install command: `pnpm install --frozen-lockfile`
+- Build command: `pnpm --filter @sequence/web build`
+- Production deployment: `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`
+- Production URL: `https://sequence-qppq4nyv1-stangtks-projects.vercel.app`
+- Production alias: `https://sequence-cyan.vercel.app`
+
+Deployment note:
+
+- Initial Vercel deploy failed because the root `prepare` hook tried to install git hooks in Vercel's non-git build archive. `tools/git-hooks/manage-hooks.js setup` now no-ops outside a git repository; retry deploy succeeded.
 
 ## Production Smoke Checklist
 
@@ -75,7 +90,7 @@ Fill these after p07-t03/p07-t04:
 
 - API health: passed (`https://sequence-api-production-8687.up.railway.app/health`)
 - WS upgrade: passed (`wss://sequence-api-production-8687.up.railway.app/trpc`)
-- Signup/login cross-origin cookie round-trip: pending
+- Signup/login cross-origin cookie round-trip: passed (`Origin: https://sequence-cyan.vercel.app`; CORS credentials allowed; session cookies `SameSite=None`, `Secure`, `HttpOnly`; `health.me` returned 200 after signup and login)
 - Guest join cookie round-trip: pending
 - Local pass-and-play full game: pending
 - Two-browser realtime game: pending
