@@ -1,6 +1,6 @@
 # web-mvp Deployment Handoff
 
-**Status:** Railway API and Vercel web deployed; production smoke recorded
+**Status:** Railway API and Vercel web deployed; operator handoff ready
 **Last updated:** 2026-06-13
 **No secrets are recorded here.**
 
@@ -101,8 +101,59 @@ Deployment note:
 - Forged-XFF invite rate-limit check: passed after limiter hardening; 31st rotated-header `game.preview` request returned `429`
 - Neon/Vercel/Railway tier audit: passed for MVP architecture; one Vercel Hobby project, one Railway API service, external Neon direct Postgres URL, no Railway database/buckets/volumes, and no paid-tier-only dependency was added
 
+## Operator Test Script
+
+Use these URLs:
+
+- Web: `https://sequence-cyan.vercel.app`
+- API health: `https://sequence-api-production-8687.up.railway.app/health`
+
+Use disposable email/password accounts for manual testing. Email/password auth is enabled; social OAuth is intentionally unset until provider credentials are configured.
+
+### Functional Checks
+
+| ID | What to verify | Manual path |
+| --- | --- | --- |
+| FR1 | Accounts and sessions | Sign up, reload the dashboard, log out, log back in, and confirm protected pages redirect unauthenticated users to login. |
+| FR2 | Game creation and settings | From `/dashboard`, create games with 2, 3, 4, and 6 players; try tap mode, hard drag mode, timer off, and timer on. Confirm invalid timer values are not offered. |
+| FR3 | Invite and join | Create a remote game, copy the invite link from the lobby, open it in another browser/context, join once as a registered user and once as a guest. Guest join should set an API cookie and route to the game. |
+| FR4 | Lobby and teams | In a 4-player or 6-player lobby, change teams, randomize teams, and kick a non-creator. Start should only succeed with a full legal team layout. |
+| FR5 | Core rules | Play normal moves, jack moves, sequence completion, and dead-card turn-in paths. Detailed rule coverage is primarily automated in `packages/game-logic`; manual smoke should confirm the UI follows server-accepted moves. |
+| FR6 | Real-time sync | Keep two browser contexts open on the same game. A move in one context should appear in the other without reload. Reload one context and confirm it recovers from the snapshot. |
+| FR7 | Two play modes | In tap mode, select a card then a highlighted board cell. In hard mode, drag the chip to a legal target and confirm invalid targets do not commit. |
+| FR8 | Turn timer | Create a timed game, let a turn expire, and confirm the server advances/forfeits the turn. Also check that disconnect/reconnect pauses and resumes timed play. |
+| FR9 | Disconnect auto-save and rejoin | In a remote game, close one browser tab. The game should freeze/save. Reopen the game within the window and confirm play resumes once all original players return. |
+| FR10 | Save and exit | Use Save & exit in an active logged-in game. Confirm it appears on the dashboard as resumable and can be resumed. |
+| FR11 | Concede | Use Concede from an active game. All browsers should land on game over, and the result should identify the conceding team. |
+| FR12 | Game over and rematch | Finish or concede a game, start a rematch, and confirm the new game keeps the roster/settings while rotating first player. |
+| FR13 | In-game display | On desktop and mobile width, confirm round, turn, players, last-played card, sequence counts, timer when enabled, board, and hand are visible without horizontal scrolling. |
+| FR14 | History and profile | Finish logged-in games and check `/history` for aggregate W-L, recent games, and head-to-head records. Local games should be labeled and excluded from aggregate/head-to-head records. |
+| FR15 | Shell and navigation | Walk `/`, `/signup`, `/login`, `/dashboard`, `/create`, `/join/<code>`, `/game/<id>`, `/history`, and game-over/rematch navigation. |
+| FR16 | Local pass-and-play | From `/dashboard`, choose Pass & play, name the opponent, play across at least two turns, and confirm the handoff screen hides the outgoing hand until the next player reveals it. Save/resume should work through the creator account. |
+
+### Non-Functional Checks
+
+| ID | Current status | Operator note |
+| --- | --- | --- |
+| NFR1 | Passed by automated unit/integration coverage | Crafted illegal moves and private-hand redaction are covered in the API/game-logic suites. |
+| NFR2 | Open follow-up | Current production probes did not meet the ~500ms target for DB-backed game mutations. Re-test after performance work; do not treat this NFR as passed yet. |
+| NFR3 | Passed in automated 375px viewport | A real phone pass was not performed; run one before broader playtesting. |
+| NFR4 | Passed by `@sequence/game-logic` tests | Run `pnpm --filter @sequence/game-logic test` for the rules suite. |
+| NFR5 | Passed for current repo/deploy posture | No secrets are recorded in this handoff. Keep env values in Railway/Vercel only and revoke the legacy GCP service key if still active. |
+| NFR6 | Passed for MVP architecture | Current deployment uses Vercel web, one Railway API service, and Neon Postgres; no paid-tier-only service was introduced. |
+| NFR7 | Passed by type gates during implementation | Run `pnpm typecheck` before opening a release PR. |
+
+## Known Limitations
+
+- Production NFR2 is not met by current probes. The likely next investigation is authenticated DB-backed route latency: session lookup, `gamePlayerProcedure`, `loadGameState`, per-seat hand updates, and event append all perform sequential database work.
+- The 375px production pass used an automated Pixel 5 viewport, not a physical phone.
+- Social OAuth is not configured. Email/password works without social provider env vars.
+- Anonymous invite preview/join is intentionally protected by one shared anonymous bucket. This prevents forged-XFF bypasses on Railway but means anonymous invite bursts can throttle all anonymous preview/join traffic on the single API instance.
+- Realtime rooms, turn timers, and rate-limit buckets are process-local. The MVP deploy runs one Railway API service instance; horizontal scaling would need external pub/sub, durable timer coordination, and distributed rate limiting.
+
 ## Operator Follow-Ups
 
 - Revoke the legacy GCP service key if not already done.
 - Configure social OAuth only when desired; email/password works without social provider env vars.
 - Keep `AUTH_COOKIE_SAME_SITE=lax` only for a shared registrable-domain deployment. For Vercel-to-Railway cross-site hosting, keep `none`.
+- Investigate and reduce production authenticated game-route latency before claiming NFR2 complete.
