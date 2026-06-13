@@ -1,5 +1,6 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
 import { useParams } from 'next/navigation';
 import { useReducer, useState } from 'react';
@@ -14,9 +15,11 @@ import {
   type GameStreamItem,
   type GameViewState,
 } from './components/game-state.ts';
+import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 
 type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
+type PlayerCount = 2 | 3 | 4 | 6;
 
 function reducer(
   state: GameViewState | null,
@@ -27,6 +30,10 @@ function reducer(
 
 function unwrapStreamItem(item: TrackedStreamItem): GameStreamItem {
   return 'data' in item ? item.data : item;
+}
+
+function asPlayerCount(count: number): PlayerCount {
+  return count === 3 || count === 4 || count === 6 ? count : 2;
 }
 
 function ReconnectingOverlay({ state }: { state: ConnectionState }) {
@@ -107,6 +114,12 @@ export default function GamePage() {
   const [state, dispatch] = useReducer(reducer, null);
   const [connectionState, setConnectionState] =
     useState<ConnectionState>('connecting');
+  const setTeam = useMutation(trpc.game.setTeam.mutationOptions());
+  const kick = useMutation(trpc.game.kick.mutationOptions());
+  const randomizeTeams = useMutation(
+    trpc.game.randomizeTeams.mutationOptions(),
+  );
+  const start = useMutation(trpc.game.start.mutationOptions());
 
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
@@ -130,10 +143,35 @@ export default function GamePage() {
 
   const showOverlay =
     connectionState !== 'live' || subscription.status === 'error';
+  const isMutating =
+    setTeam.isPending ||
+    kick.isPending ||
+    randomizeTeams.isPending ||
+    start.isPending;
 
   return (
     <>
-      {state ? (
+      {state?.status === 'lobby' ? (
+        <LobbyTeams
+          inviteCode={state.inviteCode}
+          playerCount={asPlayerCount(state.playerCount)}
+          mode={state.mode}
+          timerSeconds={state.timerSeconds}
+          players={state.players}
+          mySeat={state.mySeat}
+          isMutating={isMutating}
+          onJoinTeam={(team) =>
+            setTeam.mutate({ gameId, targetSeat: state.mySeat, team })
+          }
+          onKick={(seat) => kick.mutate({ gameId, targetSeat: seat })}
+          onRandomize={() => randomizeTeams.mutate({ gameId })}
+          onStart={() => start.mutate({ gameId })}
+          onCopyInvite={async () => {
+            const inviteUrl = `${window.location.origin}/join/${state.inviteCode}`;
+            await navigator.clipboard?.writeText(inviteUrl);
+          }}
+        />
+      ) : state ? (
         <GameRoutePlaceholder state={state} />
       ) : (
         <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
