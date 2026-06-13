@@ -3,7 +3,7 @@
 import type { Position } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { DragEvent } from 'react';
 import { useEffect, useReducer, useState } from 'react';
 
@@ -37,6 +37,7 @@ import {
   toggleChoiceCell,
 } from './components/GameBoard/components/SequenceChoice.tsx';
 import { GameBoard } from './components/GameBoard/GameBoard.tsx';
+import { GameOver } from './components/GameOver/GameOver.tsx';
 import {
   HandoffScreen,
   visibleHandForSeat,
@@ -81,6 +82,7 @@ function ReconnectingOverlay({ state }: { state: ConnectionState }) {
 
 function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const trpc = useTRPC();
+  const router = useRouter();
   const connected = state.players.filter((p) => p.connected).length;
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
     null,
@@ -155,6 +157,11 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
       },
     }),
   );
+  const rematch = useMutation(
+    trpc.game.rematch.mutationOptions({
+      onSuccess: (result) => router.push(`/game/${result.gameId}`),
+    }),
+  );
   const pendingChoiceKey = state.pendingChoice
     ? `${state.pendingChoice.seat}:${state.pendingChoice.cells.join('|')}:${
         state.pendingChoice.placed ?? ''
@@ -184,7 +191,9 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
     state.players.find((player) => player.seat === activeSeat)?.team ??
     1;
   const pendingChoice = state.pendingChoice;
-  const canMakeBoardMove = pendingChoice === undefined && !handoffVisible;
+  const gameFinished = state.status === 'finished';
+  const canMakeBoardMove =
+    pendingChoice === undefined && !handoffVisible && !gameFinished;
   const tapSelection =
     state.mode === 'tap' && canMakeBoardMove
       ? createTapSelection({
@@ -334,7 +343,17 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         />
       </section>
 
-      {pendingChoice ? (
+      {gameFinished ? (
+        <GameOver
+          winnerTeam={state.winnerTeam}
+          endReason={state.endReason}
+          players={state.players}
+          isRematching={rematch.isPending}
+          onRematch={() => rematch.mutate({ gameId: state.gameId })}
+        />
+      ) : null}
+
+      {!gameFinished && pendingChoice ? (
         <SequenceChoice
           pendingChoice={pendingChoice}
           selectedCells={choiceCells}
@@ -356,7 +375,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         />
       ) : null}
 
-      {handoffVisible ? (
+      {!gameFinished && handoffVisible ? (
         <HandoffScreen
           playerName={activePlayerName}
           lastMoveLabel={state.lastMove?.label}
@@ -364,7 +383,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         />
       ) : null}
 
-      {dragMode ? (
+      {!gameFinished && dragMode ? (
         <section className="mx-auto flex w-full max-w-[min(94vw,680px)] items-center justify-between gap-3">
           <button
             type="button"
@@ -403,7 +422,7 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
         </section>
       ) : null}
 
-      {!handoffVisible ? (
+      {!gameFinished && !handoffVisible ? (
         <CardHand
           hand={activeHand}
           mode={state.mode}
