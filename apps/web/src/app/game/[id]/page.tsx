@@ -9,6 +9,7 @@ import { Badge } from '@/components/badge.tsx';
 import { Card } from '@/components/card.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 
+import { CardHand } from './components/CardHand/CardHand.tsx';
 import {
   applyStreamItem,
   screenForState,
@@ -56,6 +57,9 @@ function ReconnectingOverlay({ state }: { state: ConnectionState }) {
 function GameRoutePlaceholder({ state }: { state: GameViewState }) {
   const screen = screenForState(state);
   const connected = state.players.filter((p) => p.connected).length;
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
+    null,
+  );
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-4 p-4">
@@ -114,6 +118,13 @@ function GameRoutePlaceholder({ state }: { state: GameViewState }) {
           pendingChoiceCells={state.pendingChoice?.cells}
         />
       </section>
+
+      <CardHand
+        hand={state.hand}
+        mode={state.mode}
+        selectedIndex={selectedCardIndex}
+        onSelectCard={(_, index) => setSelectedCardIndex(index)}
+      />
     </main>
   );
 }
