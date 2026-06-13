@@ -29,7 +29,7 @@ oat_generated: false
 | Phase 1: Foundation & Salvage    | completed (review passed) | 11 | 11/11 |
 | Phase 2: game-logic rules engine | completed (review passed) | 11 | 11/11 |
 | Phase 3: API foundation          | completed (review passed) | 10 | 10/10 |
-| Phase 4: Game domain             | completed (pre-review) | 14 | 14/14 |
+| Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | pending     | 9     | 0/9       |
 | Phase 6: Game UI                 | pending     | 13    | 0/13      |
 | Phase 7: Deploy & handoff        | pending     | 5     | 0/5       |
@@ -285,7 +285,7 @@ _- Outstanding Items_
 **Branch:** 2026
 **Tier:** 1
 **Policy:** merge-strategy=merge, retry-limit=2
-**Phases:** 3 executed, 3 passed, 0 failed, 0 stopped (p04-p07 pending)
+**Phases:** 4 executed, 4 passed, 0 failed, 0 stopped (p05-p07 pending)
 
 #### Phase Outcomes
 
@@ -294,6 +294,7 @@ _- Outstanding Items_
 | p01   | DONE_WITH_CONCERNS (advisory only) | pass | 0/2 | merged (sequential, on-branch) |
 | p02   | DONE | fail → pass (re-review) | 1/2 | merged `84759ba` (fan-in, no conflicts) |
 | p03   | DONE | pass (+ proactive fix round, verified) | 1/2 | merged `fce98ec` (fan-in, implementation.md conflict resolved by subagent) |
+| p04   | DONE | fail → pass (re-review) | 1/2 | sequential on-branch; fix round closed Critical (client version contract) + Important (lifecycle version guard) + 4 minors |
 
 #### Parallel Groups
 
@@ -308,7 +309,8 @@ _- Outstanding Items_
 
 #### Outstanding Items
 
-- **Carried to p04 (must address):** I3 — WS path `ctx.ip` is `'unknown'` (tRPC fastify WS adapter passes bare IncomingMessage); fix before attaching the rate limiter to preview/join in p04-t03. p02-m6 — actor-seat enforcement is opt-in in game-logic; p04 move engine MUST always set `move.seat`/`actorSeat`, and the p04 review must verify it.
+- ~~Carried to p04~~ **CLOSED in p04:** I3 (WS ctx.ip — fixed t03 with regression test, re-verified by review), p02-m6 (seat stamping — verified complete by review), p02-m4 (chained-runs reducer test added).
+- **Carried to p05/p06:** lifecycle broadcasts (`presence.ts:191`, `concede.ts:78`) don't carry the bumped `version` → one recoverable CONFLICT for the next mover after freeze/resume; trivial stamp fix, fold into p06-adjacent work. `head-to-head.ts:57` scores no-winner FFA concedes as losses for both users — inconsistent with new myRecord semantics; fix when history is next touched (p05-t08 renders it).
 - **Carried to p07 (deploy bucket):** I1 — SameSite=Lax breaks cross-site prod auth (cookie/domain strategy decided at deploy); M3 — boolean trustProxy keys on leftmost XFF; needs hop-count support or a forged-XFF smoke assertion on Railway.
 - **Advisory:** heavy J/Q/K SVGs (WebP contingency at p06); `manage-hooks.js` ESM warning; p02 m4 (chained additionalRuns lacks reducer-level test) + m5 (`not-a-dead-card` code reused for turn-in cap).
 
