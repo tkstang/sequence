@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { TRPCReactProvider } from '@/lib/trpc/provider.tsx';
+
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-cream text-slate min-h-screen antialiased">
-        {children}
+        <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
   );
