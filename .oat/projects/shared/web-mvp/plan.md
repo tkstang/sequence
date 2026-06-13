@@ -869,7 +869,7 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 | p05    | code     | passed | 2026-06-13 | reviews/p05-review-2026-06-13.md (fail -> fixes -> re-review pass) |
 | p06    | code     | passed | 2026-06-13 | reviews/p06-review-2026-06-13.md (fail -> fixes -> re-review pass) |
 | p07    | code     | passed | 2026-06-13 | reviews/p07-review-2026-06-13.md (fail -> fixes -> re-review pass: reviews/p07-review-2026-06-13-rereview.md) |
-| final  | code     | pending | -    | -        |
+| final  | code     | received | 2026-06-13 | reviews/final-review-2026-06-13.md |
 | spec   | artifact | pending | -    | -        |
 | design | artifact | pending | -    | -        |
 | plan   | artifact | passed  | 2026-06-12 | structured (in-memory, 2 passes) |
