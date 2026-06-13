@@ -1,9 +1,30 @@
-import { and, desc, eq, lt } from 'drizzle-orm';
+import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { gamePlayers } from '../../db/schema/game-players.ts';
 import { games } from '../../db/schema/games.ts';
 import { authedProcedure } from '../../trpc.ts';
+
+/**
+ * The pagination cursor is a TOTAL order over `(finished_at desc, id desc)`.
+ * Encoding both halves (ISO timestamp + game id) prevents skipping rows whose
+ * `finished_at` ties across a page boundary. Serialized as `"<iso>|<id>"`.
+ */
+const CURSOR_SEP = '|';
+
+function encodeCursor(finishedAt: Date, id: string): string {
+  return `${finishedAt.toISOString()}${CURSOR_SEP}${id}`;
+}
+
+function decodeCursor(cursor: string): { finishedAt: Date; id: string } | null {
+  const sep = cursor.indexOf(CURSOR_SEP);
+  if (sep === -1) return null;
+  const iso = cursor.slice(0, sep);
+  const id = cursor.slice(sep + 1);
+  const finishedAt = new Date(iso);
+  if (!id || Number.isNaN(finishedAt.getTime())) return null;
+  return { finishedAt, id };
+}
 
 /** One completed-game row in the history list (FR14). */
 export interface HistoryGame {
@@ -22,13 +43,14 @@ export interface HistoryGame {
  * `history.myGames(cursor?)` — the session user's FINISHED games, newest first,
  * cursor-paginated by `finished_at`. Local games (FR16) ARE listed here (flagged
  * `local: true`) — they're excluded only from aggregates/head-to-head. The
- * cursor is the prior page's last `finished_at` ISO string.
+ * cursor is the prior page's last `(finished_at, id)` keyset, encoded by
+ * {@link encodeCursor} (a total order, so finished_at ties never skip a row).
  */
 export const historyMyGamesRoute = authedProcedure
   .input(
     z
       .object({
-        cursor: z.string().datetime().optional(),
+        cursor: z.string().optional(),
         limit: z.number().int().min(1).max(50).default(20),
       })
       .default({ limit: 20 }),
@@ -38,8 +60,20 @@ export const historyMyGamesRoute = authedProcedure
       eq(gamePlayers.userId, ctx.user.id),
       eq(games.status, 'finished'),
     ];
-    if (input.cursor) {
-      conditions.push(lt(games.finishedAt, new Date(input.cursor)));
+    const decoded = input.cursor ? decodeCursor(input.cursor) : null;
+    if (decoded) {
+      // Composite keyset predicate: strictly after (finished_at, id) in the
+      // (finished_at desc, id desc) order — no row with a tied finished_at is
+      // skipped across a page boundary.
+      conditions.push(
+        or(
+          lt(games.finishedAt, decoded.finishedAt),
+          and(
+            eq(games.finishedAt, decoded.finishedAt),
+            lt(games.id, decoded.id),
+          ),
+        )!,
+      );
     }
 
     const rows = await ctx.db
@@ -56,7 +90,7 @@ export const historyMyGamesRoute = authedProcedure
       .from(gamePlayers)
       .innerJoin(games, eq(gamePlayers.gameId, games.id))
       .where(and(...conditions))
-      .orderBy(desc(games.finishedAt))
+      .orderBy(desc(games.finishedAt), desc(games.id))
       .limit(input.limit + 1);
 
     const hasMore = rows.length > input.limit;
@@ -73,9 +107,10 @@ export const historyMyGamesRoute = authedProcedure
       won: r.winnerTeam !== null && r.winnerTeam === r.myTeam,
     }));
 
+    const last = hasMore && page.length > 0 ? page[page.length - 1]! : null;
     const nextCursor =
-      hasMore && page.length > 0
-        ? (page[page.length - 1]!.finishedAt?.toISOString() ?? null)
+      last && last.finishedAt
+        ? encodeCursor(last.finishedAt, last.gameId)
         : null;
 
     return { items, nextCursor };

@@ -78,6 +78,57 @@ describeIntegration('history (integration)', () => {
     expect(res.data).toMatchObject({ wins: 2, losses: 1, total: 3 });
   });
 
+  it('a 3-team FFA concede records a loss only for the conceding team', async () => {
+    // Three registered users, one per FFA team. User C concedes (no winner).
+    // C must take the loss; A and B (who did not concede) record neither.
+    const a = await signUp('A');
+    const b = await signUp('B');
+    const c = await signUp('C');
+    const gameId = randomUUID();
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: a.userId,
+      playerCount: 3,
+      mode: 'tap',
+      status: 'finished',
+      winnerTeam: null, // FFA concede → no single winner
+      endReason: 'concede',
+      finishedAt: new Date(),
+    });
+    await h.db.insert(gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: a.userId, isCreator: true },
+      { gameId, seat: 1, team: 2, userId: b.userId },
+      { gameId, seat: 2, team: 3, userId: c.userId },
+    ]);
+    // The GameConceded event records the conceding team (team 3 = user C).
+    await h.db.insert(h.schema.gameEvents).values({
+      gameId,
+      seq: 1,
+      type: 'GameConceded',
+      payload: { type: 'GameConceded', team: 3 },
+    });
+
+    const recA = await h.query('history.myRecord', undefined, a.cookie);
+    const recB = await h.query('history.myRecord', undefined, b.cookie);
+    const recC = await h.query('history.myRecord', undefined, c.cookie);
+    expect(recA.ok && recA.data).toMatchObject({
+      wins: 0,
+      losses: 0,
+      total: 0,
+    });
+    expect(recB.ok && recB.data).toMatchObject({
+      wins: 0,
+      losses: 0,
+      total: 0,
+    });
+    expect(recC.ok && recC.data).toMatchObject({
+      wins: 0,
+      losses: 1,
+      total: 1,
+    });
+  });
+
   it('myRecord excludes local games', async () => {
     const a = await signUp('A');
     await finishedGame({ a: a.userId, b: null, winnerTeam: 1, local: true });
@@ -138,6 +189,54 @@ describeIntegration('history (integration)', () => {
       const d2 = page2.data as { items: unknown[] };
       expect(d2.items).toHaveLength(1);
     }
+  });
+
+  it('history.myGames does not skip rows when finished_at ties across a page', async () => {
+    const a = await signUp('A');
+    const b = await signUp('B');
+    // Three games that ALL finished at the same instant — a finished_at tie that
+    // a finished_at-only cursor would skip across a page boundary.
+    const tie = new Date(Date.now() - 1000);
+    await finishedGame({
+      a: a.userId,
+      b: b.userId,
+      winnerTeam: 1,
+      finishedAt: tie,
+    });
+    await finishedGame({
+      a: a.userId,
+      b: b.userId,
+      winnerTeam: 2,
+      finishedAt: tie,
+    });
+    await finishedGame({
+      a: a.userId,
+      b: b.userId,
+      winnerTeam: 1,
+      finishedAt: tie,
+    });
+
+    const seen = new Set<string>();
+    let cursor: string | null = null;
+    // Page through 2 at a time; the composite (finished_at, id) cursor must
+    // surface all three distinct games with no skips and no duplicates.
+    for (let page = 0; page < 5; page++) {
+      const res = await h.query(
+        'history.myGames',
+        cursor ? { limit: 2, cursor } : { limit: 2 },
+        a.cookie,
+      );
+      expect(res.ok).toBe(true);
+      if (!res.ok) break;
+      const data = res.data as {
+        items: { gameId: string }[];
+        nextCursor: string | null;
+      };
+      for (const item of data.items) seen.add(item.gameId);
+      cursor = data.nextCursor;
+      if (!cursor) break;
+    }
+    expect(seen.size).toBe(3);
   });
 
   it('headToHead pairs only registered users sharing finished games', async () => {
