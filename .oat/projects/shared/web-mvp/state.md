@@ -1,6 +1,6 @@
 ---
-oat_current_task: p07-t03
-oat_last_commit: 3896a8e
+oat_current_task: p07-t04
+oat_last_commit: 57227bc
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,7 +27,7 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-13T15:36:46.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-13T15:49:00.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -39,7 +39,7 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — in progress at p07-t03 (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p06 complete (all reviews passed; p04, p05, and p06 after 1 fix iteration). p07-t01 and p07-t02 complete; Railway API deployment is live and verified; next task is Vercel web deployment.
+Implementation — in progress at p07-t04 (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). p01-p06 complete (all reviews passed; p04, p05, and p06 after 1 fix iteration). p07-t01 through p07-t03 complete; Railway API and Vercel web deployments are live and verified; next task is production smoke.
 
 ## Artifacts
 
@@ -55,7 +55,7 @@ Implementation — in progress at p07-t03 (Run 1/4, Tier 1 subagents). 7 phases 
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
 - ✓ Plan complete (73 tasks; artifact review passed)
-- ⧗ Implementation in progress (70/73 tasks; p01-p06 ✓ reviewed; p07-t01/p07-t02 complete; current: p07-t03)
+- ⧗ Implementation in progress (71/73 tasks; p01-p06 ✓ reviewed; p07-t01/p07-t02/p07-t03 complete; current: p07-t04)
 
 ## Blockers
 
@@ -63,4 +63,4 @@ Implementation — in progress at p07-t03 (Run 1/4, Tier 1 subagents). 7 phases 
 
 ## Next Milestone
 
-Deploy the Vercel web app and verify cross-origin auth against the Railway API.
+Run production smoke checks and record results.

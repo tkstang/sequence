@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-13
-oat_current_task_id: p07-t03
+oat_current_task_id: p07-t04
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
-| Phase 7: Deploy & handoff        | in progress | 5     | 2/5       |
+| Phase 7: Deploy & handoff        | in progress | 5     | 3/5       |
 
-**Total:** 70/73 tasks completed
+**Total:** 71/73 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -353,7 +353,7 @@ API full-game e2e, and an isolated rerun of that test passed (1/1).
 
 ## Phase 7: Deploy & handoff (p07)
 
-**Status:** in progress at p07-t03
+**Status:** in progress at p07-t04
 **Started:** 2026-06-13
 
 ### Phase Summary
@@ -387,11 +387,24 @@ Node 24 WebSocket client opened `wss://sequence-api-production-8687.up.railway.a
 `WEB_ORIGIN` is currently the expected Vercel origin `https://sequence.vercel.app`
 and must be corrected during p07-t03 if Vercel assigns a different URL.
 
+p07-t03 is complete. Vercel project `sequence` was created with root directory
+`apps/web`, install command `pnpm install --frozen-lockfile`, and build command
+`pnpm --filter @sequence/web build`. The first Vercel deploy exposed that the
+root `prepare` hook tried to install git hooks in Vercel's non-git build
+archive, so `tools/git-hooks/manage-hooks.js setup` now no-ops outside a git
+repository. The retry deployed production deployment
+`dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`, aliased at
+`https://sequence-cyan.vercel.app`. Railway `WEB_ORIGIN` was updated to that
+alias and redeployed successfully (`9629e69f-3f80-4971-b616-619c4faa08dd`).
+Production smoke for p07-t03 passed: root page 200, `/game/prod-smoke` 200,
+cross-origin signup/login session cookies (`SameSite=None`, `Secure`,
+`HttpOnly`) round-tripped through `health.me`.
+
 | Task    | Name                                | Status  | Commit |
 | ------- | ----------------------------------- | ------- | ------ |
 | p07-t01 | API Dockerfile + Railway config     | completed | `3329bf2` |
 | p07-t02 | Railway deploy                      | completed | `3896a8e` |
-| p07-t03 | Vercel deploy                       | pending | -      |
+| p07-t03 | Vercel deploy                       | completed | `9bbcf76`, `57227bc` |
 | p07-t04 | Production smoke + checks           | pending | -      |
 | p07-t05 | Operator handoff notes              | pending | -      |
 
@@ -406,6 +419,36 @@ _- Parallel Groups list_
 _- Outstanding Items_
 
 <!-- orchestration-runs-start -->
+
+### Run 6 — 2026-06-13 15:49
+
+**Branch:** 2026
+**Tier:** 1
+**Policy:** merge-strategy=merge, retry-limit=2
+**Phases:** 1 continued, 0 passed, 0 failed, 0 stopped (p07 in progress)
+
+#### Phase Outcomes
+
+| Phase | Implementer | Review | Fix Iterations | Disposition |
+| ----- | ----------- | ------ | -------------- | ----------- |
+| p07   | p07-t03 completed | not run | 0/2 | sequential on-branch; Vercel project created/deployed, Railway `WEB_ORIGIN` corrected, auth smoke passed; continuing at p07-t04 |
+
+#### Parallel Groups
+
+- p07: sequential
+
+#### Dispatch Notes
+
+- Dispatch: p07 implementation effort_axis=selected:xhigh via Codex `oat-phase-implementer-xhigh`.
+- Deployment target: Vercel project `sequence`, root directory `apps/web`, production alias `https://sequence-cyan.vercel.app`.
+
+#### Outstanding Items
+
+- **Production smoke pending:** guest join cookie round-trip, full local pass-and-play game, two-browser realtime game, latency spot-check, mobile-375 pass, Neon/Vercel/Railway tier audit, and forged-XFF rate-limit check remain for p07-t04.
+
+#### Artifact / Design Deltas
+
+Run-scoped snapshot only. The durable record is `## Deviations from Plan / Design`.
 
 ### Run 5 — 2026-06-13 15:36
 
@@ -644,7 +687,7 @@ Track test execution during implementation.
 | p04   | 258 root / 125 api (22 api files; +1 game-logic chained-runs) | 258 / 125 | 0 | n/a |
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
-| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs | 30 focused + 383 root + Docker/migrate/health; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
+| p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke | 30 focused + 383 root + Docker/migrate/health; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployment `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn` READY; auth smoke passed | 0 applicable (Neon test branch migrate attempt failed due existing schema-pushed branch; prod DB not used) | n/a |
 
 ## Final Summary (for PR/docs)
 
