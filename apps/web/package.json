@@ -15,6 +15,7 @@
     "@tanstack/react-query": "^5.101.0",
     "@trpc/client": "^11.17.0",
     "@trpc/tanstack-react-query": "^11.17.0",
+    "better-auth": "^1.6.18",
     "next": "^16.2.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
@@ -22,9 +23,13 @@
   "devDependencies": {
     "@sequence/api": "workspace:*",
     "@tailwindcss/postcss": "^4.3.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.5.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "jsdom": "^25.0.1",
     "tailwindcss": "^4.3.1",
     "vitest": "^3.2.6"
   }
