@@ -73,7 +73,10 @@ export function GameBoard({
     <div
       role="grid"
       aria-label="Sequence board"
-      className="bg-felt-dark grid aspect-square w-full max-w-[min(92vw,680px)] grid-cols-10 gap-[2px] rounded-lg p-1.5 shadow-xl"
+      className="bg-felt-dark grid aspect-square w-full grid-cols-10 gap-[2px] rounded-lg p-1.5 shadow-xl"
+      style={{
+        maxWidth: 'min(92vw, 680px, max(320px, calc(100dvh - 25rem)))',
+      }}
     >
       {cells.map((cell) => (
         <BoardCell

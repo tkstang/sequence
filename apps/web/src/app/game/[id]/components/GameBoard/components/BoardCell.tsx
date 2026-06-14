@@ -102,7 +102,7 @@ export function BoardCell({
           fill
           sizes="7vw"
           unoptimized
-          className="object-cover"
+          className="object-contain"
           style={{ transform: `rotate(${rotation}deg)` }}
         />
       ) : (

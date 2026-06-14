@@ -99,7 +99,7 @@ export function CardHand({
                 fill
                 sizes="(min-width: 640px) 80px, 52px"
                 unoptimized
-                className="rounded-md object-cover"
+                className="rounded-md object-contain"
               />
               {isDead ? (
                 <span className="bg-team-red absolute top-1 right-1 rounded px-1 text-[0.6rem] font-black text-white uppercase">

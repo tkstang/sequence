@@ -38,6 +38,10 @@ const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3001';
 function createWsLink() {
   const wsClient = createWSClient({
     url: `${wsUrl}/trpc`,
+    // Do not open a socket at app-shell load time. Auth pages construct the
+    // shared tRPC client before a session cookie exists; an eager socket can
+    // then carry no cookies into the later game subscription.
+    lazy: { enabled: true, closeMs: 1000 },
     // Reconnect with backoff; the blocking "Reconnecting…" overlay (p06) is
     // driven off connection state. `lastEventId` is handled by tRPC's
     // subscription transport on resubscribe.

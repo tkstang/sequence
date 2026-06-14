@@ -130,7 +130,7 @@ export function PlayerRail({
                     fill
                     sizes="16px"
                     unoptimized
-                    className="object-cover"
+                    className="object-contain"
                   />
                 </span>
               ) : (
