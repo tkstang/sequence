@@ -795,6 +795,12 @@ Chronological log of implementation progress.
 - `.oat/config.json` aligned with stoa baseline before start (archive/S3, localPaths, workflow block); documentation block deliberately omitted (no docs app in this repo); postImplementSequence set to `pr` (not `docs-pr`) for the same reason.
 - p01 implemented by oat-phase-implementer (opus): 11/11 tasks, commits `69b8fa0`..`3849ad5`, DONE_WITH_CONCERNS (3 advisory: stoa-specific worktree init.sh, heavy J/Q/K SVGs, manage-hooks ESM warning). Phase review next.
 
+### 2026-06-13 — Post-handoff card-fit hotfix
+
+- Commit `feb38c8` fixes cropped playing-card artwork on the board, hand, and player rail by using contained card images, keeps the board square while fitting better in short desktop viewports, and makes the shared tRPC WebSocket client lazy so signup/create flows do not reuse an unauthenticated eager socket.
+- Commit `c827395` records backlog item `bl-821f` for a larger symbolic/physical-board visual exploration; that work is intentionally out of scope for the card-cropping hotfix.
+- Verification: `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web test -- --runInBand`; `pnpm --filter @sequence/web build`; changed-file `oxfmt --check`; `git diff --check`; local dev smoke at `http://127.0.0.1:3010/game/38e4842a-176f-4e5a-ac1c-f53a4c1df81b`; production smoke after Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh` (signup -> local game, 103 card images rendered, all sampled card images `object-fit: contain`, no game-unavailable/connection-interrupted state).
+
 ---
 
 ## Deviations from Plan / Design

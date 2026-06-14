@@ -86,8 +86,8 @@ Vercel project settings:
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm --filter @sequence/web build`
 - Initial production deployment: `dpl_3dyyJiXnxBRaPw6mkQp8N38EC9Rn`
-- Current production deployment: `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`
-- Current production URL: `https://sequence-online-5ei6rq5i4-stangtks-projects.vercel.app`
+- Current production deployment: `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`
+- Current production URL: `https://sequence-online-1154vc8ov-stangtks-projects.vercel.app`
 - Production alias: `https://sequence-online.vercel.app`
 - Vercel deployment protection: SSO protection disabled so the public `vercel.app` alias is reachable for operator testing
 - Deprecated alias `https://sequence-cyan.vercel.app` removed after the current deployment
@@ -108,6 +108,7 @@ Deployment note:
 - Versioned lifecycle smoke: passed after deployment `2a313ac4-91b1-4915-aa16-4b4722c8f3da`; a production local game accepted `game.makeMove` at version `1`, returned version `2`, then accepted `game.concede` with version `2` (`Server-Timing: app;dur=49.8`, HTTP 200).
 - Initial game-stream auth error UX: passed after Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; opening a game route without a participant session produced `FORBIDDEN` on the WS subscription and rendered "Game unavailable" with login/dashboard actions instead of indefinite "Loading game..." plus "Connection interrupted".
 - Signup to local pass-and-play route: passed after Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; `https://sequence-online.vercel.app` signup set the API session cookie, `game.create` returned 200, the WS subscription emitted the initial snapshot, and the board rendered.
+- Board/hand card-fit hotfix: passed after Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; signup to local pass-and-play reached `https://sequence-online.vercel.app/game/facd595e-5a97-4af4-8ac4-61c86dc28a9b`, rendered 103 card images, all sampled card images used `object-fit: contain`, and the route did not show "Game unavailable" or "Connection interrupted". The larger symbolic/physical-board rendering direction is tracked separately as backlog item `bl-821f`.
 - 375px mobile pass: passed in an automated Pixel 5 / 375px viewport; real physical phone not performed
 - Forged-XFF invite rate-limit check: passed after limiter hardening; 31st rotated-header `game.preview` request returned `429`
 - Neon/Vercel/Railway tier audit: passed for MVP architecture; one Vercel Hobby project, one Railway API service, external Neon direct Postgres URL, no Railway database/buckets/volumes, and no paid-tier-only dependency was added
