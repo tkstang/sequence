@@ -4,14 +4,12 @@
 
 ## Curated Overview
 
-- Add brief narrative summaries here as backlog items are created and reprioritized.
+- `bl-821f` captures a follow-up visual exploration for a more physical-board-like game surface; keep it separate from the current card-cropping hotfix.
 
 <!-- OAT BACKLOG-INDEX -->
-
 | ID | Title | Status | Priority | Scope | Estimate |
 | --- | --- | --- | --- | --- | --- |
-| _No backlog items yet_ | - | - | - | - | - |
-
+| bl-821f | Explore symbolic Sequence board rendering | open | medium | feature | M |
 <!-- END OAT BACKLOG-INDEX -->
 
 ## Notes
