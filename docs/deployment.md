@@ -111,7 +111,8 @@ forgeable when proxy trust was enabled.
 
 - Real physical-phone verification has not replaced the automated 375px mobile
   viewport pass.
-- Social OAuth is not configured.
+- Social OAuth is supported in code (presence-gated) but left unconfigured in
+  the production deployment.
 - Anonymous invite preview/join traffic shares one anonymous limiter bucket.
 - Server processing latency is measured with `Server-Timing`; total client
   round-trip can be higher because of edge and network paths.

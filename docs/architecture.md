@@ -66,8 +66,9 @@ cursor or send a fresh snapshot when needed.
 
 ## Auth and Guests
 
-Email/password auth is enabled through Better Auth. Optional GitHub and Google
-OAuth variables exist, but social providers are not configured for the MVP.
+Email/password auth is enabled through Better Auth. GitHub and Google OAuth
+providers register automatically when both their client id and secret are set;
+the production MVP sets neither, so it runs email/password only.
 
 Guest joins are scoped to a game. The API signs guest tokens with
 `BETTER_AUTH_SECRET` and sends them as httpOnly cookies using the same cookie

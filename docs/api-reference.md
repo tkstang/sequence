@@ -543,9 +543,10 @@ expects (`server.ts:129-148`). Mutating calls clear the in-process session cache
 At a high level:
 
 - **Email/password sessions** — Better Auth issues an httpOnly session cookie.
-  `health.me` and every `authedProcedure` resolve the user from it. Optional
-  GitHub/Google OAuth variables exist but social providers are not configured for
-  the MVP.
+  `health.me` and every `authedProcedure` resolve the user from it. GitHub and
+  Google OAuth providers register automatically when both their client id and
+  secret are set (`packages/api/src/user/auth.ts`); a deployment without those
+  vars offers email/password only — which is how the production MVP runs.
 - **Guest cookies** — separate from Better Auth, the API signs game-scoped guest
   tokens with `BETTER_AUTH_SECRET` and sets them as httpOnly `sequence_guest`
   cookies on `game.join`, using the same cookie attributes (`SameSite`/`Secure`)
