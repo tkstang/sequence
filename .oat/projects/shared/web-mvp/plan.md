@@ -954,7 +954,7 @@ git commit -m "fix(p08-t02): share move authorization resolution"
 | p06    | code     | passed | 2026-06-13 | reviews/p06-review-2026-06-13.md (fail -> fixes -> re-review pass) |
 | p07    | code     | passed | 2026-06-13 | reviews/p07-review-2026-06-13.md (fail -> fixes -> re-review pass: reviews/p07-review-2026-06-13-rereview.md) |
 | final  | code     | received | 2026-06-13 | reviews/final-review-2026-06-13.md |
-| final  | code     | fixes_added | 2026-06-21 | reviews/archived/final-review-2026-06-21.md (p08-t01, p08-t02 added; M2/m1/m2 explicitly deferred) |
+| final  | code     | fixes_completed | 2026-06-21 | reviews/archived/final-review-2026-06-21.md (p08-t01, p08-t02 completed; M2/m1/m2 explicitly deferred) |
 | spec   | artifact | pending | -    | -        |
 | design | artifact | pending | -    | -        |
 | plan   | artifact | passed  | 2026-06-12 | structured (in-memory, 2 passes) |

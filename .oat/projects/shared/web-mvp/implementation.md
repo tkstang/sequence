@@ -1,16 +1,16 @@
 ---
-oat_status: in_progress
-oat_ready_for: null
+oat_status: complete
+oat_ready_for: oat-project-review-provide
 oat_blockers: []
 oat_last_updated: 2026-06-21
-oat_current_task_id: p08-t02
+oat_current_task_id: null
 oat_generated: false
 ---
 
 # Implementation: web-mvp
 
 **Started:** 2026-06-12
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-06-21
 
 > This document is used to resume interrupted implementation sessions.
 >
@@ -33,13 +33,13 @@ oat_generated: false
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
 | Phase 7: Deploy & handoff        | completed (review passed) | 5 | 5/5 |
-| Phase 8: Final review fixes      | in progress | 2     | 1/2       |
+| Phase 8: Final review fixes      | completed (awaiting re-review) | 2 | 2/2 |
 
-**Total:** 74/75 tasks completed
+**Total:** 75/75 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07] → [p08]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
-**Tier:** 1 (subagents) · **Dispatch ceiling:** codex xhigh / claude opus (enforced where supported; preset: maximum)
+**Tier:** p01-p07 Tier 1 (subagents); p08 Tier 2 inline (user-directed no subagents) · **Dispatch ceiling:** codex xhigh / claude opus (enforced where supported; preset: maximum)
 
 ---
 
@@ -500,13 +500,17 @@ and for signup -> local pass-and-play -> initial WS snapshot -> board render.
 - Minor m2: anonymous invite shared limiter bucket. Follow-up trigger:
   anonymous invite traffic volume or verified proxy overwrite behavior.
 
-**Next:** Execute `p08-t01` and `p08-t02`, then update the final review row to
-`fixes_completed` and re-run final code review focused on p08 fixes.
+**Completed:** `p08-t01` stabilizes move-event sequence/payload pairing without
+depending on PostgreSQL `RETURNING` row order. `p08-t02` shares the
+seat-resolution helper between `gamePlayerProcedure` and the hot-path move route
+and adds move-route coverage for outsider rejection, guest cookies, and local
+creator authorization. Final re-review should focus on these p08 fixes plus the
+explicitly deferred M2/m1/m2 findings above.
 
 | Task    | Name                                          | Status  | Commit |
 | ------- | --------------------------------------------- | ------- | ------ |
 | p08-t01 | Fix move hot-path event seq pairing           | completed | `2aa27d9` |
-| p08-t02 | Share and cover move-route seat authorization | pending | -      |
+| p08-t02 | Share and cover move-route seat authorization | completed | `0428a7e` |
 
 ---
 
@@ -859,6 +863,12 @@ Chronological log of implementation progress.
 - Commit `c827395` records backlog item `bl-821f` for a larger symbolic/physical-board visual exploration; that work is intentionally out of scope for the card-cropping hotfix.
 - Verification: `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web test -- --runInBand`; `pnpm --filter @sequence/web build`; changed-file `oxfmt --check`; `git diff --check`; local dev smoke at `http://127.0.0.1:3010/game/38e4842a-176f-4e5a-ac1c-f53a4c1df81b`; production smoke after Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh` (signup -> local game, 103 card images rendered, all sampled card images `object-fit: contain`, no game-unavailable/connection-interrupted state).
 
+### 2026-06-21 — Final review fixes
+
+- Commit `2aa27d9` closes final review I1 by deriving appended event sequences from the source event order instead of trusting `INSERT ... RETURNING` row order, with a deterministic reversed-row regression test.
+- Commit `0428a7e` closes final review M1 by extracting `resolveSeatFromLoadedGame` and reusing it from both the canonical `gamePlayerProcedure` and the hot-path `game.makeMove` route, with move-route coverage for non-participants, guest cookies, and local pass-and-play creators.
+- Verification: `pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts src/trpc-game-middleware.test.ts`; `pnpm --filter @sequence/api typecheck`.
+
 ---
 
 ## Deviations from Plan / Design
@@ -919,29 +929,36 @@ Track test execution during implementation.
 | p05   | 313 root / 44 files after review fixes (web login/logout/dashboard/history/join focused tests; API `game.myGames` + `history.myGames` integration; full root gate) | 313 | 0 | n/a |
 | p06   | Review-fix focused web controls/state/GameOver (13); focused API lobby/replay (21); Playwright desktop+mobile-375 (10); web build; root typecheck/lint/format; root test aggregate; isolated API full-game rerun | 34 focused + 10 Playwright + 1 isolated API e2e; root aggregate 374/375 | 1 root aggregate timeout (transient Neon `CONNECTION_ENDED`; isolated rerun passed) | n/a |
 | p07   | p07-t01 focused API env/cookie/proxy/join tests (30); root `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; root `pnpm test`; Docker build; container `/health`; `drizzle-kit migrate` on disposable Postgres; p07-t02 Railway deploy, prod `/health`, WS upgrade, Railway logs; p07-t03 Vercel build/deploy, prod root/game route checks, signup/login auth smoke; p07-t04 focused API invite limiter/env/server tests (23), production guest/local/realtime/XFF/tier/latency smoke; p07 review-fix focused auth/makeMove/full-game/lifecycle tests; API/web typechecks; touched-file oxlint; full root `pnpm test`; post-rereview alias rename smoke; post-handoff game-route auth-error regression test and deployed browser smokes | 30 focused + 383 root + Docker/migrate/health; p07 review-fix local gate: lifecycle 9/9, makeMove+auth 11/11, full-game e2e 1/1, API typecheck, web typecheck, oxlint, root 386/386; post-handoff web page regression 1/1, web typecheck, full web suite 98/98, web build; Railway deployment `016512d9-afef-4204-b9e6-11fb1b74a9d6` SUCCESS; prod health + WS passed; Vercel deployments READY; auth + guest cookie smoke passed; functional realtime smoke passed; forged-XFF check passed after `b36afa6` and Railway deployment `12949411-5cfa-4c42-89b7-f6861a9e50f2`; NFR2 server timing passed after `acbdec9` / Railway `85e343cd-993c-4e72-8ab3-5bae24c55061` (`game.makeMove` `app;dur=24.4ms`) and after lifecycle deploy `2a313ac4-91b1-4915-aa16-4b4722c8f3da` (`game.makeMove` `app;dur=45.6ms`, `game.concede` `app;dur=49.8ms`); Vercel production deployments `dpl_3EgH16neQoi79NZmeHfHxarjgB2v`, `dpl_GnJi7APdv7NBa5v1afXjhhou1W12`, and `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9` READY; Railway `WEB_ORIGIN` redeploy `eb50f46c-f4b7-4e63-850a-05f5426ddbf4` SUCCESS; `https://sequence-online.vercel.app` `/ping`, API CORS preflight, `/health`, signup -> `health.me` auth-cookie round trip, unauthenticated game-route error UX, and signup -> local game WS snapshot all passed | Pre-fix NFR2 probes failed (`game.makeMove` direct Node fetch `2548ms`, server timing `1780.3ms`); grouped focused Vitest run was manually terminated after opaque silence, then equivalent files passed individually; Neon test branch migrate attempt failed due existing schema-pushed branch, prod DB not used for that local check; one post-handoff Playwright smoke clicked before hydration and was rerun with network-idle waits successfully | n/a |
+| p08   | p08-t01 make-move regression suite; p08-t02 make-move + canonical game middleware suites; API typecheck | make-move 10/10; trpc-game-middleware 7/7; API typecheck green | 0 | n/a |
 
 ## Final Summary (for PR/docs)
 
 **What shipped:**
 
-- {capability 1}
-- {capability 2}
+- Complete server-authoritative Sequence Online MVP: rules engine, Fastify/tRPC API, Better Auth users + signed guest tokens, realtime recovery streams, timers/presence/history/rematch, Next web shell and playable game UI.
+- Production handoff for Railway API + Vercel web at `https://sequence-online.vercel.app`, with deployment notes, Bruno coverage, smoke records, and final review fixes.
 
 **Behavioral changes (user-facing):**
 
-- {bullet}
+- Users can sign up, create remote or pass-and-play games, invite guests, play legal Sequence moves in realtime, recover after reconnects, save/concede/rematch, and review history.
+- Post-handoff fixes improved first-load game stream behavior and card artwork fitting; physical/symbolic board rendering remains tracked separately as backlog item `bl-821f`.
 
 **Key files / modules:**
 
-- `{path}` - {purpose}
+- `packages/game-logic/src/` - pure rules engine and display helpers.
+- `packages/api/src/` - Fastify/tRPC API, persistence, auth, realtime, move engine, lifecycle, history.
+- `apps/web/src/` - Next app shell, auth flows, dashboard/create/join/history pages, and game route UI.
+- `bruno/` - local API smoke collections.
+- `.oat/projects/shared/web-mvp/handoff.md` - operator deployment and smoke-test handoff.
 
 **Verification performed:**
 
-- {tests/lint/typecheck/build/manual steps}
+- Root gates and package-focused gates were run throughout implementation (`typecheck`, `lint`, `format:check`, `test`, web build, Playwright e2e, API integration suites, Bruno, Docker/health checks).
+- Final p08 verification: `pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts src/trpc-game-middleware.test.ts`; `pnpm --filter @sequence/api typecheck`.
 
 **Design deltas (if any):**
 
-- {what changed vs design.md and why}
+- Durable deltas are captured in `## Deviations from Plan / Design`; p08 added no new design-scope delta beyond closing final review I1/M1 and explicitly deferring M2/m1/m2.
 
 ## References
 
