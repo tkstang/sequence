@@ -22,12 +22,12 @@ oat_dispatch_ceiling:
   source: project-state
 oat_workflow_mode: spec-driven # spec-driven | quick | import
 oat_workflow_origin: native # native | imported
-oat_docs_updated: null # null | skipped | complete — documentation sync status
+oat_docs_updated: complete # null | skipped | complete — documentation sync status
 oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-14T00:19:13.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-21T15:21:52.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -39,7 +39,7 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. The final HiLL checkpoint remains pending approval.
+Implementation — p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. Documentation sync completed on 2026-06-21. The final HiLL checkpoint remains pending approval.
 
 ## Artifacts
 
