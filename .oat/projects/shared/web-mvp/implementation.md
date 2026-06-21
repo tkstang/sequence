@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-21
-oat_current_task_id: p08-t01
+oat_current_task_id: p08-t02
 oat_generated: false
 ---
 
@@ -33,9 +33,9 @@ oat_generated: false
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
 | Phase 7: Deploy & handoff        | completed (review passed) | 5 | 5/5 |
-| Phase 8: Final review fixes      | in progress | 2     | 0/2       |
+| Phase 8: Final review fixes      | in progress | 2     | 1/2       |
 
-**Total:** 73/75 tasks completed
+**Total:** 74/75 tasks completed
 
 **Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07] → [p08]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
@@ -505,7 +505,7 @@ and for signup -> local pass-and-play -> initial WS snapshot -> board render.
 
 | Task    | Name                                          | Status  | Commit |
 | ------- | --------------------------------------------- | ------- | ------ |
-| p08-t01 | Fix move hot-path event seq pairing           | pending | -      |
+| p08-t01 | Fix move hot-path event seq pairing           | completed | `2aa27d9` |
 | p08-t02 | Share and cover move-route seat authorization | pending | -      |
 
 ---
