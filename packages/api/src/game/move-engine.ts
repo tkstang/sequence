@@ -1,0 +1,328 @@
+/**
+ * The authoritative move engine — the one loop that matters (design §Data Flow):
+ *
+ *   load game + hands (one transaction)
+ *     → game-logic applyMove/resolveSequenceChoice/turnInDeadCard (reduce)
+ *     → persist changed fields + append events (same transaction, version guard)
+ *     → emit events to the room (redacted per recipient at the subscription edge)
+ *
+ * Optimistic concurrency: the caller passes the `version` it last saw; the
+ * persist step's version predicate makes a stale/duplicate submit lose cleanly
+ * as CONFLICT (first commit wins, deterministically).
+ *
+ * p02-m6 (carried): game-logic's actor-seat enforcement is opt-in. The engine
+ * therefore ALWAYS stamps the authenticated seat onto the move (`move.seat`) and
+ * passes `actorSeat` to `resolveSequenceChoice` / `turnInDeadCard`, so a move
+ * authored by a non-current seat is rejected by the rules engine itself
+ * (NFR1) — no engine call site may omit it.
+ */
+
+import {
+  applyMove,
+  type Card,
+  forfeitTurn,
+  type GameEvent,
+  type GameState,
+  type Move,
+  type Position,
+  resolveSequenceChoice,
+  type Rng,
+  type RuleViolation,
+  turnInDeadCard,
+} from '@sequence/game-logic';
+import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
+
+import type { Database } from '../db/client.ts';
+import { games } from '../db/schema/games.ts';
+import { rooms } from '../shared/realtime/rooms.ts';
+import { createServerRng } from './server-rng.ts';
+import {
+  appendEvents,
+  type LoadedGameState,
+  loadGameState,
+  persistGameStateAndAppendEvents,
+  persistGameState,
+  VersionConflictError,
+} from './state-mapping.ts';
+
+/** A reduction step: how the engine maps the loaded state to a MoveResult. */
+type Reduction = (
+  state: GameState,
+  rng: Rng,
+) =>
+  | { ok: true; nextState: GameState; events: readonly GameEvent[] }
+  | { ok: false; error: RuleViolation };
+
+/** Raised when a rule is violated — surfaces as BAD_REQUEST + typed code. */
+export class RuleViolationError extends Error {
+  constructor(readonly violation: RuleViolation) {
+    super(`rule violation: ${violation.code}`);
+    this.name = 'RuleViolationError';
+  }
+}
+
+/**
+ * Turn-start timer hook (p04-t09). After every committed reduction the engine
+ * calls this with the post-commit state + version so the {@link TimerService}
+ * can (re)arm or clear the turn timer. Left unset in tests that don't exercise
+ * timers; `server.ts` wires the real service on boot.
+ */
+export interface TimerHook {
+  onTurnCommitted(args: {
+    gameId: string;
+    timerSeconds: number | null;
+    version: number;
+    pendingChoice: boolean;
+    finished: boolean;
+  }): void;
+}
+
+let timerHook: TimerHook | null = null;
+
+/** Wire the turn-start timer hook (called once on boot). */
+export function setTimerHook(hook: TimerHook | null): void {
+  timerHook = hook;
+}
+
+/**
+ * Notify the timer hook that a turn started outside a reduction (game start in
+ * p04-t05, presence resume in p04-t10) so the first turn's timer is armed too.
+ */
+export function notifyTurnStart(args: {
+  gameId: string;
+  timerSeconds: number | null;
+  version: number;
+  pendingChoice?: boolean;
+}): void {
+  timerHook?.onTurnCommitted({
+    gameId: args.gameId,
+    timerSeconds: args.timerSeconds,
+    version: args.version,
+    pendingChoice: args.pendingChoice ?? false,
+    finished: false,
+  });
+}
+
+/**
+ * Run one reduction transactionally with the version guard, then broadcast.
+ *
+ * Shared by every gameplay route (make-move, choose-sequence-cells,
+ * turn-in-dead-card) so they all go through the identical load→reduce→persist→
+ * emit path. The `version` the caller saw guards the write; a mismatch (stale
+ * client OR a lost concurrent race) throws CONFLICT.
+ */
+export async function runReduction(
+  db: Database,
+  gameId: string,
+  expectedVersion: number,
+  reduce: Reduction,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  const rng = createServerRng();
+
+  let result;
+  try {
+    result = await db.transaction(async (tx) => {
+      // Guard the read against the caller's version up front for a clean
+      // CONFLICT even before the reduce (persist's predicate is authoritative).
+      const [row] = await tx
+        .select({ version: games.version })
+        .from(games)
+        .where(eq(games.id, gameId))
+        .limit(1);
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (row.version !== expectedVersion) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+      }
+
+      const state = await loadGameState(tx, gameId);
+      const reduced = reduce(state, rng);
+      if (!reduced.ok) {
+        throw new RuleViolationError(reduced.error);
+      }
+
+      // persistGameState re-checks the version predicate atomically — a
+      // concurrent committer that won the race throws VersionConflictError.
+      const newVersion = await persistGameState(
+        tx,
+        gameId,
+        reduced.nextState,
+        expectedVersion,
+      );
+      const appended = await appendEvents(tx, gameId, reduced.events);
+      return { newVersion, appended, nextState: reduced.nextState };
+    });
+  } catch (err) {
+    // A lost optimistic-concurrency race surfaces as CONFLICT, not a 500.
+    if (err instanceof VersionConflictError) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+    }
+    throw err;
+  }
+
+  const { newVersion, appended, nextState } = result;
+
+  // Broadcast AFTER the commit so subscribers never see an event the DB rolled
+  // back. Redaction happens per-recipient in the subscription generator. Each
+  // event carries the post-commit `version` (global per-game, not redacted) so
+  // every subscriber tracks the version to submit its next move with (FR6).
+  for (const ev of appended) {
+    rooms.publish(gameId, {
+      seq: ev.seq,
+      type: ev.type,
+      payload: ev.payload as unknown as Record<string, unknown>,
+      version: newVersion,
+    });
+  }
+
+  // (Re)arm the turn timer for the new state: a fresh deadline when the turn is
+  // live and timed, cleared while a choice freezes the turn or the game ends.
+  timerHook?.onTurnCommitted({
+    gameId,
+    timerSeconds: nextState.settings.timerSeconds,
+    version: newVersion,
+    pendingChoice: nextState.pendingChoice !== undefined,
+    finished: nextState.status === 'finished',
+  });
+
+  return {
+    version: newVersion,
+    events: appended.map((a) => a.payload as unknown as GameEvent),
+  };
+}
+
+/**
+ * Execute a `place` / `removeChip` move for the authenticated seat. Stamps the
+ * seat onto the move (p02-m6) so the rules engine enforces turn ownership.
+ */
+export async function executeMove(
+  db: Database,
+  gameId: string,
+  seat: number,
+  move: Move,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  // Always set the acting seat — the engine rejects an out-of-turn move itself.
+  const stamped: Move = { ...move, seat };
+  return runReduction(db, gameId, version, (state, rng) =>
+    applyMove(state, stamped, rng),
+  );
+}
+
+/**
+ * Execute a move from a preloaded state bundle. The makeMove route uses this
+ * production hot path after authorizing the caller from the same joined load
+ * that builds the GameState, avoiding the generic middleware's repeated
+ * game/player reads.
+ */
+export async function executeMoveFromLoadedState(
+  db: Database,
+  loaded: LoadedGameState,
+  seat: number,
+  move: Move,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  if (loaded.version !== version) {
+    throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+  }
+
+  const stamped: Move = { ...move, seat };
+  const rng = createServerRng();
+  const reduced = applyMove(loaded.state, stamped, rng);
+  if (!reduced.ok) {
+    throw new RuleViolationError(reduced.error);
+  }
+
+  let persisted;
+  try {
+    persisted = await persistGameStateAndAppendEvents(
+      db,
+      loaded.gameId,
+      reduced.nextState,
+      version,
+      reduced.events,
+    );
+  } catch (err) {
+    if (err instanceof VersionConflictError) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'stale version' });
+    }
+    throw err;
+  }
+
+  for (const ev of persisted.appended) {
+    rooms.publish(loaded.gameId, {
+      seq: ev.seq,
+      type: ev.type,
+      payload: ev.payload as unknown as Record<string, unknown>,
+      version: persisted.version,
+    });
+  }
+
+  timerHook?.onTurnCommitted({
+    gameId: loaded.gameId,
+    timerSeconds: reduced.nextState.settings.timerSeconds,
+    version: persisted.version,
+    pendingChoice: reduced.nextState.pendingChoice !== undefined,
+    finished: reduced.nextState.status === 'finished',
+  });
+
+  return {
+    version: persisted.version,
+    events: persisted.appended.map((a) => a.payload as unknown as GameEvent),
+  };
+}
+
+/** Resolve a pending >5-run choice for the authenticated seat (passes actorSeat). */
+export async function executeChoice(
+  db: Database,
+  gameId: string,
+  seat: number,
+  cells: readonly Position[],
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  return runReduction(db, gameId, version, (state, rng) =>
+    resolveSequenceChoice(state, cells, rng, seat),
+  );
+}
+
+/**
+ * Forfeit the current turn (timer expiry): advance without play or draw. Guarded
+ * on `version` like every other reduction, so a forfeit that races a real move
+ * loses cleanly as CONFLICT (first commit wins). Authored by the engine itself,
+ * not a seat — there is no caller seat to stamp.
+ */
+export async function executeForfeit(
+  db: Database,
+  gameId: string,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  return runReduction(db, gameId, version, (state, rng) =>
+    forfeitTurn(state, rng),
+  );
+}
+
+/** Manual hard-mode dead-card turn-in for the authenticated seat. */
+export async function executeTurnIn(
+  db: Database,
+  gameId: string,
+  seat: number,
+  card: Card,
+  version: number,
+): Promise<{ version: number; events: readonly GameEvent[] }> {
+  return runReduction(db, gameId, version, (state, rng) =>
+    turnInDeadCard(state, seat, card, rng),
+  );
+}
+
+/** Map a {@link RuleViolationError} to the BAD_REQUEST tRPC error contract. */
+export function toTrpcError(err: unknown): TRPCError {
+  if (err instanceof RuleViolationError) {
+    return new TRPCError({
+      code: 'BAD_REQUEST',
+      message: err.violation.code,
+      cause: err,
+    });
+  }
+  if (err instanceof TRPCError) return err;
+  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: err });
+}

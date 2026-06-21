@@ -1,0 +1,19 @@
+meta {
+  name: my-games
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/trpc/game.myGames
+  body: none
+  auth: none
+}
+
+headers {
+  origin: {{webOrigin}}
+}
+
+assert {
+  res.status: eq 200
+}

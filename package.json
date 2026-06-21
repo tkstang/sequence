@@ -2,14 +2,33 @@
   "name": "sequence",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+  "packageManager": "pnpm@10.17.0",
+  "engines": {
+    "node": "^24.5.0",
+    "pnpm": ">=10.17.0"
   },
-  "dependencies": {
-    "next": "9.3.6",
-    "react": "16.13.1",
-    "react-dom": "16.13.1"
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint --no-error-on-unmatched-pattern apps packages scripts tools",
+    "format": "oxfmt --no-error-on-unmatched-pattern apps packages scripts tools",
+    "format:check": "oxfmt --check --no-error-on-unmatched-pattern apps packages scripts tools",
+    "test": "node scripts/run-tests.mjs",
+    "build": "pnpm -r build",
+    "hooks:setup": "node tools/git-hooks/manage-hooks.js setup",
+    "hooks:status": "node tools/git-hooks/manage-hooks.js status",
+    "hooks:enable-all": "node tools/git-hooks/manage-hooks.js enable-all",
+    "hooks:disable-all": "node tools/git-hooks/manage-hooks.js disable-all",
+    "hooks": "node tools/git-hooks/manage-hooks.js",
+    "worktree:init": "bash scripts/worktree/init.sh",
+    "worktree:validate": "bash scripts/worktree/validate.sh",
+    "prepare": "node tools/git-hooks/manage-hooks.js setup"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260612.1",
+    "oxfmt": "^0.54.0",
+    "oxlint": "^1.69.0",
+    "svgo": "^4.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.6"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 80,
+  "tabWidth": 2,
+  "sortImports": true,
+  "sortTailwindcss": true,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.next/**",
+    "**/drizzle/**",
+    "**/next-env.d.ts"
+  ]
+}

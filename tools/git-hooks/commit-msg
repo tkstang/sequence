@@ -1,0 +1,51 @@
+#!/bin/sh
+set -e
+
+# Lightweight conventional-commit validator (no commitlint dependency).
+#
+# Accepts:  <type>(<scope>): <description>
+#       or  <type>: <description>
+#
+# <type>  ∈ feat|fix|chore|docs|test|refactor|perf|build|ci|style|revert
+# <scope> is optional; when it matches the phase-task shape it must be
+#         pNN-tNN (e.g. p01-t11) per this project's commit convention.
+#
+# Merge/revert/fixup/squash commits and comment-only messages are skipped.
+
+msg_file="$1"
+subject=$(sed -n '1{/^#/d;p;}' "$msg_file" | head -n 1)
+
+# Skip empty subjects and git-generated merge/revert/fixup messages.
+case "$subject" in
+  '' | Merge\ * | Revert\ * | "fixup! "* | "squash! "*)
+    exit 0
+    ;;
+esac
+
+types='feat|fix|chore|docs|test|refactor|perf|build|ci|style|revert'
+
+# Validate overall conventional shape: type, optional (scope), optional !, colon.
+if ! printf '%s' "$subject" | grep -Eq "^(${types})(\([a-z0-9._/-]+\))?!?: .+"; then
+  echo "Invalid commit message:"
+  echo "  $subject"
+  echo
+  echo "Expected: <type>(<scope>): <description>"
+  echo "  type ∈ ${types}"
+  echo "  e.g. chore(p01-t11): adapted git hooks and worktree env scripts"
+  exit 1
+fi
+
+# When a scope is present and looks like a phase-task ref (starts with p<digit>),
+# enforce the pNN-tNN shape.
+scope=$(printf '%s' "$subject" | sed -n 's/^[a-z]\{1,\}(\([^)]*\)).*/\1/p')
+case "$scope" in
+  p[0-9]*)
+    if ! printf '%s' "$scope" | grep -Eq '^p[0-9]{2}-t[0-9]{2}$'; then
+      echo "Invalid phase-task scope: ($scope)"
+      echo "Expected pNN-tNN, e.g. (p01-t11)."
+      exit 1
+    fi
+    ;;
+esac
+
+exit 0

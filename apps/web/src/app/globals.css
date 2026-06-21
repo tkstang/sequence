@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens (wireframes/README.md). The visual language:
+ *  - slate `#2d3142` chrome (headers, dark surfaces)
+ *  - felt-green board / cream surface
+ *  - team colors: blue / green / red
+ * Tailwind v4 is CSS-configured; these custom properties become utility
+ * classes (e.g. `bg-slate`, `text-team-blue`, `bg-cream`).
+ */
+@theme {
+  --color-slate: #2d3142;
+  --color-slate-soft: #3a3f54;
+  --color-cream: #f6f3ee;
+  --color-felt: #2e7d4f;
+  --color-felt-dark: #1f5c39;
+
+  --color-team-blue: #3a6ea5;
+  --color-team-green: #2e9e5b;
+  --color-team-red: #c0453c;
+
+  /* Badge palettes (dashboard FROZEN/SAVED). */
+  --color-frozen-bg: #fdebc8;
+  --color-frozen-fg: #9a6b00;
+  --color-saved-bg: #ddeafa;
+  --color-saved-fg: #2d5b96;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-slate);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}

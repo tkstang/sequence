@@ -1,30 +1,137 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/zeit/next.js/tree/canary/packages/create-next-app).
+# Sequence Online
 
-## Getting Started
+Sequence Online is a web MVP for playing the Sequence board game online or as a
+local pass-and-play game. It includes account sessions, guest invite joins,
+lobby/team management, tap and drag play modes, timers, reconnect/freeze
+behavior, save/resume, concede, rematch, and game history.
 
-First, run the development server:
+Current public MVP:
+
+- Web: `https://sequence-online.vercel.app`
+- API health: `https://sequence-api-production-8687.up.railway.app/health`
+
+No secrets belong in this repository. Keep runtime values in local ignored env
+files, Railway, Vercel, or Neon.
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `apps/web` | Next.js App Router client, game UI, auth pages, Playwright tests |
+| `packages/api` | Fastify server, Better Auth, tRPC HTTP/WS API, persistence, timers |
+| `packages/game-logic` | Pure TypeScript rules engine shared by API and web |
+| `bruno` | Bruno API smoke collection for local auth/game requests |
+| `docs` | Architecture, development, and deployment/operator documentation |
+| `tools/git-hooks` | Local git hook installation and management scripts |
+
+## Requirements
+
+- Node from `.nvmrc` (`v24`)
+- pnpm `10.17.0` or newer
+- A Postgres/Neon connection string for API work
+- Optional: a Neon test branch connection string for integration and Playwright
+  tests
+
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+The root `.env.example` lists all supported API and web variables.
 
-## Learn More
+For local API development, create a package-local env file because
+`@sequence/api` scripts run from `packages/api` and use `node --env-file=.env`:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.example packages/api/.env
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Fill in at least:
 
-You can check out [the Next.js GitHub repository](https://github.com/zeit/next.js/) - your feedback and contributions are welcome!
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET` with at least 32 characters
+- `BETTER_AUTH_URL=http://localhost:3001`
+- `WEB_ORIGIN=http://localhost:3000`
 
-## Deploy on Vercel
+The web app defaults to `http://localhost:3001` and `ws://localhost:3001`, so
+`apps/web/.env.local` is only needed when pointing at a non-default API.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/import?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Local Development
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Run the API and web app in separate terminals:
+
+```bash
+pnpm --filter @sequence/api dev
+pnpm --filter @sequence/web dev
+```
+
+Open `http://localhost:3000`.
+
+Useful routes:
+
+- `/signup` and `/login` for email/password auth
+- `/dashboard` for saved/resumable games
+- `/create` for new remote or pass-and-play games
+- `/join/<invite-code>` for invite preview and join
+- `/game/<game-id>` for active play
+- `/history` for logged-in aggregate records
+
+## Common Commands
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format:check
+pnpm test
+pnpm build
+```
+
+Package-specific commands:
+
+```bash
+pnpm --filter @sequence/game-logic test
+pnpm --filter @sequence/api test
+pnpm --filter @sequence/web test
+pnpm --filter @sequence/web e2e
+```
+
+`pnpm --filter @sequence/web e2e` loads the root `.env` and only starts its API
+and web servers when `DATABASE_URL_TEST` is present. The suite runs one worker
+against desktop Chromium and a 375px mobile viewport.
+
+## Database and Migrations
+
+Drizzle migrations live in `packages/api/drizzle`.
+
+Generate migration SQL from schema changes:
+
+```bash
+pnpm --filter @sequence/api exec drizzle-kit generate
+```
+
+Apply migrations to the connection in `DATABASE_URL`:
+
+```bash
+pnpm --filter @sequence/api exec drizzle-kit migrate
+```
+
+For local verification, point `DATABASE_URL` at the Neon test branch or another
+disposable database. Do not run local experiments against production.
+
+## API Smoke Requests
+
+The Bruno collection in `bruno/` exercises the local Better Auth and tRPC HTTP
+surfaces. Start the API first, then open the collection in Bruno with the
+`local` environment. See `bruno/README.md`.
+
+## More Documentation
+
+- `docs/architecture.md` - system boundaries and request/event flow
+- `docs/development.md` - local workflows, testing, and UI iteration
+- `docs/deployment.md` - Railway/Vercel deployment and operator checks
+- `apps/web/README.md` - web app package details
+- `packages/api/README.md` - API package details
+- `packages/game-logic/README.md` - rules engine package details

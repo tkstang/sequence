@@ -1,0 +1,29 @@
+meta {
+  name: set-team
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/trpc/game.setTeam
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  origin: {{webOrigin}}
+}
+
+body:json {
+  {
+    "gameId": "{{gameId}}",
+    "targetSeat": 0,
+    "team": 1
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.data.team: eq 1
+}

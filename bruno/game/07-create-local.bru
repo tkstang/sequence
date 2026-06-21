@@ -1,0 +1,39 @@
+meta {
+  name: create-local
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/trpc/game.create
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  origin: {{webOrigin}}
+}
+
+body:json {
+  {
+    "playerCount": 2,
+    "mode": "tap",
+    "timerSeconds": null,
+    "local": true,
+    "opponentName": "Bruno Opponent"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.result.data.status: eq active
+  res.body.result.data.local: eq true
+}
+
+script:post-response {
+  // A local game skips the lobby: it is already active at version 1 with both
+  // seats dealt, so the host can make a move immediately. Capture its id.
+  const data = res.body.result.data;
+  bru.setVar("localGameId", data.gameId);
+}

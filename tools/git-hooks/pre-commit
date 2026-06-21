@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+# Git sets GIT_INDEX_FILE for hooks; in linked worktrees .git is a file, so let
+# Git resolve the worktree index itself.
+unset GIT_INDEX_FILE
+
+# Lint and format-check only the staged source files (oxlint + oxfmt, no
+# lint-staged dependency). Scope to the file types these tools understand.
+staged_files=$(
+  git diff --cached --name-only --diff-filter=ACMR \
+    -- '*.js' '*.jsx' '*.cjs' '*.mjs' '*.ts' '*.tsx' '*.cts' '*.mts'
+)
+
+if [ -n "$staged_files" ]; then
+  # shellcheck disable=SC2086
+  pnpm exec oxlint --no-error-on-unmatched-pattern $staged_files
+  # shellcheck disable=SC2086
+  pnpm exec oxfmt --check $staged_files
+fi
+
+# >>> oat pre-commit hook >>>
+if command -v oat >/dev/null 2>&1; then
+  oat status --scope project --hook || true
+fi
+# <<< oat pre-commit hook <<<
