@@ -12,7 +12,7 @@ oat_hill_checkpoints: [final] # Configured: which phases require human-in-the-lo
 oat_hill_completed: [] # Progress: which HiLL checkpoints have been completed
 oat_parallel_execution: false
 oat_phase: implement # Current phase: discovery | spec | design | plan | implement | decomposition
-oat_phase_status: in_progress # Status: in_progress | complete | pr_open
+oat_phase_status: pr_open # Status: in_progress | complete | pr_open
 # oat_orchestration_retry_limit: 2  # optional; override fix-loop retry limit (range 0-5)
 oat_dispatch_ceiling:
   preset: maximum
@@ -23,23 +23,23 @@ oat_dispatch_ceiling:
 oat_workflow_mode: spec-driven # spec-driven | quick | import
 oat_workflow_origin: native # native | imported
 oat_docs_updated: complete # null | skipped | complete — documentation sync status
-oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
-oat_pr_url: null # null | string — tracked PR URL when a PR exists
+oat_pr_status: open # null | ready | open | closed | merged — actual PR state for the current project
+oat_pr_url: "https://github.com/tkstang/sequence/pull/2" # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-21T16:01:13.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-21T16:09:25.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: web-mvp
 
-**Status:** Implementation complete; final re-review pending
+**Status:** PR open; awaiting human review
 **Started:** 2026-06-12
 **Last Updated:** 2026-06-21
 
 ## Current Phase
 
-Implementation — p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). Final review `reviews/archived/final-review-2026-06-21.md` was received on 2026-06-21 and converted into p08 review-fix tasks (`p08-t01`, `p08-t02`); both p08 fixes are complete (`2aa27d9`, `0428a7e`) and the final review row is ready for re-review. Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. Documentation sync completed on 2026-06-21. The final HiLL checkpoint remains pending final re-review and PR completion.
+Implementation — PR open, awaiting human review: `https://github.com/tkstang/sequence/pull/2`. p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). Final review `reviews/archived/final-review-2026-06-21.md` was received on 2026-06-21 and converted into p08 review-fix tasks (`p08-t01`, `p08-t02`); both p08 fixes are complete (`2aa27d9`, `0428a7e`) and the PR body notes that the latest final review row is `fixes_completed`, not `passed`. Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. Documentation sync completed on 2026-06-21.
 
 ## Artifacts
 
@@ -55,7 +55,9 @@ Implementation — p01-p07 implementation and p07 re-review are complete; final 
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
 - ✓ Plan complete (75 tasks; artifact review passed)
-- ✓ Implementation tasks complete (75/75 tasks; final re-review pending)
+- ✓ Implementation tasks complete (75/75 tasks)
+- ✓ PR created
+- ⧗ Awaiting human review
 
 ## Blockers
 
@@ -63,4 +65,7 @@ Implementation — p01-p07 implementation and p07 re-review are complete; final 
 
 ## Next Milestone
 
-Re-run final code review focused on the p08 fixes and deferred review dispositions, then proceed to final HiLL / PR completion workflow.
+PR is open for review.
+
+- To incorporate feedback: run `oat-project-revise`
+- When approved: run `oat-project-complete`
