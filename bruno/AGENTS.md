@@ -13,3 +13,5 @@ This directory is a Bruno API smoke collection.
   scripts.
 - If adding production smoke requests, document that they must use disposable
   accounts and must not mutate real user data.
+
+See `bruno/README.md` for how to run the collection in Bruno.

@@ -1,0 +1,109 @@
+bundleVersion: 1
+analysisArtifact: ../agent-instructions-2026-06-21-1640.md
+summary: summary.md
+recommendations:
+  - id: rec-001
+    action: update
+    target: AGENTS.md
+    provider: agents_md
+    format: AGENTS.md
+    severity: medium
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-001.md
+  - id: rec-002
+    action: create
+    target: CLAUDE.md
+    provider: claude
+    format: import-shim
+    severity: high
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-002.md
+  - id: rec-003
+    action: create
+    target: bruno/CLAUDE.md
+    provider: claude
+    format: import-shim
+    severity: medium
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-003.md
+  - id: rec-004
+    action: create
+    target: apps/web/AGENTS.md
+    provider: agents_md
+    format: AGENTS.md
+    severity: high
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-004.md
+  - id: rec-005
+    action: create
+    target: apps/web/CLAUDE.md
+    provider: claude
+    format: import-shim
+    severity: medium
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-005.md
+  - id: rec-006
+    action: create
+    target: packages/api/AGENTS.md
+    provider: agents_md
+    format: AGENTS.md
+    severity: high
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-006.md
+  - id: rec-007
+    action: create
+    target: packages/api/CLAUDE.md
+    provider: claude
+    format: import-shim
+    severity: medium
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-007.md
+  - id: rec-008
+    action: create
+    target: packages/game-logic/AGENTS.md
+    provider: agents_md
+    format: AGENTS.md
+    severity: medium
+    confidence: high
+    disclosure: link_only
+    pack: packs/rec-008.md
+  - id: rec-009
+    action: create
+    target: packages/game-logic/CLAUDE.md
+    provider: claude
+    format: import-shim
+    severity: low
+    confidence: high
+    disclosure: inline
+    pack: packs/rec-009.md
+  - id: rec-010
+    action: update
+    target: bruno/AGENTS.md
+    provider: agents_md
+    format: AGENTS.md
+    severity: low
+    confidence: high
+    disclosure: link_only
+    pack: packs/rec-010.md
+  - id: rec-011
+    action: create
+    target: .claude/rules + .cursor/rules
+    provider: claude+cursor
+    format: glob-rule
+    severity: medium
+    confidence: medium
+    disclosure: ask_user
+    pack: packs/rec-011.md
+
+# Rules:
+# - Every recommendation referenced here also exists in the markdown analysis artifact.
+# - `pack` is a relative path under this bundle directory.
+# - The manifest is the primary index used by oat-agent-instructions-apply when the bundle exists.
+# - rec-011 is ask_user: require explicit user confirmation before generating provider glob rules.

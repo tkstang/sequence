@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "docs": {
+    "lastRunAt": "2026-06-21T16:50:14Z",
+    "commitHash": "bdef3ed93692960159f173479206873ae5070041",
+    "baseBranch": "master",
+    "mode": "full",
+    "formats": [],
+    "artifactPath": ".oat/repo/analysis/docs-2026-06-21-1639.md"
+  },
+  "agentInstructions": {
+    "lastRunAt": "2026-06-21T16:53:03Z",
+    "commitHash": "bdef3ed93692960159f173479206873ae5070041",
+    "baseBranch": "master",
+    "mode": "full",
+    "formats": [
+      "agents_md",
+      "claude",
+      "codex",
+      "cursor"
+    ],
+    "artifactPath": ".oat/repo/analysis/agent-instructions-2026-06-21-1640.md"
+  },
+  "docsApply": {
+    "lastRunAt": "2026-06-21T18:09:07Z",
+    "commitHash": "bdef3ed93692960159f173479206873ae5070041",
+    "baseBranch": "master",
+    "mode": "apply",
+    "formats": []
+  },
+  "agentInstructionsApply": {
+    "lastRunAt": "2026-06-21T18:58:37Z",
+    "commitHash": "bdef3ed93692960159f173479206873ae5070041",
+    "baseBranch": "master",
+    "mode": "apply",
+    "formats": [
+      "agents_md",
+      "claude",
+      "codex",
+      "cursor"
+    ]
+  }
+}
