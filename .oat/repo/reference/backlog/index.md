@@ -10,7 +10,7 @@
 <!-- OAT BACKLOG-INDEX -->
 | ID | Title | Status | Priority | Scope | Estimate |
 | --- | --- | --- | --- | --- | --- |
-| bl-d319 | Dev-only UI component playground for fast UI iteration | open | medium | task | S |
+| bl-d319 | Dev-only UI component playground for fast UI iteration | in_progress | medium | task | S |
 | bl-821f | Explore symbolic Sequence board rendering | open | medium | feature | M |
 <!-- END OAT BACKLOG-INDEX -->
 
