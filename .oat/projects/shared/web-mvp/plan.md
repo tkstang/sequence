@@ -858,6 +858,90 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 
 ---
 
+## Phase 8: Final review fixes (p08)
+
+Goal: close the 2026-06-21 final review follow-ups before final re-review.
+
+### Task p08-t01: (review) Fix move hot-path event seq pairing
+
+**Files:**
+
+- Modify: `packages/api/src/game/state-mapping.ts`
+- Modify: `packages/api/src/game/routes/make-move.test.ts`
+
+**Step 1: Understand the issue**
+
+Review finding: `persistGameStateAndAppendEvents` maps returned SQL rows to the
+source `events[]` array by index even though PostgreSQL does not guarantee
+`INSERT ... RETURNING` row order. This can pair a returned `seq` with the wrong
+event payload on the realtime move hot path.
+Location: `packages/api/src/game/state-mapping.ts:558`
+
+**Step 2: Implement fix**
+
+Make pairing order-independent. Compute each event's assigned sequence from the
+source event order (`base + ord`) in code and use returned rows only to confirm
+that the atomic insert/update succeeded. Do not rely on `RETURNING` result
+ordering for payload identity.
+
+**Step 3: Verify**
+
+Run:
+
+```bash
+pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts
+```
+
+Expected: move tests pass and include coverage that appended event payloads
+remain matched to their assigned `seq` values.
+
+**Step 4: Commit**
+
+```bash
+git add packages/api/src/game/state-mapping.ts packages/api/src/game/routes/make-move.test.ts .oat/projects/shared/web-mvp/implementation.md .oat/projects/shared/web-mvp/state.md .oat/projects/shared/web-mvp/plan.md
+git commit -m "fix(p08-t01): stabilize move event sequence pairing"
+```
+
+### Task p08-t02: (review) Share and cover move-route seat authorization
+
+**Files:**
+
+- Modify: `packages/api/src/trpc.ts`
+- Modify: `packages/api/src/game/routes/make-move.ts`
+- Modify: `packages/api/src/game/routes/make-move.test.ts`
+
+**Step 1: Understand the issue**
+
+Review finding: `makeMove` inlined a second copy of the security-sensitive
+seat-resolution chain so it can reuse the preloaded hot-path game state. The
+copy is currently faithful but has limited branch coverage on the move route.
+Location: `packages/api/src/game/routes/make-move.ts:99`
+
+**Step 2: Implement fix**
+
+Extract the seat-resolution logic into a shared helper that both
+`gamePlayerProcedure` and the hot-path move route consume. Add move-route tests
+for non-participant rejection plus guest and local-creator authorization.
+
+**Step 3: Verify**
+
+Run:
+
+```bash
+pnpm --filter @sequence/api exec vitest run src/game/routes/make-move.test.ts src/trpc-game-middleware.test.ts
+```
+
+Expected: canonical middleware and hot-path move-route authorization tests pass.
+
+**Step 4: Commit**
+
+```bash
+git add packages/api/src/trpc.ts packages/api/src/game/routes/make-move.ts packages/api/src/game/routes/make-move.test.ts .oat/projects/shared/web-mvp/implementation.md .oat/projects/shared/web-mvp/state.md .oat/projects/shared/web-mvp/plan.md
+git commit -m "fix(p08-t02): share move authorization resolution"
+```
+
+---
+
 ## Reviews
 
 | Scope  | Type     | Status  | Date | Artifact |
@@ -870,7 +954,7 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 | p06    | code     | passed | 2026-06-13 | reviews/p06-review-2026-06-13.md (fail -> fixes -> re-review pass) |
 | p07    | code     | passed | 2026-06-13 | reviews/p07-review-2026-06-13.md (fail -> fixes -> re-review pass: reviews/p07-review-2026-06-13-rereview.md) |
 | final  | code     | received | 2026-06-13 | reviews/final-review-2026-06-13.md |
-| final  | code     | received | 2026-06-21 | reviews/final-review-2026-06-21.md (independent re-review: 1 Important, 2 Medium, 2 Minor; PASS w/ fast-follows) |
+| final  | code     | fixes_added | 2026-06-21 | reviews/archived/final-review-2026-06-21.md (p08-t01, p08-t02 added; M2/m1/m2 explicitly deferred) |
 | spec   | artifact | pending | -    | -        |
 | design | artifact | pending | -    | -        |
 | plan   | artifact | passed  | 2026-06-12 | structured (in-memory, 2 passes) |
@@ -890,8 +974,9 @@ Goal: production, operator-testable. Requires operator pre-flight complete (Neon
 - Phase 5: 9 tasks — Web shell (auth, dashboard, create, join, history)
 - Phase 6: 13 tasks — Game UI (board, hand, controllers, handoff, e2e)
 - Phase 7: 5 tasks — Deploy & handoff (Railway, Vercel, smoke, notes)
+- Phase 8: 2 tasks — Final review fixes (event seq pairing, move auth sharing)
 
-**Total: 73 tasks**
+**Total: 75 tasks**
 
 Ready for code review and merge.
 

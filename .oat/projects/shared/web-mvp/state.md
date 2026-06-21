@@ -1,5 +1,5 @@
 ---
-oat_current_task: null
+oat_current_task: p08-t01
 oat_last_commit: c827395
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
@@ -27,7 +27,7 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-12T02:41:28.504Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-21T15:21:52.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-21T15:47:42.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
@@ -39,23 +39,23 @@ oat_generated: false
 
 ## Current Phase
 
-Implementation — p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). 7 phases / 73 tasks; schedule [p01] → [p02 ∥ p03] → [p04] → [p05] → [p06] → [p07]; HiLL checkpoint after p07 only, auto-review enabled; dispatch ceiling maximum (Codex xhigh / Claude opus). Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. Documentation sync completed on 2026-06-21. The final HiLL checkpoint remains pending approval.
+Implementation — p01-p07 implementation and p07 re-review are complete; final HiLL checkpoint reached (Run 1/4, Tier 1 subagents). Final review `reviews/archived/final-review-2026-06-21.md` was received on 2026-06-21 and converted into p08 review-fix tasks (`p08-t01`, `p08-t02`); next task is `p08-t01`. Railway API and Vercel web deployments are live at `https://sequence-online.vercel.app`, functional smoke passed, forged-XFF hardening passed, operator handoff is ready, NFR2 now passes after the p07 review-fix latency work, the lifecycle version-guard regression is fixed in `96c9148`, and p07 re-review passed with one non-blocking physical-phone caveat. Post-handoff hotfix `87d84d3` fixed the pre-snapshot game-stream auth error UX and was deployed to Vercel deployment `dpl_HPXqFU225rj2JQ5JWzax1DzSGru9`; post-handoff hotfix `feb38c8` fixed cropped card artwork and lazy WebSocket auth timing, and was deployed to Vercel deployment `dpl_FzuuKDfc2iSB2weUV9LFmtuomrBh`; symbolic/physical board rendering is tracked separately as backlog item `bl-821f`. Documentation sync completed on 2026-06-21. The final HiLL checkpoint remains pending p08 fix completion and re-review.
 
 ## Artifacts
 
 - **Discovery:** `discovery.md` (complete)
 - **Spec:** `spec.md` (complete — 16 FRs, 7 NFRs)
 - **Design:** `design.md` (complete — ready for oat-project-plan)
-- **Plan:** `plan.md` (complete — 73 tasks, review passed)
-- **Implementation:** `implementation.md` (tasks complete — final HiLL checkpoint reached)
+- **Plan:** `plan.md` (complete — 75 tasks, p08 review fixes added)
+- **Implementation:** `implementation.md` (p08 review-fix tasks in progress)
 
 ## Progress
 
 - ✓ Discovery complete (seeded from brainstorm: requirements + stack validation)
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (selective collaborative; 9 sections live-reviewed)
-- ✓ Plan complete (73 tasks; artifact review passed)
-- ⧗ Implementation tasks complete (73/73 tasks; p01-p07 ✓ reviewed; final HiLL checkpoint pending approval)
+- ✓ Plan complete (75 tasks; artifact review passed)
+- ⧗ Implementation tasks in progress (73/75 tasks; p08 review fixes pending)
 
 ## Blockers
 
@@ -63,4 +63,4 @@ Implementation — p01-p07 implementation and p07 re-review are complete; final 
 
 ## Next Milestone
 
-Await final HiLL approval before proceeding to final review / PR completion workflow.
+Complete p08 review-fix tasks, re-run final code review, then proceed to final HiLL / PR completion workflow.

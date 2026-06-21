@@ -2,8 +2,8 @@
 oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
-oat_last_updated: 2026-06-13
-oat_current_task_id: null
+oat_last_updated: 2026-06-21
+oat_current_task_id: p08-t01
 oat_generated: false
 ---
 
@@ -32,11 +32,12 @@ oat_generated: false
 | Phase 4: Game domain             | completed (review passed) | 14 | 14/14 |
 | Phase 5: Web shell               | completed (review passed) | 9 | 9/9 |
 | Phase 6: Game UI                 | completed (review passed) | 13 | 13/13 |
-| Phase 7: Deploy & handoff        | in progress | 5     | 3/5       |
+| Phase 7: Deploy & handoff        | completed (review passed) | 5 | 5/5 |
+| Phase 8: Final review fixes      | in progress | 2     | 0/2       |
 
-**Total:** 71/73 tasks completed
+**Total:** 73/75 tasks completed
 
-**Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07]
+**Execution schedule:** [p01] → [p02 ∥ p03] (parallel group, worktrees) → [p04] → [p05] → [p06] → [p07] → [p08]
 **HiLL checkpoints:** ["p07"] (pause only after the final phase) · auto-review at checkpoints: enabled
 **Tier:** 1 (subagents) · **Dispatch ceiling:** codex xhigh / claude opus (enforced where supported; preset: maximum)
 
@@ -449,6 +450,63 @@ and for signup -> local pass-and-play -> initial WS snapshot -> board render.
 | p07-t03 | Vercel deploy                       | completed | `9bbcf76`, `57227bc` |
 | p07-t04 | Production smoke + checks           | completed | `13fba71`, `b36afa6`, `953139f`, `519e21f`, `8afd6a3`, `acbdec9`, `87d84d3` |
 | p07-t05 | Operator handoff notes              | completed | `694b40e` |
+
+---
+
+## Phase 8: Final review fixes (p08)
+
+**Status:** in progress — final review fixes added from
+`reviews/archived/final-review-2026-06-21.md`
+**Started:** 2026-06-21
+
+### Review Received: final
+
+**Date:** 2026-06-21
+**Review artifact:** `reviews/archived/final-review-2026-06-21.md`
+
+**Findings:**
+
+- Critical: 0
+- Important: 1
+- Medium: 2
+- Minor: 2
+
+**New tasks added:** `p08-t01`, `p08-t02`
+
+**Finding disposition map:**
+
+- I1 -> converted to `p08-t01`: fix move hot-path event `seq`/payload pairing
+  so realtime replay cursors do not depend on PostgreSQL `RETURNING` row order.
+- M1 -> converted to `p08-t02`: share the move-route seat-resolution helper
+  with `gamePlayerProcedure` and add move-route tests for non-participant,
+  guest, and local-creator authorization branches.
+- M2 -> deferred with rationale: bound the short-lived session-user cache as a
+  post-release cleanup unless traffic patterns change. The current 10s TTL,
+  auth-mutation invalidation, and single-instance MVP traffic make this a
+  slow-leak maintainability issue, not a correctness/privacy blocker.
+- m1 -> deferred with rationale: physical-phone smoke remains an operator
+  playtesting follow-up. Automated 375px/mobile-375 verification satisfies the
+  written NFR3 acceptance criterion.
+- m2 -> deferred with rationale: the shared anonymous invite limiter bucket is a
+  deliberate safer tradeoff after Railway XFF spoofing tests. Revisit only when
+  a trusted edge identifier can be verified.
+
+**Deferred Findings:**
+
+- Medium M2: unbounded session-user cache. Follow-up trigger: sustained public
+  traffic, memory growth observations, or any auth-cache touch.
+- Minor m1: physical-phone smoke. Follow-up trigger: broader operator
+  playtesting or public launch.
+- Minor m2: anonymous invite shared limiter bucket. Follow-up trigger:
+  anonymous invite traffic volume or verified proxy overwrite behavior.
+
+**Next:** Execute `p08-t01` and `p08-t02`, then update the final review row to
+`fixes_completed` and re-run final code review focused on p08 fixes.
+
+| Task    | Name                                          | Status  | Commit |
+| ------- | --------------------------------------------- | ------- | ------ |
+| p08-t01 | Fix move hot-path event seq pairing           | pending | -      |
+| p08-t02 | Share and cover move-route seat authorization | pending | -      |
 
 ---
 
