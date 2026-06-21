@@ -30,5 +30,12 @@
     "svgo": "^4.0.1",
     "typescript": "^6.0.3",
     "vitest": "^3.2.6"
+  },
+  "pnpm": {
+    "//": "Force vulnerable transitive build/test tooling up to patched versions (Dependabot GHSA-qx2v-qp2m-jg93, GHSA-67mh-4wv8-2f99, GHSA-g7r4-m6w7-qqqr). All dev-only; selectors only lift versions below the fixed range.",
+    "overrides": {
+      "esbuild@<0.28.1": ">=0.28.1",
+      "postcss@<8.5.10": ">=8.5.10"
+    }
   }
 }

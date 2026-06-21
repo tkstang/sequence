@@ -64,11 +64,44 @@ Playwright lives in `apps/web/e2e`. It loads the root `.env`, requires
 `DATABASE_URL_TEST`, and starts API/web servers on `127.0.0.1` with a fixed test
 auth secret.
 
+## Component Playground (`/dev`)
+
+A dev-only UI playground renders the reusable UI and game components in
+isolation across their key visual states — no login, no live tRPC
+subscription. It reuses the production Tailwind/typography pipeline, so previews
+are visually faithful to what ships.
+
+Open it by running the app and visiting [`/dev`](http://localhost:3000/dev):
+
+```bash
+pnpm --filter @sequence/web dev   # then open http://localhost:3000/dev
+```
+
+The whole `/dev` subtree is gated on `process.env.NODE_ENV !== 'production'`
+(see `src/app/dev/layout.tsx`), so it 404s and never ships to users.
+
+How it is wired:
+
+- **Fixtures** — `src/app/game/[id]/components/game-fixtures.ts` exports
+  representative `GameSnapshotView` states (lobby, active/your-turn,
+  active/not-your-turn, dead-card, sequence-choice, game-over). These are shared
+  by the playground and by tests (see `game-fixtures.test.ts`).
+- **Sections** — `src/app/dev/_playground/sections.ts` lists the nav entries;
+  `stories.tsx` maps each section slug to a renderer that drives the real
+  components from the fixtures.
+
+To add a component or state:
+
+1. Add or extend a fixture in `game-fixtures.ts` (and surface it via
+   `gameFixtures` if it is a new snapshot state).
+2. Add a renderer in `_playground/stories.tsx` and a matching entry in
+   `_playground/sections.ts` (the `slug` must match the `STORIES` key).
+
 ## Game UI Notes
 
 The game route uses `GameSnapshotView` plus streamed events from
 `components/game-state.ts`. Leaf components are prop-driven and should stay
-usable from tests or future fixture-driven playgrounds.
+usable from tests or the fixture-driven playground (see above).
 
 The board currently uses full card SVGs from `public/cards` and renders them
 with `object-fit: contain`. A symbolic/physical-board rendering direction is a
