@@ -14,7 +14,9 @@ archives, use `pnpm install --ignore-scripts` or set `GIT_HOOKS=0`.
 
 ## Environment Files
 
-The committed `.env.example` is the source of truth for variable names.
+The committed `.env.example` is the source of truth for variable names. See
+`configuration.md` for the full variable reference (scopes, defaults, and
+validation).
 
 For local API development, copy it to `packages/api/.env`:
 

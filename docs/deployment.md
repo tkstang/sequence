@@ -56,6 +56,9 @@ Optional social auth variables:
 
 Email/password auth works without social provider variables.
 
+See `configuration.md` for the full environment-variable reference (scopes,
+defaults, and validation).
+
 ## Vercel Web
 
 Vercel project:

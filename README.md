@@ -72,6 +72,7 @@ Open `http://localhost:3000`.
 
 Useful routes:
 
+- `/` for the public landing page
 - `/signup` and `/login` for email/password auth
 - `/dashboard` for saved/resumable games
 - `/create` for new remote or pass-and-play games
@@ -129,9 +130,17 @@ surfaces. Start the API first, then open the collection in Bruno with the
 
 ## More Documentation
 
+Start at [`docs/index.md`](docs/index.md) for the full documentation map. Key pages:
+
 - `docs/architecture.md` - system boundaries and request/event flow
+- `docs/game-rules.md` - the Sequence ruleset as implemented
 - `docs/development.md` - local workflows, testing, and UI iteration
+- `docs/configuration.md` - environment-variable reference
 - `docs/deployment.md` - Railway/Vercel deployment and operator checks
-- `apps/web/README.md` - web app package details
-- `packages/api/README.md` - API package details
-- `packages/game-logic/README.md` - rules engine package details
+- `docs/api-reference.md` - tRPC API reference
+- `docs/game-logic-reference.md` - rules engine API
+- `docs/data-model.md` - database schema reference
+- `docs/testing.md` - test layers and the test-database workflow
+- `CONTRIBUTING.md` - contributor guide, quality gates, and commit convention
+- `apps/web/README.md`, `packages/api/README.md`, `packages/game-logic/README.md` - package details
+- `bruno/README.md`, `tools/git-hooks/README.md` - API smoke collection and git hooks

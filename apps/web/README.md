@@ -39,7 +39,9 @@ By default the client points at:
 - `NEXT_PUBLIC_API_URL=http://localhost:3001`
 - `NEXT_PUBLIC_WS_URL=ws://localhost:3001`
 
-Set `apps/web/.env.local` only when overriding those defaults.
+Set `apps/web/.env.local` only when overriding those defaults. See
+[`../../docs/configuration.md`](../../docs/configuration.md) for the full
+variable reference.
 
 ## Commands
 
@@ -52,6 +54,9 @@ pnpm --filter @sequence/web e2e
 ```
 
 ## Testing
+
+See [`../../docs/testing.md`](../../docs/testing.md) for the full testing strategy
+(layers and the test-database workflow).
 
 Vitest covers component and route helper behavior under `apps/web/src`.
 

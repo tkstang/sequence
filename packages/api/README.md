@@ -29,13 +29,9 @@ Required for local API boot:
 - `BETTER_AUTH_URL=http://localhost:3001`
 - `WEB_ORIGIN=http://localhost:3000`
 
-Optional:
-
-- `DATABASE_URL_TEST`
-- `GITHUB_CLIENT_ID`
-- `GITHUB_CLIENT_SECRET`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
+See [`../../docs/configuration.md`](../../docs/configuration.md) for the full
+variable reference, including optional test-database and social-OAuth variables,
+defaults, and validation.
 
 ## Commands
 
@@ -54,9 +50,11 @@ pnpm --filter @sequence/api typecheck
   choice, dead-card turn-in, save/exit, concede, rematch, my games, event
   subscription
 - `history` - aggregate and head-to-head records
-- `health` - authenticated session/user health helpers
+- `health` - `ping` (public) and `me` (authenticated session/user) helpers
 
-Game routes live one file per action in `src/game/routes`.
+Game routes live one file per action in `src/game/routes`. See
+[`../../docs/api-reference.md`](../../docs/api-reference.md) for the full
+per-procedure reference.
 
 ## Persistence and Migrations
 
@@ -74,7 +72,10 @@ Apply migrations using `DATABASE_URL`:
 pnpm --filter @sequence/api exec drizzle-kit migrate
 ```
 
-Use a test or disposable database for local migration verification.
+Use a test or disposable database for local migration verification. See
+[`../../docs/data-model.md`](../../docs/data-model.md) for the schema reference
+and [`../../docs/development.md`](../../docs/development.md) for the database
+workflow.
 
 ## Runtime Notes
 
