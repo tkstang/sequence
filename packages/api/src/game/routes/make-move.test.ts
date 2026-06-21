@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { games } from '../../db/schema/index.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
+import { hashToken, issueGuestToken } from '../../user/guest-tokens.ts';
 import {
   appendedEventsFromInsertedRows,
   persistGameState,
@@ -122,6 +123,92 @@ describeIntegration('game.makeMove (integration)', () => {
     };
   }
 
+  async function seedGuestTurnGame(): Promise<{
+    guestCookie: string;
+    gameId: string;
+    state: GameState;
+  }> {
+    const host = await h.signUp({
+      email: `guest-host-${randomUUID()}@example.com`,
+      password: 'supersecret123',
+      name: 'Guest Host',
+    });
+    const gameId = randomUUID();
+    const token = issueGuestToken(gameId, 1, h.env.BETTER_AUTH_SECRET);
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: host.userId,
+      playerCount: 2,
+      mode: 'tap',
+      status: 'lobby',
+      version: 0,
+    });
+    await h.db.insert(h.schema.gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: host.userId, isCreator: true },
+      {
+        gameId,
+        seat: 1,
+        team: 2,
+        guestName: 'Guest',
+        guestTokenHash: hashToken(token),
+      },
+    ]);
+    const state: GameState = {
+      ...createGame(
+        { playerCount: 2, mode: 'tap', timerSeconds: null, local: false },
+        [
+          { seat: 0, team: 1 },
+          { seat: 1, team: 2 },
+        ],
+        createSeededRng(456),
+      ),
+      currentSeat: 1,
+    };
+    await h.db.transaction((tx) => persistGameState(tx, gameId, state, 0));
+    return { guestCookie: h.guestCookie(token), gameId, state };
+  }
+
+  async function seedLocalCreatorTurnGame(): Promise<{
+    cookie: string;
+    gameId: string;
+    state: GameState;
+  }> {
+    const host = await h.signUp({
+      email: `local-host-${randomUUID()}@example.com`,
+      password: 'supersecret123',
+      name: 'Local Host',
+    });
+    const gameId = randomUUID();
+    await h.db.insert(games).values({
+      id: gameId,
+      inviteCode: gameId.slice(0, 10),
+      createdBy: host.userId,
+      playerCount: 2,
+      mode: 'tap',
+      status: 'lobby',
+      version: 0,
+      local: true,
+    });
+    await h.db.insert(h.schema.gamePlayers).values([
+      { gameId, seat: 0, team: 1, userId: host.userId, isCreator: true },
+      { gameId, seat: 1, team: 2, guestName: 'Pass Player' },
+    ]);
+    const state: GameState = {
+      ...createGame(
+        { playerCount: 2, mode: 'tap', timerSeconds: null, local: true },
+        [
+          { seat: 0, team: 1 },
+          { seat: 1, team: 2 },
+        ],
+        createSeededRng(789),
+      ),
+      currentSeat: 1,
+    };
+    await h.db.transaction((tx) => persistGameState(tx, gameId, state, 0));
+    return { cookie: host.cookie, gameId, state };
+  }
+
   it('applies a legal place, bumps version, and returns events', async () => {
     const seeded = await seedGame();
     const { cookie, gameId, state } = seeded;
@@ -203,6 +290,57 @@ describeIntegration('game.makeMove (integration)', () => {
       expect((res.ruleViolation as { code: string } | undefined)?.code).toBe(
         'not-your-turn',
       );
+    }
+  });
+
+  it('returns FORBIDDEN for a session user who is not a participant', async () => {
+    const { gameId, state } = await seedGame();
+    const outsider = await h.signUp({
+      email: `outsider-${randomUUID()}@example.com`,
+      password: 'supersecret123',
+      name: 'Outsider',
+    });
+    const move = legalMove(state, 0);
+
+    const res = await h.mutate(
+      'game.makeMove',
+      { gameId, version: 1, move: { type: 'place', ...move } },
+      outsider.cookie,
+    );
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('FORBIDDEN');
+  });
+
+  it('authorizes a valid guest cookie on the move route', async () => {
+    const { guestCookie, gameId, state } = await seedGuestTurnGame();
+    const move = legalMove(state, 1);
+
+    const res = await h.mutate(
+      'game.makeMove',
+      { gameId, version: 1, move: { type: 'place', ...move } },
+      guestCookie,
+    );
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect((res.data as { version: number }).version).toBe(2);
+    }
+  });
+
+  it('authorizes the local-game creator for the current local seat', async () => {
+    const { cookie, gameId, state } = await seedLocalCreatorTurnGame();
+    const move = legalMove(state, 1);
+
+    const res = await h.mutate(
+      'game.makeMove',
+      { gameId, version: 1, move: { type: 'place', ...move } },
+      cookie,
+    );
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect((res.data as { version: number }).version).toBe(2);
     }
   });
 

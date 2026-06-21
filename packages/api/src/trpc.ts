@@ -269,13 +269,28 @@ export interface GameSeat {
   isLocal: boolean;
 }
 
+export interface SeatResolutionPlayer {
+  seat: number;
+  team: number;
+  userId: string | null;
+  guestTokenHash: string | null;
+}
+
+export interface SeatResolutionGame {
+  gameId: string;
+  local: boolean;
+  createdBy: string;
+  currentSeat: number | null;
+  players: readonly SeatResolutionPlayer[];
+}
+
 /**
  * Resolve the caller to a seat in `input.gameId`, or throw FORBIDDEN.
  *
  * Resolution order, per design §API authorization chain:
- *  - Session user → their `game_players` row in this game.
  *  - Local game → the creator's session covers every seat (privacy is the
  *    client-side handoff screen).
+ *  - Session user → their `game_players` row in this game.
  *  - Guest cookie → verify the game-scoped token, then match the stored hash.
  */
 export const gamePlayerProcedure = t.procedure
@@ -318,32 +333,62 @@ async function resolveSeat(
     // lowest seat (as documented), not arbitrary DB-row order.
     .orderBy(gamePlayers.seat);
 
+  return resolveSeatFromLoadedGame(ctx, {
+    gameId: game.id,
+    local: game.local,
+    createdBy: game.createdBy,
+    currentSeat: game.currentSeat,
+    players: seats,
+  });
+}
+
+export function resolveSeatFromLoadedGame(
+  ctx: Context,
+  game: SeatResolutionGame,
+): GameSeat | null {
+  const seats = game.players;
+
   // Local game: the creator's session controls every seat.
   if (game.local && ctx.user && ctx.user.id === game.createdBy) {
     const target = seats.find((s) => s.seat === game.currentSeat) ?? seats[0];
     if (!target) return null;
-    return { gameId, seat: target.seat, team: target.team, isLocal: true };
+    return {
+      gameId: game.gameId,
+      seat: target.seat,
+      team: target.team,
+      isLocal: true,
+    };
   }
 
   // Registered user occupying a seat.
   if (ctx.user) {
     const mine = seats.find((s) => s.userId === ctx.user?.id);
     if (mine) {
-      return { gameId, seat: mine.seat, team: mine.team, isLocal: false };
+      return {
+        gameId: game.gameId,
+        seat: mine.seat,
+        team: mine.team,
+        isLocal: false,
+      };
     }
   }
 
   // Guest: verify the game-scoped cookie, then match the stored hash.
   const rawToken = readCookie(ctx.headers, GUEST_COOKIE_NAME);
   if (rawToken) {
-    const identity = verifyGuestToken(rawToken, gameId, ctx.guestSecret);
+    const identity = verifyGuestToken(rawToken, game.gameId, ctx.guestSecret);
     if (identity) {
       const hash = hashToken(rawToken);
       const seat = seats.find(
         (s) => s.seat === identity.seat && s.guestTokenHash === hash,
       );
       if (seat) {
-        return { gameId, seat: seat.seat, team: seat.team, isLocal: false };
+        return {
+          gameId: game.gameId,
+          seat: seat.seat,
+          team: seat.team,
+          isLocal: false,
+        };
       }
     }
   }
