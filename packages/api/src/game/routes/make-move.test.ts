@@ -13,7 +13,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { games } from '../../db/schema/index.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
-import { persistGameState } from '../state-mapping.ts';
+import {
+  appendedEventsFromInsertedRows,
+  persistGameState,
+} from '../state-mapping.ts';
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const describeIntegration = hasTestDb ? describe : describe.skip;
@@ -31,6 +34,29 @@ function legalMove(
   }
   throw new Error('no legal move for seat');
 }
+
+describe('move event append mapping', () => {
+  it('pairs source payloads with deterministic seqs independent of RETURNING row order', () => {
+    const events = [
+      { type: 'ChipPlaced', seat: 0, position: '1AC' },
+      { type: 'CardDrawn', seat: 0, card: { rank: '2', suit: 'C' } },
+      { type: 'TurnAdvanced', seat: 1 },
+    ] as const;
+
+    const appended = appendedEventsFromInsertedRows(
+      [
+        { seq: 12, type: 'TurnAdvanced', actorSeat: 1 },
+        { seq: 10, type: 'ChipPlaced', actorSeat: 0 },
+        { seq: 11, type: 'CardDrawn', actorSeat: 0 },
+      ],
+      events,
+    );
+
+    expect(appended.map((event) => event.seq)).toEqual([10, 11, 12]);
+    expect(appended.map((event) => event.payload)).toEqual(events);
+    expect(appended.map((event) => event.actorSeat)).toEqual([0, 0, 1]);
+  });
+});
 
 describeIntegration('game.makeMove (integration)', () => {
   let h: Harness;

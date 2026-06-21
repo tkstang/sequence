@@ -345,10 +345,30 @@ interface JoinedGameStateRow {
   hand: Card[] | null;
 }
 
-interface AppendedEventRow {
+export interface AppendedEventRow {
   seq: number;
   type: string;
   actorSeat: number | null;
+}
+
+export function appendedEventsFromInsertedRows<E extends LoggableEvent>(
+  rows: readonly AppendedEventRow[],
+  events: readonly E[],
+): AppendedEvent[] {
+  if (rows.length !== events.length) {
+    throw new Error(
+      `expected ${events.length} appended events, received ${rows.length}`,
+    );
+  }
+  if (events.length === 0) return [];
+
+  const baseSeq = Math.min(...rows.map((row) => row.seq)) - 1;
+  return events.map((event, index) => ({
+    seq: baseSeq + index + 1,
+    type: event.type,
+    payload: event,
+    actorSeat: event.seat ?? null,
+  }));
 }
 
 function firstGameRow(rows: readonly JoinedGameStateRow[]): JoinedGameStateRow {
@@ -576,11 +596,6 @@ export async function persistGameStateAndAppendEvents<E extends LoggableEvent>(
 
   return {
     version: nextVersion,
-    appended: rows.map((row, index) => ({
-      seq: row.seq,
-      type: row.type,
-      payload: events[index]!,
-      actorSeat: row.actorSeat,
-    })),
+    appended: appendedEventsFromInsertedRows(rows, events),
   };
 }
