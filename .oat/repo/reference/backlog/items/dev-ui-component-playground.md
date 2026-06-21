@@ -1,14 +1,14 @@
 ---
 id: bl-d319
 title: 'Dev-only UI component playground for fast UI iteration'
-status: open # open | in_progress | closed | wont_do
+status: in_progress # open | in_progress | closed | wont_do
 priority: medium # urgent | high | medium | low | none
 scope: task # idea | task | feature | initiative
 scope_estimate: S # XS | S | M | L | XL | XXL
 labels: [web, game-ui, dx, tooling]
 assignee: null
 created: '2026-06-21T15:10:31.000Z'
-updated: '2026-06-21T15:10:31.000Z'
+updated: '2026-06-21T18:38:00.000Z'
 associated_issues: []
 oat_template: false
 oat_template_name: backlog-item
