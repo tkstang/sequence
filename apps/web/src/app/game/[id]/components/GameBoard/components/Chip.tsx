@@ -12,15 +12,20 @@ const TEAM_COLOR: Record<Team, string> = {
 const styles = stylex.create({
   chip: {
     position: 'absolute',
-    insetBlock: '18%',
-    insetInline: '18%',
+    // Size by width with a 1:1 aspect ratio so the chip stays circular even
+    // though board cells are now portrait (equal % insets would make it oblong).
+    insetInlineStart: '50%',
+    insetBlockStart: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '64%',
+    aspectRatio: '1 / 1',
     borderRadius: radius.round,
     boxShadow: shadow.sm,
     borderWidth: '2px',
     borderStyle: 'solid',
   },
   tint: (background: string) => ({ backgroundColor: background }),
-  ringWinning: { borderColor: '#fde047' },
+  ringWinning: { borderColor: color.highlight },
   ringLocked: { borderColor: 'rgba(255,255,255,0.8)' },
   ringNeutral: { borderColor: color.border },
   lockDot: {

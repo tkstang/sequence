@@ -84,6 +84,10 @@ export const color = stylex.defineVars({
   // Focus + overlay
   focusRing: { default: '#2d3142', [DARK]: '#8fb6e6' },
   overlay: { default: 'rgba(20,22,29,0.55)', [DARK]: 'rgba(0,0,0,0.66)' },
+
+  // Board selection / winning highlight — blue for legibility on the white card
+  // faces and green felt (replaces the previous low-contrast yellow).
+  highlight: { default: '#2563eb', [DARK]: '#3b82f6' },
 });
 
 export const space = stylex.defineVars({

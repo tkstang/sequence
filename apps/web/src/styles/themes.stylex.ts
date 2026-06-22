@@ -44,6 +44,7 @@ export const lightTheme = stylex.createTheme(color, {
   neutralBadgeBg: 'rgba(0,0,0,0.08)',
   focusRing: '#2d3142',
   overlay: 'rgba(20,22,29,0.55)',
+  highlight: '#2563eb',
 });
 
 export const darkTheme = stylex.createTheme(color, {
@@ -79,4 +80,5 @@ export const darkTheme = stylex.createTheme(color, {
   neutralBadgeBg: 'rgba(255,255,255,0.12)',
   focusRing: '#8fb6e6',
   overlay: 'rgba(0,0,0,0.66)',
+  highlight: '#3b82f6',
 });

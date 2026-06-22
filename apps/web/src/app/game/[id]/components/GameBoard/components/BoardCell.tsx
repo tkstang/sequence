@@ -13,7 +13,6 @@ export interface BoardCellProps {
   isCorner: boolean;
   cardCode: string | null;
   assetPath: string | null;
-  rotation: number;
   chip?: 1 | 2 | 3;
   lockedBy?: number;
   highlight?: CellHighlight;
@@ -27,14 +26,9 @@ export interface BoardCellProps {
   onDrop?: (position: Position) => void;
 }
 
-// Selection/win accent yellow (not a semantic surface token; consistent across
-// valid-target, pending-choice, and winning states).
-const ACCENT_YELLOW = '#fde047';
-
 const styles = stylex.create({
   cell: {
     position: 'relative',
-    aspectRatio: '1 / 1',
     overflow: 'hidden',
     borderRadius: '3px',
     borderWidth: '1px',
@@ -56,7 +50,7 @@ const styles = stylex.create({
     backgroundColor: '#e8d9b5',
   },
   highlightValid: {
-    boxShadow: `inset 0 0 0 2px ${ACCENT_YELLOW}`,
+    boxShadow: `inset 0 0 0 2px ${color.highlight}`,
   },
   highlightPending: {
     boxShadow: 'inset 0 0 0 2px #ffffff',
@@ -68,7 +62,7 @@ const styles = stylex.create({
   winning: {
     outlineStyle: 'solid',
     outlineWidth: '2px',
-    outlineColor: ACCENT_YELLOW,
+    outlineColor: color.highlight,
     outlineOffset: '1px',
   },
   image: {
@@ -98,7 +92,6 @@ export function BoardCell({
   isCorner,
   cardCode,
   assetPath,
-  rotation,
   chip,
   lockedBy,
   highlight,
@@ -168,7 +161,7 @@ export function BoardCell({
           sizes="7vw"
           unoptimized
           className={imageProps.className}
-          style={{ ...imageProps.style, transform: `rotate(${rotation}deg)` }}
+          style={imageProps.style}
         />
       ) : (
         <span aria-hidden {...stylex.props(styles.wild)}>

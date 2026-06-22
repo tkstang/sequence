@@ -16,9 +16,6 @@ import type { PendingChoiceView } from '../../game-state.ts';
 
 const REQUIRED_CELLS = 5;
 
-// Selection accent yellow, matching the board highlight/pin color.
-const ACCENT_YELLOW = '#fde047';
-
 const styles = stylex.create({
   card: {
     marginInline: 'auto',
@@ -30,9 +27,9 @@ const styles = stylex.create({
     padding: space.lg,
     borderWidth: '1px',
     borderStyle: 'solid',
-    borderColor: ACCENT_YELLOW,
+    borderColor: color.highlight,
     borderRadius: radius.xl,
-    backgroundColor: color.frozenBg,
+    backgroundColor: color.savedBg,
   },
   header: {
     display: 'flex',
@@ -104,7 +101,7 @@ const styles = stylex.create({
     color: color.textMuted,
   },
   chipPinned: {
-    boxShadow: `0 0 0 2px ${ACCENT_YELLOW}`,
+    boxShadow: `0 0 0 2px ${color.highlight}`,
   },
 });
 

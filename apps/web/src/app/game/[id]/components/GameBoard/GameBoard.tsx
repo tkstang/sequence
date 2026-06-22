@@ -14,7 +14,11 @@ const styles = stylex.create({
   board: {
     display: 'grid',
     gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',
-    aspectRatio: '1 / 1',
+    gridTemplateRows: 'repeat(10, minmax(0, 1fr))',
+    // Cards are upright (portrait), so each cell — and the whole 10×10 board —
+    // takes the playing-card aspect ratio. No rotation, no dead space; the board
+    // is rectangular rather than square.
+    aspectRatio: '224.225 / 312.808',
     width: '100%',
     gap: '2px',
     padding: space.xs,
@@ -94,7 +98,9 @@ export function GameBoard({
       className={boardProps.className}
       style={{
         ...boardProps.style,
-        maxWidth: 'min(92vw, 680px, max(320px, calc(100dvh - 25rem)))',
+        // Portrait board: height = width × 312.808/224.225 (≈1.395). Cap width so
+        // that height fits the available space (the 0.717 factor = 224.225/312.808).
+        maxWidth: 'min(94vw, 460px, calc((100dvh - 22rem) * 0.717))',
       }}
     >
       {cells.map((cell) => (
@@ -104,7 +110,6 @@ export function GameBoard({
           isCorner={cell.isCorner}
           cardCode={cell.cardCode}
           assetPath={cell.assetPath}
-          rotation={cell.rotation}
           chip={cell.chip}
           lockedBy={cell.lockedBy}
           highlight={cell.highlight}

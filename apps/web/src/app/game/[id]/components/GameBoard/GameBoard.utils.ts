@@ -1,6 +1,5 @@
 import {
   BOARD_MAP,
-  BOARD_SIZE,
   isCorner,
   parseBoardCell,
   type Position,
@@ -21,7 +20,6 @@ export interface BoardCellView {
   isCorner: boolean;
   cardCode: string | null;
   assetPath: string | null;
-  rotation: number;
   chip?: SnapshotBoardCell['chip'];
   lockedBy?: number;
   highlight?: CellHighlight;
@@ -39,14 +37,6 @@ export interface BuildBoardCellsOptions {
 
 export function cardAssetPath(cardCode: string): string {
   return `/cards/${cardCode}.svg`;
-}
-
-function rotationFor(row: number, col: number): number {
-  if (row === 0) return 180;
-  if (row === BOARD_SIZE - 1) return 0;
-  if (col === 0) return 90;
-  if (col === BOARD_SIZE - 1) return -90;
-  return 0;
 }
 
 export function buildBoardCells({
@@ -88,7 +78,6 @@ export function buildBoardCells({
         isCorner: isCorner(position),
         cardCode,
         assetPath: cardCode ? cardAssetPath(cardCode) : null,
-        rotation: rotationFor(row, col),
         chip: cell?.chip,
         lockedBy: cell?.lockedBy,
         highlight,
