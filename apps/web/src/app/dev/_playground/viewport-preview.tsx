@@ -2,7 +2,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import {
   color,
@@ -19,7 +19,7 @@ interface Device {
   id: DeviceId;
   label: string;
   glyph: string;
-  /** Portrait dimensions in px; null = "Fit" (render inline, fluid). */
+  /** Width in px (and the alt width via `height` when rotated); null = Fit. */
   width: number | null;
   height: number | null;
 }
@@ -29,17 +29,13 @@ const DEVICES: Device[] = [
   { id: 'mobile', label: 'Mobile', glyph: '▯', width: 390, height: 844 },
   { id: 'mobileL', label: 'Mobile L', glyph: '▯', width: 430, height: 932 },
   { id: 'tablet', label: 'Tablet', glyph: '▭', width: 768, height: 1024 },
-  { id: 'desktop', label: 'Desktop', glyph: '▭', width: 1280, height: 800 },
+  { id: 'desktop', label: 'Desktop', glyph: '▭', width: 1280, height: 900 },
 ];
 
 const FIT = DEVICES[0]!;
 
 const styles = stylex.create({
-  wrap: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: space.lg,
-  },
+  wrap: { display: 'flex', flexDirection: 'column', gap: space.lg },
   toolbar: {
     display: 'flex',
     alignItems: 'center',
@@ -90,7 +86,7 @@ const styles = stylex.create({
     color: color.text,
     boxShadow: shadow.sm,
   },
-  rotate: {
+  control: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: space.xs,
@@ -103,9 +99,9 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     lineHeight: 1,
+    cursor: 'pointer',
     color: color.textMuted,
     backgroundColor: { default: color.surface, ':hover': color.hoverWash },
-    cursor: 'pointer',
     transitionProperty: 'background-color, color, border-color',
     transitionDuration: '120ms',
     outlineStyle: { default: 'none', ':focus-visible': 'solid' },
@@ -113,20 +109,22 @@ const styles = stylex.create({
     outlineColor: color.focusRing,
     outlineOffset: '1px',
   },
-  rotateDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
-  },
+  controlDisabled: { opacity: 0.4, cursor: 'not-allowed' },
   dims: {
     fontSize: fontSize.xs,
     color: color.textFaint,
     fontVariantNumeric: 'tabular-nums',
   },
-  // Full-width measuring container.
   stage: {
     width: '100%',
   },
-  // Scaled device footprint, centered. Holds the (transform-scaled) iframe.
+  stageFullscreen: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    backgroundColor: color.bg,
+  },
   scaled: {
     marginInline: 'auto',
     overflow: 'hidden',
@@ -137,25 +135,19 @@ const styles = stylex.create({
     boxShadow: shadow.lg,
     backgroundColor: color.surface,
   },
-  scaledSize: (w: number, h: number) => ({ width: `${w}px`, height: `${h}px` }),
   iframe: {
     display: 'block',
     borderWidth: 0,
     transformOrigin: 'top left',
   },
-  iframeSize: (w: number, h: number, scale: number) => ({
-    width: `${w}px`,
-    height: `${h}px`,
-    transform: `scale(${scale})`,
-  }),
 });
 
 /**
  * Wraps a playground story with a device-viewport switcher. "Fit" renders the
- * story inline (fluid). Each device preset renders it inside an iframe at the
- * real device width — so CSS media queries respond to that width — then scales
- * the iframe down to fit the available panel (e.g. a 1280px desktop shown shrunk
- * to fit, rather than cramped by the sidebar). Rotate swaps the orientation.
+ * story inline. Device presets render it inside an iframe at the real device
+ * width — so media queries respond to that width — auto-grown to the content
+ * height (no clipping) and scaled to fit the panel. "Rotate" swaps to the
+ * device's alternate width; "Fullscreen" shows it at the true screen viewport.
  */
 export function ViewportPreview({
   slug,
@@ -165,9 +157,13 @@ export function ViewportPreview({
   children: ReactNode;
 }) {
   const [deviceId, setDeviceId] = useState<DeviceId>('fit');
-  const [landscape, setLandscape] = useState(false);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const [swapped, setSwapped] = useState(false);
   const [stageWidth, setStageWidth] = useState(0);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const contentObserver = useRef<ResizeObserver | null>(null);
 
   useEffect(() => {
     const el = stageRef.current;
@@ -179,15 +175,58 @@ export function ViewportPreview({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      contentObserver.current?.disconnect();
+    };
+  }, []);
+
+  const handleIframeLoad = () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    const measure = () => setContentHeight(doc.documentElement.scrollHeight);
+    measure();
+    contentObserver.current?.disconnect();
+    const observer = new ResizeObserver(measure);
+    observer.observe(doc.documentElement);
+    contentObserver.current = observer;
+  };
+
   const device = DEVICES.find((d) => d.id === deviceId) ?? FIT;
+  // A mutable `let` (not a foldable const) so the StyleX compiler doesn't try to
+  // statically evaluate `width == null` in the stylex.props condition below.
   let width: number | null = null;
-  let height: number | null = null;
   if (device.width != null && device.height != null) {
-    width = landscape ? device.height : device.width;
-    height = landscape ? device.width : device.height;
+    width = swapped ? device.height : device.width;
   }
   const scale =
     width != null && stageWidth > 0 ? Math.min(1, stageWidth / width) : 1;
+  const height = contentHeight ?? (width != null ? Math.round(width * 1.3) : 0);
+
+  const scaledStyle: CSSProperties = isFullscreen
+    ? { width: '100%', height: '100%', border: 'none', borderRadius: 0 }
+    : {
+        width: `${Math.round((width ?? 0) * scale)}px`,
+        height: `${Math.round(height * scale)}px`,
+      };
+  const iframeStyle: CSSProperties = isFullscreen
+    ? { width: '100%', height: '100%', transform: 'none' }
+    : {
+        width: `${width ?? 0}px`,
+        height: `${height}px`,
+        transform: `scale(${scale})`,
+      };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void stageRef.current?.requestFullscreen?.();
+    }
+  };
 
   return (
     <div {...stylex.props(styles.wrap)}>
@@ -215,46 +254,46 @@ export function ViewportPreview({
         </fieldset>
         <button
           type="button"
-          onClick={() => setLandscape((v) => !v)}
+          onClick={() => setSwapped((v) => !v)}
           disabled={width == null}
-          aria-pressed={landscape}
           {...stylex.props(
-            styles.rotate,
-            width == null && styles.rotateDisabled,
+            styles.control,
+            width == null && styles.controlDisabled,
           )}
         >
-          <span aria-hidden>⟳</span>
-          {landscape ? 'Portrait' : 'Landscape'}
+          <span aria-hidden>⟳</span> Rotate
         </button>
-        {width != null && height != null ? (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          {...stylex.props(styles.control)}
+        >
+          <span aria-hidden>⛶</span>
+          {isFullscreen ? 'Exit' : 'Fullscreen'}
+        </button>
+        {width != null ? (
           <span {...stylex.props(styles.dims)}>
-            {width} × {height}
-            {scale < 1 ? ` · ${Math.round(scale * 100)}%` : ''}
+            {width}px wide{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ''}
           </span>
         ) : null}
       </div>
 
-      <div ref={stageRef} {...stylex.props(styles.stage)}>
-        {width != null && height != null ? (
-          <div
-            {...stylex.props(
-              styles.scaled,
-              styles.scaledSize(
-                Math.round(width * scale),
-                Math.round(height * scale),
-              ),
-            )}
-          >
+      <div
+        ref={stageRef}
+        {...stylex.props(styles.stage, isFullscreen && styles.stageFullscreen)}
+      >
+        {width != null ? (
+          <div {...stylex.props(styles.scaled)} style={scaledStyle}>
             {/* No sandbox: first-party, dev-only route that must stay same-origin
                 (shared theme via localStorage) and run scripts (React). */}
             {/* eslint-disable-next-line react/iframe-missing-sandbox */}
             <iframe
-              {...stylex.props(
-                styles.iframe,
-                styles.iframeSize(width, height, scale),
-              )}
+              ref={iframeRef}
+              onLoad={handleIframeLoad}
+              {...stylex.props(styles.iframe)}
+              style={iframeStyle}
               src={`/dev-frame/${slug}`}
-              title={`${slug} preview at ${width}×${height}`}
+              title={`${slug} preview at ${width}px wide`}
             />
           </div>
         ) : (
