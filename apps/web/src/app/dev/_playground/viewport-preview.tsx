@@ -1,7 +1,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -13,31 +13,26 @@ import {
   space,
 } from '@/styles/tokens.stylex.ts';
 
-type DeviceId = 'mobile' | 'mobileL' | 'tablet' | 'desktop';
+type DeviceId = 'fit' | 'mobile' | 'mobileL' | 'tablet' | 'desktop';
 
 interface Device {
   id: DeviceId;
   label: string;
   glyph: string;
-  /** Portrait dimensions in px; null on desktop renders the story inline. */
+  /** Portrait dimensions in px; null = "Fit" (render inline, fluid). */
   width: number | null;
   height: number | null;
 }
 
-const DESKTOP: Device = {
-  id: 'desktop',
-  label: 'Desktop',
-  glyph: '▢',
-  width: null,
-  height: null,
-};
-
 const DEVICES: Device[] = [
+  { id: 'fit', label: 'Fit', glyph: '▢', width: null, height: null },
   { id: 'mobile', label: 'Mobile', glyph: '▯', width: 390, height: 844 },
   { id: 'mobileL', label: 'Mobile L', glyph: '▯', width: 430, height: 932 },
   { id: 'tablet', label: 'Tablet', glyph: '▭', width: 768, height: 1024 },
-  DESKTOP,
+  { id: 'desktop', label: 'Desktop', glyph: '▭', width: 1280, height: 800 },
 ];
+
+const FIT = DEVICES[0]!;
 
 const styles = stylex.create({
   wrap: {
@@ -127,41 +122,40 @@ const styles = stylex.create({
     color: color.textFaint,
     fontVariantNumeric: 'tabular-nums',
   },
-  stageArea: {
-    display: 'flex',
-    // Keep the true device width (so media queries are accurate); scroll
-    // horizontally when it exceeds the panel. `safe center` avoids clipping the
-    // left edge when the frame is wider than the container.
-    justifyContent: 'safe center',
-    overflowX: 'auto',
+  // Full-width measuring container.
+  stage: {
+    width: '100%',
   },
-  frame: {
-    flexShrink: 0,
-    maxHeight: 'calc(100vh - 11rem)',
-    minHeight: '360px',
+  // Scaled device footprint, centered. Holds the (transform-scaled) iframe.
+  scaled: {
+    marginInline: 'auto',
+    overflow: 'hidden',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: color.borderStrong,
     borderRadius: radius.lg,
-    overflow: 'hidden',
     boxShadow: shadow.lg,
     backgroundColor: color.surface,
   },
-  frameDims: (w: number, h: number) => ({ width: `${w}px`, height: `${h}px` }),
+  scaledSize: (w: number, h: number) => ({ width: `${w}px`, height: `${h}px` }),
   iframe: {
     display: 'block',
-    width: '100%',
-    height: '100%',
     borderWidth: 0,
+    transformOrigin: 'top left',
   },
+  iframeSize: (w: number, h: number, scale: number) => ({
+    width: `${w}px`,
+    height: `${h}px`,
+    transform: `scale(${scale})`,
+  }),
 });
 
 /**
- * Wraps a playground story with a device-viewport switcher. "Desktop" renders
- * the story inline at full width; the device presets render it inside an iframe
- * sized to the device width, so real CSS media queries respond to that width (a
- * plain max-width container would not trigger them). Rotate swaps the
- * orientation.
+ * Wraps a playground story with a device-viewport switcher. "Fit" renders the
+ * story inline (fluid). Each device preset renders it inside an iframe at the
+ * real device width — so CSS media queries respond to that width — then scales
+ * the iframe down to fit the available panel (e.g. a 1280px desktop shown shrunk
+ * to fit, rather than cramped by the sidebar). Rotate swaps the orientation.
  */
 export function ViewportPreview({
   slug,
@@ -170,17 +164,30 @@ export function ViewportPreview({
   slug: string;
   children: ReactNode;
 }) {
-  const [deviceId, setDeviceId] = useState<DeviceId>('desktop');
+  const [deviceId, setDeviceId] = useState<DeviceId>('fit');
   const [landscape, setLandscape] = useState(false);
-  const device = DEVICES.find((d) => d.id === deviceId) ?? DESKTOP;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageWidth, setStageWidth] = useState(0);
 
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      setStageWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const device = DEVICES.find((d) => d.id === deviceId) ?? FIT;
   let width: number | null = null;
   let height: number | null = null;
   if (device.width != null && device.height != null) {
     width = landscape ? device.height : device.width;
     height = landscape ? device.width : device.height;
   }
-  const isDevice = width != null && height != null;
+  const scale =
+    width != null && stageWidth > 0 ? Math.min(1, stageWidth / width) : 1;
 
   return (
     <div {...stylex.props(styles.wrap)}>
@@ -209,37 +216,51 @@ export function ViewportPreview({
         <button
           type="button"
           onClick={() => setLandscape((v) => !v)}
-          disabled={!isDevice}
+          disabled={width == null}
           aria-pressed={landscape}
-          {...stylex.props(styles.rotate, !isDevice && styles.rotateDisabled)}
+          {...stylex.props(
+            styles.rotate,
+            width == null && styles.rotateDisabled,
+          )}
         >
           <span aria-hidden>⟳</span>
           {landscape ? 'Portrait' : 'Landscape'}
         </button>
-        {isDevice ? (
+        {width != null && height != null ? (
           <span {...stylex.props(styles.dims)}>
             {width} × {height}
+            {scale < 1 ? ` · ${Math.round(scale * 100)}%` : ''}
           </span>
         ) : null}
       </div>
 
-      {width != null && height != null ? (
-        <div {...stylex.props(styles.stageArea)}>
-          <div {...stylex.props(styles.frame, styles.frameDims(width, height))}>
-            {/* No sandbox: this is a first-party, dev-only route that must stay
-                same-origin (shared theme via localStorage) and run scripts
-                (React) — the two attributes a sandbox would strip. */}
+      <div ref={stageRef} {...stylex.props(styles.stage)}>
+        {width != null && height != null ? (
+          <div
+            {...stylex.props(
+              styles.scaled,
+              styles.scaledSize(
+                Math.round(width * scale),
+                Math.round(height * scale),
+              ),
+            )}
+          >
+            {/* No sandbox: first-party, dev-only route that must stay same-origin
+                (shared theme via localStorage) and run scripts (React). */}
             {/* eslint-disable-next-line react/iframe-missing-sandbox */}
             <iframe
-              {...stylex.props(styles.iframe)}
+              {...stylex.props(
+                styles.iframe,
+                styles.iframeSize(width, height, scale),
+              )}
               src={`/dev-frame/${slug}`}
               title={`${slug} preview at ${width}×${height}`}
             />
           </div>
-        </div>
-      ) : (
-        children
-      )}
+        ) : (
+          children
+        )}
+      </div>
     </div>
   );
 }

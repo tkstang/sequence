@@ -50,7 +50,9 @@ const styles = stylex.create({
     backgroundColor: '#e8d9b5',
   },
   highlightValid: {
-    boxShadow: `inset 0 0 0 2px ${color.highlight}`,
+    // Green to match the selected-card ring in the hand; thicker so valid
+    // targets read clearly against a busy board.
+    boxShadow: `inset 0 0 0 3px ${color.teamGreen}`,
   },
   highlightPending: {
     boxShadow: 'inset 0 0 0 2px #ffffff',
