@@ -41,11 +41,13 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: space.sm,
   },
-  // Centered vertical preview column with a constrained width.
+  // Centered vertical preview column with a constrained width. The cap is
+  // overridable so the Stage "Expand" overlay can let the board grow/rotate
+  // to fill the screen (see EXPANDED_VARS in stage.tsx).
   previewColumn: {
     display: 'flex',
     width: '100%',
-    maxWidth: '42rem',
+    maxWidth: 'var(--preview-max, 42rem)',
     flexDirection: 'column',
     alignItems: 'center',
     gap: space.md,
@@ -67,11 +69,12 @@ const styles = stylex.create({
     fontSize: fontSize.xs,
     color: color.textMuted,
   },
-  // Constrained-width preview wrappers used across stories.
-  w2xl: { width: '100%', maxWidth: '42rem' },
-  w3xl: { width: '100%', maxWidth: '48rem' },
-  wXl: { width: '100%', maxWidth: '36rem' },
-  wMd: { width: '100%', maxWidth: '28rem' },
+  // Constrained-width preview wrappers used across stories. The cap is
+  // overridable (see previewColumn) so Expand can let content fill the screen.
+  w2xl: { width: '100%', maxWidth: 'var(--preview-max, 42rem)' },
+  w3xl: { width: '100%', maxWidth: 'var(--preview-max, 48rem)' },
+  wXl: { width: '100%', maxWidth: 'var(--preview-max, 36rem)' },
+  wMd: { width: '100%', maxWidth: 'var(--preview-max, 28rem)' },
 });
 
 /** Fixture lookup that throws loudly if a slug drifts out of sync. */

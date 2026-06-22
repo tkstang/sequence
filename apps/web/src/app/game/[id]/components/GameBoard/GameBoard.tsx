@@ -174,12 +174,15 @@ export function GameBoard({
   const boardStyle: CSSProperties = quarter
     ? {
         ...boardProps.style,
+        // Center via inset:0 + margin:auto (works for any size), then rotate
+        // around center. translate(-50%,-50%) would mis-center once rotated.
         position: 'absolute',
-        insetBlockStart: '50%',
-        insetInlineStart: '50%',
+        insetBlock: 0,
+        insetInline: 0,
+        margin: 'auto',
         width: 'calc(var(--board-long) * 0.717)',
         height: 'var(--board-long)',
-        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        transform: `rotate(${rotation}deg)`,
       }
     : {
         ...boardProps.style,

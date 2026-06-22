@@ -15,9 +15,12 @@ import {
 
 type StageBackground = 'cream' | 'slate' | 'felt' | 'white';
 
-// In the Expand overlay, raise the board's width cap and shrink its vertical
-// reserve so it grows to fill the available space (see GameBoard's caps).
+// In the Expand overlay: lift the preview wrapper's width cap (so a rotated
+// board can use the full width and stay centered) and raise the board's own
+// width cap / shrink its vertical reserve so it grows to fill the space. The
+// board still self-limits via 94vw + the viewport-height term, so it fits.
 const EXPANDED_VARS = {
+  '--preview-max': 'none',
   '--board-max-width': '1400px',
   '--board-reserve': '7rem',
 } as CSSProperties;
