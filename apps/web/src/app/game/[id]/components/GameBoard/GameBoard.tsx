@@ -2,29 +2,79 @@
 
 import type { Position } from '@sequence/game-logic';
 import * as stylex from '@stylexjs/stylex';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 
-import { color, radius, shadow, space } from '@/styles/tokens.stylex.ts';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  shadow,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import type { SnapshotBoardCell } from '../game-state.ts';
 import { BoardCell } from './components/BoardCell.tsx';
 import { allCardAssetPaths, buildBoardCells } from './GameBoard.utils.ts';
 
+// Upright (portrait) the board is capped so its height fits the viewport
+// (0.717 = 224.225/312.808). Turned on its side it fills more width; the long
+// edge is shared via the `--board-long` custom property.
+const PORTRAIT_MAX = 'min(94vw, 460px, calc((100dvh - 22rem) * 0.717))';
+const LANDSCAPE_LONG = 'min(94vw, 880px, calc((100dvh - 12rem) * 1.395))';
+const PORTRAIT_RATIO = '224.225 / 312.808';
+const LANDSCAPE_RATIO = '312.808 / 224.225';
+
 const styles = stylex.create({
+  shell: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: space.sm,
+    marginInline: 'auto',
+  },
+  toolbar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+  frame: {
+    position: 'relative',
+    width: '100%',
+  },
   board: {
     display: 'grid',
     gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',
     gridTemplateRows: 'repeat(10, minmax(0, 1fr))',
-    // Cards are upright (portrait), so each cell — and the whole 10×10 board —
-    // takes the playing-card aspect ratio. No rotation, no dead space; the board
-    // is rectangular rather than square.
-    aspectRatio: '224.225 / 312.808',
-    width: '100%',
     gap: '2px',
     padding: space.xs,
     borderRadius: radius.md,
     backgroundColor: color.feltDark,
     boxShadow: shadow.lg,
+    transformOrigin: 'center center',
+  },
+  rotateButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingBlock: space.xs,
+    paddingInline: space.sm,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: color.border,
+    borderRadius: radius.pill,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    lineHeight: 1,
+    cursor: 'pointer',
+    color: color.textMuted,
+    backgroundColor: { default: color.surface, ':hover': color.hoverWash },
+    transitionProperty: 'background-color, color, border-color',
+    transitionDuration: '120ms',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
   },
 });
 
@@ -70,7 +120,10 @@ export function GameBoard({
   onCellDrop,
 }: GameBoardProps) {
   usePreloadCardAssets();
-  const boardProps = stylex.props(styles.board);
+  // Optional whole-board rotation (0 / 90 / 180 / 270) — turn it like a physical
+  // board to view from another "seat". Default upright; everything inside the
+  // board rotates together, so cards/chips/highlights and tap targets stay correct.
+  const [rotation, setRotation] = useState(0);
   const cells = useMemo(
     () =>
       buildBoardCells({
@@ -91,38 +144,85 @@ export function GameBoard({
     ],
   );
 
-  return (
-    <div
-      role="grid"
-      aria-label="Sequence board"
-      className={boardProps.className}
-      style={{
+  const quarter = rotation % 180 !== 0;
+  const shellProps = stylex.props(styles.shell);
+  const frameProps = stylex.props(styles.frame);
+  const boardProps = stylex.props(styles.board);
+
+  // The shell carries the footprint width (portrait cap vs landscape long edge);
+  // the frame inside fills it and sets the aspect ratio for that orientation.
+  const shellStyle = {
+    ...shellProps.style,
+    '--board-long': LANDSCAPE_LONG,
+    width: quarter ? 'var(--board-long)' : '100%',
+    maxWidth: quarter ? 'none' : PORTRAIT_MAX,
+  } as CSSProperties;
+  const frameStyle: CSSProperties = {
+    ...frameProps.style,
+    aspectRatio: quarter ? LANDSCAPE_RATIO : PORTRAIT_RATIO,
+  };
+
+  // When turned a quarter-turn, the (portrait) grid is absolutely centered and
+  // rotated so it fills the landscape frame; upright it just fills the frame.
+  const boardStyle: CSSProperties = quarter
+    ? {
         ...boardProps.style,
-        // Portrait board: height = width × 312.808/224.225 (≈1.395). Cap width so
-        // that height fits the available space (the 0.717 factor = 224.225/312.808).
-        maxWidth: 'min(94vw, 460px, calc((100dvh - 22rem) * 0.717))',
-      }}
-    >
-      {cells.map((cell) => (
-        <BoardCell
-          key={cell.position}
-          position={cell.position}
-          isCorner={cell.isCorner}
-          cardCode={cell.cardCode}
-          assetPath={cell.assetPath}
-          chip={cell.chip}
-          lockedBy={cell.lockedBy}
-          highlight={cell.highlight}
-          winning={cell.winning}
-          draggable={canDragCell?.(cell.position) ?? false}
-          onSelect={onCellSelect}
-          onHover={onCellHover}
-          onDragStart={onCellDragStart}
-          onDragEnd={onCellDragEnd}
-          onDragOver={onCellDragOver}
-          onDrop={onCellDrop}
-        />
-      ))}
+        position: 'absolute',
+        insetBlockStart: '50%',
+        insetInlineStart: '50%',
+        width: 'calc(var(--board-long) * 0.717)',
+        height: 'var(--board-long)',
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      }
+    : {
+        ...boardProps.style,
+        width: '100%',
+        height: '100%',
+        transform: `rotate(${rotation}deg)`,
+      };
+
+  return (
+    <div className={shellProps.className} style={shellStyle}>
+      <div {...stylex.props(styles.toolbar)}>
+        <button
+          type="button"
+          onClick={() => setRotation((current) => (current + 90) % 360)}
+          aria-label="Rotate board"
+          title="Rotate board"
+          {...stylex.props(styles.rotateButton)}
+        >
+          <span aria-hidden>⟳</span> Rotate
+        </button>
+      </div>
+      <div className={frameProps.className} style={frameStyle}>
+        <div
+          role="grid"
+          aria-label="Sequence board"
+          className={boardProps.className}
+          style={boardStyle}
+        >
+          {cells.map((cell) => (
+            <BoardCell
+              key={cell.position}
+              position={cell.position}
+              isCorner={cell.isCorner}
+              cardCode={cell.cardCode}
+              assetPath={cell.assetPath}
+              chip={cell.chip}
+              lockedBy={cell.lockedBy}
+              highlight={cell.highlight}
+              winning={cell.winning}
+              draggable={canDragCell?.(cell.position) ?? false}
+              onSelect={onCellSelect}
+              onHover={onCellHover}
+              onDragStart={onCellDragStart}
+              onDragEnd={onCellDragEnd}
+              onDragOver={onCellDragOver}
+              onDrop={onCellDrop}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
