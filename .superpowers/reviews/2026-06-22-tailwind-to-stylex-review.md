@@ -24,7 +24,7 @@ Strict DOM path.
 | `pnpm format:check` (oxfmt) | ✅ pass |
 | `pnpm --filter @sequence/web build` (Next 16 + Turbopack) | ✅ pass |
 | Web tests (vitest) | ✅ 103/103 (23 files) |
-| Full suite `pnpm test` | ⏳ final re-run in progress; web green, api/game-logic unchanged |
+| Full suite `pnpm test` | ✅ 396/396 tests, 60/60 files (api + game-logic + web) |
 
 ## What shipped
 
