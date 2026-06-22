@@ -88,18 +88,16 @@ const styles = stylex.create({
     justifyContent: 'center',
     padding: space.lg,
   },
-  placeholder: {
-    fontSize: fontSize.xs,
-    color: color.textFaint,
-  },
-  overlay: {
+  // When expanded, the surface itself becomes the overlay so the children are
+  // NOT re-mounted (board rotation etc. is preserved).
+  surfaceExpanded: {
     position: 'fixed',
     insetBlock: 0,
     insetInline: 0,
     zIndex: zIndex.overlay,
-    display: 'flex',
     flexDirection: 'column',
-    padding: space.lg,
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     gap: space.md,
   },
   overlayBar: {
@@ -114,13 +112,16 @@ const styles = stylex.create({
     fontWeight: fontWeight.bold,
     color: color.text,
   },
-  overlayContent: {
+  // Transparent in normal flow; a scrollable, safe-centered area when expanded
+  // ('safe center' keeps the top reachable when the content overflows).
+  content: { display: 'contents' },
+  contentExpanded: {
+    display: 'flex',
     flex: 1,
     minHeight: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'auto',
+    alignItems: 'safe center',
+    justifyContent: 'safe center',
   },
   grid: {
     display: 'flex',
@@ -149,7 +150,7 @@ export interface StageProps {
  * Frames a single preview variant: a caption plus a production-faithful surface
  * (same StyleX tokens as the live app). "Expand" maximizes just this variant
  * into an in-app overlay that covers the layout (not OS fullscreen), where the
- * component is allowed to grow to fill the space.
+ * component grows to fill the space and stays scrollable.
  */
 export function Stage({
   title,
@@ -168,6 +169,11 @@ export function Stage({
     return () => window.removeEventListener('keydown', onKey);
   }, [expanded]);
 
+  const contentProps = stylex.props(
+    styles.content,
+    expanded && styles.contentExpanded,
+  );
+
   return (
     <figure {...stylex.props(styles.figure)}>
       <figcaption {...stylex.props(styles.caption)}>
@@ -179,26 +185,25 @@ export function Stage({
             </span>
           ) : null}
         </span>
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          aria-label={`Expand ${title}`}
-          {...stylex.props(styles.pill)}
-        >
-          <span aria-hidden>⛶</span> Expand
-        </button>
-      </figcaption>
-      <div {...stylex.props(styles.surface, backgrounds[background])}>
-        {expanded ? (
-          <span {...stylex.props(styles.placeholder)}>
-            Expanded — press Esc or Close to return
-          </span>
-        ) : (
-          children
+        {expanded ? null : (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            aria-label={`Expand ${title}`}
+            {...stylex.props(styles.pill)}
+          >
+            <span aria-hidden>⛶</span> Expand
+          </button>
         )}
-      </div>
-      {expanded ? (
-        <div {...stylex.props(styles.overlay, backgrounds[background])}>
+      </figcaption>
+      <div
+        {...stylex.props(
+          styles.surface,
+          backgrounds[background],
+          expanded && styles.surfaceExpanded,
+        )}
+      >
+        {expanded ? (
           <div {...stylex.props(styles.overlayBar)}>
             <span {...stylex.props(styles.overlayTitle)}>{title}</span>
             <button
@@ -210,11 +215,14 @@ export function Stage({
               <span aria-hidden>✕</span> Close
             </button>
           </div>
-          <div {...stylex.props(styles.overlayContent)} style={EXPANDED_VARS}>
-            {children}
-          </div>
+        ) : null}
+        <div
+          className={contentProps.className}
+          style={expanded ? EXPANDED_VARS : undefined}
+        >
+          {children}
         </div>
-      ) : null}
+      </div>
     </figure>
   );
 }
