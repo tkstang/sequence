@@ -7,6 +7,7 @@ import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
 
 import { getSectionMeta } from '../_playground/sections.ts';
 import { STORIES } from '../_playground/stories.tsx';
+import { ViewportPreview } from '../_playground/viewport-preview.tsx';
 
 const styles = stylex.create({
   page: {
@@ -49,7 +50,9 @@ export default function DevSectionPage() {
         <h2 {...stylex.props(styles.heading)}>{meta.title}</h2>
         <p {...stylex.props(styles.blurb)}>{meta.blurb}</p>
       </header>
-      <Story />
+      <ViewportPreview slug={slug}>
+        <Story />
+      </ViewportPreview>
     </div>
   );
 }

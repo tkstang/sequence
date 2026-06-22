@@ -52,7 +52,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const sync = () => setSystemDark(mq.matches);
     sync();
     mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
+
+    // Keep other documents (e.g. the /dev viewport-preview iframe) in sync when
+    // the choice changes here. `storage` only fires in *other* documents.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY) return;
+      const next = event.newValue;
+      if (next === 'light' || next === 'dark' || next === 'system') {
+        setModeState(next);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      mq.removeEventListener('change', sync);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   useEffect(() => {
