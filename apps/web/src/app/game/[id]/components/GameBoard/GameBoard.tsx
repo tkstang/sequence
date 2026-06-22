@@ -20,9 +20,13 @@ import { allCardAssetPaths, buildBoardCells } from './GameBoard.utils.ts';
 
 // Upright (portrait) the board is capped so its height fits the viewport
 // (0.717 = 224.225/312.808). Turned on its side it fills more width; the long
-// edge is shared via the `--board-long` custom property.
-const PORTRAIT_MAX = 'min(94vw, 460px, calc((100dvh - 22rem) * 0.717))';
-const LANDSCAPE_LONG = 'min(94vw, 880px, calc((100dvh - 12rem) * 1.395))';
+// edge is shared via the `--board-long` custom property. The width cap and the
+// vertical reserve are overridable via custom properties so an expanded/maximized
+// context (e.g. the playground "Expand" overlay) can let the board grow.
+const PORTRAIT_MAX =
+  'min(94vw, var(--board-max-width, 460px), calc((100dvh - var(--board-reserve, 22rem)) * 0.717))';
+const LANDSCAPE_LONG =
+  'min(94vw, var(--board-max-width, 880px), calc((100dvh - var(--board-reserve, 12rem)) * 1.395))';
 const PORTRAIT_RATIO = '224.225 / 312.808';
 const LANDSCAPE_RATIO = '312.808 / 224.225';
 

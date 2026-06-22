@@ -118,13 +118,6 @@ const styles = stylex.create({
   stage: {
     width: '100%',
   },
-  stageFullscreen: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    backgroundColor: color.bg,
-  },
   scaled: {
     marginInline: 'auto',
     overflow: 'hidden',
@@ -160,7 +153,6 @@ export function ViewportPreview({
   const [swapped, setSwapped] = useState(false);
   const [stageWidth, setStageWidth] = useState(0);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentObserver = useRef<ResizeObserver | null>(null);
@@ -175,14 +167,7 @@ export function ViewportPreview({
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('fullscreenchange', onChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', onChange);
-      contentObserver.current?.disconnect();
-    };
-  }, []);
+  useEffect(() => () => contentObserver.current?.disconnect(), []);
 
   const handleIframeLoad = () => {
     const doc = iframeRef.current?.contentDocument;
@@ -206,26 +191,14 @@ export function ViewportPreview({
     width != null && stageWidth > 0 ? Math.min(1, stageWidth / width) : 1;
   const height = contentHeight ?? (width != null ? Math.round(width * 1.3) : 0);
 
-  const scaledStyle: CSSProperties = isFullscreen
-    ? { width: '100%', height: '100%', border: 'none', borderRadius: 0 }
-    : {
-        width: `${Math.round((width ?? 0) * scale)}px`,
-        height: `${Math.round(height * scale)}px`,
-      };
-  const iframeStyle: CSSProperties = isFullscreen
-    ? { width: '100%', height: '100%', transform: 'none' }
-    : {
-        width: `${width ?? 0}px`,
-        height: `${height}px`,
-        transform: `scale(${scale})`,
-      };
-
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void stageRef.current?.requestFullscreen?.();
-    }
+  const scaledStyle: CSSProperties = {
+    width: `${Math.round((width ?? 0) * scale)}px`,
+    height: `${Math.round(height * scale)}px`,
+  };
+  const iframeStyle: CSSProperties = {
+    width: `${width ?? 0}px`,
+    height: `${height}px`,
+    transform: `scale(${scale})`,
   };
 
   return (
@@ -263,14 +236,6 @@ export function ViewportPreview({
         >
           <span aria-hidden>⟳</span> Rotate
         </button>
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          {...stylex.props(styles.control)}
-        >
-          <span aria-hidden>⛶</span>
-          {isFullscreen ? 'Exit' : 'Fullscreen'}
-        </button>
         {width != null ? (
           <span {...stylex.props(styles.dims)}>
             {width}px wide{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ''}
@@ -278,10 +243,7 @@ export function ViewportPreview({
         ) : null}
       </div>
 
-      <div
-        ref={stageRef}
-        {...stylex.props(styles.stage, isFullscreen && styles.stageFullscreen)}
-      >
+      <div ref={stageRef} {...stylex.props(styles.stage)}>
         {width != null ? (
           <div {...stylex.props(styles.scaled)} style={scaledStyle}>
             {/* No sandbox: first-party, dev-only route that must stay same-origin
