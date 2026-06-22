@@ -13,14 +13,15 @@ import {
   space,
 } from '@/styles/tokens.stylex.ts';
 
-type DeviceId = 'mobile' | 'tablet' | 'desktop';
+type DeviceId = 'mobile' | 'mobileL' | 'tablet' | 'desktop';
 
 interface Device {
   id: DeviceId;
   label: string;
   glyph: string;
-  /** Viewport width in px; null renders the story inline at full width. */
+  /** Portrait dimensions in px; null on desktop renders the story inline. */
   width: number | null;
+  height: number | null;
 }
 
 const DESKTOP: Device = {
@@ -28,11 +29,13 @@ const DESKTOP: Device = {
   label: 'Desktop',
   glyph: '▢',
   width: null,
+  height: null,
 };
 
 const DEVICES: Device[] = [
-  { id: 'mobile', label: 'Mobile', glyph: '▯', width: 390 },
-  { id: 'tablet', label: 'Tablet', glyph: '▭', width: 768 },
+  { id: 'mobile', label: 'Mobile', glyph: '▯', width: 390, height: 844 },
+  { id: 'mobileL', label: 'Mobile L', glyph: '▯', width: 430, height: 932 },
+  { id: 'tablet', label: 'Tablet', glyph: '▭', width: 768, height: 1024 },
   DESKTOP,
 ];
 
@@ -92,6 +95,33 @@ const styles = stylex.create({
     color: color.text,
     boxShadow: shadow.sm,
   },
+  rotate: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: space.xs,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: color.border,
+    borderRadius: radius.pill,
+    paddingBlock: space.xs,
+    paddingInline: space.md,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    lineHeight: 1,
+    color: color.textMuted,
+    backgroundColor: { default: color.surface, ':hover': color.hoverWash },
+    cursor: 'pointer',
+    transitionProperty: 'background-color, color, border-color',
+    transitionDuration: '120ms',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '1px',
+  },
+  rotateDisabled: {
+    opacity: 0.4,
+    cursor: 'not-allowed',
+  },
   dims: {
     fontSize: fontSize.xs,
     color: color.textFaint,
@@ -99,12 +129,16 @@ const styles = stylex.create({
   },
   stageArea: {
     display: 'flex',
-    justifyContent: 'center',
+    // Keep the true device width (so media queries are accurate); scroll
+    // horizontally when it exceeds the panel. `safe center` avoids clipping the
+    // left edge when the frame is wider than the container.
+    justifyContent: 'safe center',
+    overflowX: 'auto',
   },
   frame: {
-    height: 'calc(100vh - 12rem)',
-    minHeight: '420px',
-    maxWidth: '100%',
+    flexShrink: 0,
+    maxHeight: 'calc(100vh - 11rem)',
+    minHeight: '360px',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: color.borderStrong,
@@ -113,7 +147,7 @@ const styles = stylex.create({
     boxShadow: shadow.lg,
     backgroundColor: color.surface,
   },
-  frameWidth: (w: number) => ({ width: `${w}px` }),
+  frameDims: (w: number, h: number) => ({ width: `${w}px`, height: `${h}px` }),
   iframe: {
     display: 'block',
     width: '100%',
@@ -124,9 +158,10 @@ const styles = stylex.create({
 
 /**
  * Wraps a playground story with a device-viewport switcher. "Desktop" renders
- * the story inline at full width; "Mobile"/"Tablet" render it inside an iframe
- * sized to the device width, so real CSS media queries respond to that width
- * (a plain max-width container would not trigger them).
+ * the story inline at full width; the device presets render it inside an iframe
+ * sized to the device width, so real CSS media queries respond to that width (a
+ * plain max-width container would not trigger them). Rotate swaps the
+ * orientation.
  */
 export function ViewportPreview({
   slug,
@@ -136,7 +171,16 @@ export function ViewportPreview({
   children: ReactNode;
 }) {
   const [deviceId, setDeviceId] = useState<DeviceId>('desktop');
+  const [landscape, setLandscape] = useState(false);
   const device = DEVICES.find((d) => d.id === deviceId) ?? DESKTOP;
+
+  let width: number | null = null;
+  let height: number | null = null;
+  if (device.width != null && device.height != null) {
+    width = landscape ? device.height : device.width;
+    height = landscape ? device.width : device.height;
+  }
+  const isDevice = width != null && height != null;
 
   return (
     <div {...stylex.props(styles.wrap)}>
@@ -162,16 +206,26 @@ export function ViewportPreview({
             </button>
           ))}
         </fieldset>
-        {device.width ? (
-          <span {...stylex.props(styles.dims)}>{device.width}px wide</span>
+        <button
+          type="button"
+          onClick={() => setLandscape((v) => !v)}
+          disabled={!isDevice}
+          aria-pressed={landscape}
+          {...stylex.props(styles.rotate, !isDevice && styles.rotateDisabled)}
+        >
+          <span aria-hidden>⟳</span>
+          {landscape ? 'Portrait' : 'Landscape'}
+        </button>
+        {isDevice ? (
+          <span {...stylex.props(styles.dims)}>
+            {width} × {height}
+          </span>
         ) : null}
       </div>
 
-      {device.width == null ? (
-        children
-      ) : (
+      {width != null && height != null ? (
         <div {...stylex.props(styles.stageArea)}>
-          <div {...stylex.props(styles.frame, styles.frameWidth(device.width))}>
+          <div {...stylex.props(styles.frame, styles.frameDims(width, height))}>
             {/* No sandbox: this is a first-party, dev-only route that must stay
                 same-origin (shared theme via localStorage) and run scripts
                 (React) — the two attributes a sandbox would strip. */}
@@ -179,10 +233,12 @@ export function ViewportPreview({
             <iframe
               {...stylex.props(styles.iframe)}
               src={`/dev-frame/${slug}`}
-              title={`${slug} preview at ${device.width}px wide`}
+              title={`${slug} preview at ${width}×${height}`}
             />
           </div>
         </div>
+      ) : (
+        children
       )}
     </div>
   );
