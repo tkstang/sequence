@@ -149,6 +149,9 @@ export function GameBoard({
   );
 
   const quarter = rotation % 180 !== 0;
+  // Spotlight: only while a selected card's targets are being previewed
+  // (validTargets is empty otherwise — it never auto-lists all plays).
+  const spotlight = validTargets.length > 0;
   const shellProps = stylex.props(styles.shell);
   const frameProps = stylex.props(styles.frame);
   const boardProps = stylex.props(styles.board);
@@ -216,6 +219,11 @@ export function GameBoard({
               lockedBy={cell.lockedBy}
               highlight={cell.highlight}
               winning={cell.winning}
+              dimmed={
+                spotlight &&
+                cell.highlight !== 'valid-target' &&
+                cell.highlight !== 'hover-confirm'
+              }
               draggable={canDragCell?.(cell.position) ?? false}
               onSelect={onCellSelect}
               onHover={onCellHover}

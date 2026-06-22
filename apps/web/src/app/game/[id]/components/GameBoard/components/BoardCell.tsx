@@ -17,6 +17,8 @@ export interface BoardCellProps {
   lockedBy?: number;
   highlight?: CellHighlight;
   winning?: boolean;
+  /** Dimmed by the target-preview spotlight (every non-target cell). */
+  dimmed?: boolean;
   draggable?: boolean;
   onSelect?: (position: Position) => void;
   onHover?: (position: Position | null) => void;
@@ -50,9 +52,14 @@ const styles = stylex.create({
     backgroundColor: '#e8d9b5',
   },
   highlightValid: {
-    // Green to match the selected-card ring in the hand; thicker so valid
-    // targets read clearly against a busy board.
-    boxShadow: `inset 0 0 0 3px ${color.teamGreen}`,
+    // Spotlight: valid cells stay bright and lift above the dimmed board. The
+    // dimming of the other cells (see `dimmed` + GameBoard) is the primary cue.
+    zIndex: 1,
+    boxShadow: shadow.lg,
+  },
+  dimmed: {
+    // Applied to every non-target cell while a card's targets are previewed.
+    filter: 'brightness(0.32) saturate(0.75)',
   },
   highlightPending: {
     boxShadow: 'inset 0 0 0 2px #ffffff',
@@ -98,6 +105,7 @@ export function BoardCell({
   lockedBy,
   highlight,
   winning = false,
+  dimmed = false,
   draggable = false,
   onSelect,
   onHover,
@@ -151,6 +159,7 @@ export function BoardCell({
       {...stylex.props(
         styles.cell,
         isCorner && styles.corner,
+        dimmed && styles.dimmed,
         highlight ? HIGHLIGHT_STYLE[highlight] : null,
         winning && styles.winning,
       )}
