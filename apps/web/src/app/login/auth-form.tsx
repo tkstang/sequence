@@ -1,10 +1,95 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { Button } from '@/components/button.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
+
+const styles = stylex.create({
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.lg,
+    width: '100%',
+    maxWidth: '24rem',
+  },
+  title: {
+    margin: 0,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    lineHeight: lineHeight.tight,
+    color: color.text,
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: color.text,
+  },
+  input: {
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: { default: color.border, ':focus-visible': color.focusRing },
+    backgroundColor: color.surface,
+    color: color.text,
+    paddingBlock: space.sm,
+    paddingInline: space.md,
+    fontSize: fontSize.md,
+    fontFamily: 'inherit',
+    transitionProperty: 'border-color, box-shadow',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '1px',
+  },
+  inputInvalid: {
+    borderColor: color.danger,
+  },
+  fieldError: {
+    color: color.teamRed,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.regular,
+  },
+  formError: {
+    margin: 0,
+    color: color.teamRed,
+    fontSize: fontSize.sm,
+  },
+  footer: {
+    margin: 0,
+    textAlign: 'center',
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  link: {
+    color: { default: color.teamBlue, ':hover': color.accentHover },
+    fontWeight: fontWeight.semibold,
+    textDecorationLine: { default: 'none', ':hover': 'underline' },
+    transitionProperty: 'color',
+    transitionDuration: '120ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+    borderRadius: radius.sm,
+  },
+});
 
 export interface AuthFormValues {
   name?: string;
@@ -82,15 +167,15 @@ export function AuthForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="flex w-full max-w-sm flex-col gap-4"
+      {...stylex.props(styles.form)}
       aria-label={isSignup ? 'Sign up' : 'Log in'}
     >
-      <h1 className="text-2xl font-bold">
+      <h1 {...stylex.props(styles.title)}>
         {isSignup ? 'Create your account' : 'Welcome back'}
       </h1>
 
       {isSignup ? (
-        <div className="flex flex-col gap-1 text-sm font-medium">
+        <div {...stylex.props(styles.field)}>
           <label htmlFor="auth-name">Name</label>
           <input
             id="auth-name"
@@ -102,13 +187,16 @@ export function AuthForm({
             onChange={(e) => setName(e.target.value)}
             aria-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? 'name-error' : undefined}
-            className="rounded-lg border border-black/20 bg-white px-3 py-2 text-base"
+            {...stylex.props(
+              styles.input,
+              Boolean(errors.name) && styles.inputInvalid,
+            )}
           />
           {errors.name ? (
             <span
               id="name-error"
               role="alert"
-              className="text-team-red text-xs"
+              {...stylex.props(styles.fieldError)}
             >
               {errors.name}
             </span>
@@ -116,7 +204,7 @@ export function AuthForm({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-1 text-sm font-medium">
+      <div {...stylex.props(styles.field)}>
         <label htmlFor="auth-email">Email</label>
         <input
           id="auth-email"
@@ -128,16 +216,23 @@ export function AuthForm({
           onChange={(e) => setEmail(e.target.value)}
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? 'email-error' : undefined}
-          className="rounded-lg border border-black/20 bg-white px-3 py-2 text-base"
+          {...stylex.props(
+            styles.input,
+            Boolean(errors.email) && styles.inputInvalid,
+          )}
         />
         {errors.email ? (
-          <span id="email-error" role="alert" className="text-team-red text-xs">
+          <span
+            id="email-error"
+            role="alert"
+            {...stylex.props(styles.fieldError)}
+          >
             {errors.email}
           </span>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-1 text-sm font-medium">
+      <div {...stylex.props(styles.field)}>
         <label htmlFor="auth-password">Password</label>
         <input
           id="auth-password"
@@ -149,13 +244,16 @@ export function AuthForm({
           onChange={(e) => setPassword(e.target.value)}
           aria-invalid={Boolean(errors.password)}
           aria-describedby={errors.password ? 'password-error' : undefined}
-          className="rounded-lg border border-black/20 bg-white px-3 py-2 text-base"
+          {...stylex.props(
+            styles.input,
+            Boolean(errors.password) && styles.inputInvalid,
+          )}
         />
         {errors.password ? (
           <span
             id="password-error"
             role="alert"
-            className="text-team-red text-xs"
+            {...stylex.props(styles.fieldError)}
           >
             {errors.password}
           </span>
@@ -163,7 +261,7 @@ export function AuthForm({
       </div>
 
       {submitError ? (
-        <p role="alert" className="text-team-red text-sm">
+        <p role="alert" {...stylex.props(styles.formError)}>
           {submitError}
         </p>
       ) : null}
@@ -172,18 +270,18 @@ export function AuthForm({
         {isSubmitting ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}
       </Button>
 
-      <p className="text-center text-sm">
+      <p {...stylex.props(styles.footer)}>
         {isSignup ? (
           <>
             Already have an account?{' '}
-            <Link href="/login" className="text-team-blue font-semibold">
+            <Link href="/login" {...stylex.props(styles.link)}>
               Log in
             </Link>
           </>
         ) : (
           <>
             New here?{' '}
-            <Link href="/signup" className="text-team-blue font-semibold">
+            <Link href="/signup" {...stylex.props(styles.link)}>
               Create an account
             </Link>
           </>

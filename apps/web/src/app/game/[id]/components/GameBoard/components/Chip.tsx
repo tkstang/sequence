@@ -1,10 +1,36 @@
 import type { Team } from '@sequence/game-logic';
+import * as stylex from '@stylexjs/stylex';
 
-const TEAM_CLASS: Record<Team, string> = {
-  1: 'bg-team-blue',
-  2: 'bg-team-green',
-  3: 'bg-team-red',
+import { color, radius, shadow } from '@/styles/tokens.stylex.ts';
+
+const TEAM_COLOR: Record<Team, string> = {
+  1: color.teamBlue,
+  2: color.teamGreen,
+  3: color.teamRed,
 };
+
+const styles = stylex.create({
+  chip: {
+    position: 'absolute',
+    insetBlock: '18%',
+    insetInline: '18%',
+    borderRadius: radius.round,
+    boxShadow: shadow.sm,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+  },
+  tint: (background: string) => ({ backgroundColor: background }),
+  ringWinning: { borderColor: '#fde047' },
+  ringLocked: { borderColor: 'rgba(255,255,255,0.8)' },
+  ringNeutral: { borderColor: color.border },
+  lockDot: {
+    position: 'absolute',
+    insetBlock: '32%',
+    insetInline: '32%',
+    borderRadius: radius.round,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+});
 
 export interface ChipProps {
   team: Team;
@@ -16,16 +42,17 @@ export function Chip({ team, locked = false, winning = false }: ChipProps) {
   return (
     <span
       aria-label={`Team ${team} chip${locked ? ' locked' : ''}`}
-      className={`absolute inset-[18%] rounded-full ${TEAM_CLASS[team]} shadow-sm ring-2 ${
-        winning ? 'ring-yellow-300' : locked ? 'ring-white/80' : 'ring-black/10'
-      }`}
+      {...stylex.props(
+        styles.chip,
+        styles.tint(TEAM_COLOR[team]),
+        winning
+          ? styles.ringWinning
+          : locked
+            ? styles.ringLocked
+            : styles.ringNeutral,
+      )}
     >
-      {locked ? (
-        <span
-          className="absolute inset-[32%] rounded-full bg-white/70"
-          aria-hidden
-        />
-      ) : null}
+      {locked ? <span aria-hidden {...stylex.props(styles.lockDot)} /> : null}
     </span>
   );
 }

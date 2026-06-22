@@ -1,11 +1,13 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 import { useLogout } from '@/lib/use-logout.ts';
 import { useRequireSession } from '@/lib/use-session.ts';
+import { color, fontSize, space } from '@/styles/tokens.stylex.ts';
 
 import { HistoryView } from './history-view.tsx';
 import type {
@@ -13,6 +15,23 @@ import type {
   HistoryGameRow,
   RecordSummary,
 } from './history-view.tsx';
+
+const styles = stylex.create({
+  loading: {
+    display: 'flex',
+    minHeight: '100vh',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xxxl,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  page: {
+    display: 'flex',
+    minHeight: '100vh',
+    flexDirection: 'column',
+  },
+});
 
 /**
  * History page (p05-t08, FR14). Gated on a session. Fetches the aggregate
@@ -43,11 +62,7 @@ export default function HistoryPage() {
   });
 
   if (session.isPending || !session.isAuthenticated) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
-        Loading…
-      </main>
-    );
+    return <main {...stylex.props(styles.loading)}>Loading…</main>;
   }
 
   const allGames: HistoryGameRow[] = (games.data?.pages ?? []).flatMap(
@@ -55,7 +70,7 @@ export default function HistoryPage() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div {...stylex.props(styles.page)}>
       <AuthenticatedHeader
         userInitial={(session.user?.name ?? '?').charAt(0).toUpperCase()}
         onLogout={logout}

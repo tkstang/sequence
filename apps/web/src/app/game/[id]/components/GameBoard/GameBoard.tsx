@@ -1,11 +1,28 @@
 'use client';
 
 import type { Position } from '@sequence/game-logic';
+import * as stylex from '@stylexjs/stylex';
 import { useEffect, useMemo } from 'react';
+
+import { color, radius, shadow, space } from '@/styles/tokens.stylex.ts';
 
 import type { SnapshotBoardCell } from '../game-state.ts';
 import { BoardCell } from './components/BoardCell.tsx';
 import { allCardAssetPaths, buildBoardCells } from './GameBoard.utils.ts';
+
+const styles = stylex.create({
+  board: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(10, minmax(0, 1fr))',
+    aspectRatio: '1 / 1',
+    width: '100%',
+    gap: '2px',
+    padding: space.xs,
+    borderRadius: radius.md,
+    backgroundColor: color.feltDark,
+    boxShadow: shadow.lg,
+  },
+});
 
 export interface GameBoardProps {
   board: Record<Position, SnapshotBoardCell>;
@@ -49,6 +66,7 @@ export function GameBoard({
   onCellDrop,
 }: GameBoardProps) {
   usePreloadCardAssets();
+  const boardProps = stylex.props(styles.board);
   const cells = useMemo(
     () =>
       buildBoardCells({
@@ -73,8 +91,9 @@ export function GameBoard({
     <div
       role="grid"
       aria-label="Sequence board"
-      className="bg-felt-dark grid aspect-square w-full grid-cols-10 gap-[2px] rounded-lg p-1.5 shadow-xl"
+      className={boardProps.className}
       style={{
+        ...boardProps.style,
         maxWidth: 'min(92vw, 680px, max(320px, calc(100dvh - 25rem)))',
       }}
     >

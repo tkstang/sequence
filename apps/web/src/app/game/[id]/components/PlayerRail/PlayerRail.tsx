@@ -1,8 +1,18 @@
 'use client';
 
 import type { Card, Team } from '@sequence/game-logic';
+import * as stylex from '@stylexjs/stylex';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+
+import {
+  color,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import type { SnapshotPlayer, SnapshotSequence } from '../game-state.ts';
 import { cardAssetPath } from '../GameBoard/GameBoard.utils.ts';
@@ -21,9 +31,9 @@ export interface PlayerRailProps {
 }
 
 const TEAM_COLOR: Record<Team, string> = {
-  1: 'var(--color-team-blue)',
-  2: 'var(--color-team-green)',
-  3: 'var(--color-team-red)',
+  1: color.teamBlue,
+  2: color.teamGreen,
+  3: color.teamRed,
 };
 
 function cardCode(card: Card): string {
@@ -44,6 +54,117 @@ function sequenceCounts(sequences: readonly SnapshotSequence[]) {
   }
   return counts;
 }
+
+const styles = stylex.create({
+  header: {
+    display: 'flex',
+    flexDirection: { default: 'column', '@media (min-width: 640px)': 'row' },
+    alignItems: {
+      default: 'stretch',
+      '@media (min-width: 640px)': 'center',
+    },
+    gap: space.sm,
+    borderRadius: radius.lg,
+    padding: space.sm,
+    backgroundColor: color.slate,
+    color: color.textOnDark,
+  },
+  playerGroup: {
+    display: { default: 'grid', '@media (min-width: 640px)': 'flex' },
+    flexWrap: { default: null, '@media (min-width: 640px)': 'wrap' },
+    gridTemplateColumns: {
+      default: 'repeat(2, minmax(0, 1fr))',
+      '@media (min-width: 640px)': null,
+    },
+    minWidth: 0,
+    flex: '1 1 0%',
+    gap: space.sm,
+  },
+  player: {
+    display: 'flex',
+    minWidth: 0,
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius.md,
+    paddingBlock: space.xs,
+    paddingInline: space.sm,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    fontSize: fontSize.xs,
+    outlineStyle: 'solid',
+    outlineWidth: 0,
+    outlineOffset: '-2px',
+    transitionProperty: 'outline-width, outline-color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+  },
+  playerActive: {
+    outlineWidth: 2,
+    outlineColor: color.frozenFg,
+  },
+  swatch: {
+    height: '10px',
+    width: '10px',
+    flexShrink: 0,
+    borderRadius: radius.round,
+  },
+  name: {
+    maxWidth: '5rem',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    fontWeight: fontWeight.bold,
+  },
+  lastCard: {
+    position: 'relative',
+    height: '24px',
+    width: '16px',
+    flexShrink: 0,
+    overflow: 'hidden',
+    borderRadius: '2px',
+    backgroundColor: color.surface,
+  },
+  lastCardImage: {
+    objectFit: 'contain',
+  },
+  lastCardEmpty: {
+    fontSize: '0.62rem',
+    color: 'rgba(255,255,255,0.4)',
+  },
+  metaGroup: {
+    display: { default: 'grid', '@media (min-width: 640px)': 'flex' },
+    gridTemplateColumns: {
+      default: 'repeat(3, minmax(0, 1fr))',
+      '@media (min-width: 640px)': null,
+    },
+    alignItems: { default: null, '@media (min-width: 640px)': 'center' },
+    gap: space.sm,
+  },
+  stat: {
+    borderRadius: radius.md,
+    paddingBlock: space.xs,
+    paddingInline: space.sm,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    textAlign: 'end',
+  },
+  statLabel: {
+    fontSize: '0.62rem',
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  statValue: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.black,
+  },
+  statValueMono: {
+    fontFamily: fontFamily.mono,
+  },
+});
+
+const swatchStyles = stylex.create({
+  tint: (tint: string) => ({ backgroundColor: tint }),
+});
 
 function TimerDisplay({
   timerSeconds,
@@ -74,11 +195,11 @@ function TimerDisplay({
         : timerSeconds * 1000;
 
   return (
-    <div className="rounded-lg bg-white/10 px-2 py-1 text-right">
-      <div className="text-[0.62rem] font-bold tracking-wide text-white/45 uppercase">
+    <div {...stylex.props(styles.stat)}>
+      <div {...stylex.props(styles.statLabel)}>
         {paused ? 'Paused' : 'Timer'}
       </div>
-      <div className="font-mono text-sm font-black">
+      <div {...stylex.props(styles.statValue, styles.statValueMono)}>
         {formatRemaining(remaining)}
       </div>
     </div>
@@ -104,55 +225,51 @@ export function PlayerRail({
   const counts = useMemo(() => sequenceCounts(sequences), [sequences]);
 
   return (
-    <header className="bg-slate flex flex-col items-stretch gap-2 rounded-lg p-2 text-white sm:flex-row sm:items-center">
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
+    <header {...stylex.props(styles.header)}>
+      <div {...stylex.props(styles.playerGroup)}>
         {players.map((player) => {
           const last = lastPlayedCards[player.seat];
           const active = player.seat === currentSeat;
           return (
             <div
               key={player.seat}
-              className={`flex min-w-0 items-center gap-1.5 rounded-lg bg-white/8 px-2 py-1 text-xs ${
-                active ? 'ring-2 ring-yellow-300' : ''
-              }`}
+              {...stylex.props(styles.player, active && styles.playerActive)}
             >
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: TEAM_COLOR[player.team] }}
+                {...stylex.props(
+                  styles.swatch,
+                  swatchStyles.tint(TEAM_COLOR[player.team]),
+                )}
                 aria-hidden
               />
-              <span className="max-w-20 truncate font-bold">{player.name}</span>
+              <span {...stylex.props(styles.name)}>{player.name}</span>
               {last ? (
-                <span className="relative h-6 w-4 shrink-0 overflow-hidden rounded-[2px] bg-white">
+                <span {...stylex.props(styles.lastCard)}>
                   <Image
                     src={cardAssetPath(cardCode(last))}
                     alt={`${cardCode(last)} last played`}
                     fill
                     sizes="16px"
                     unoptimized
-                    className="object-contain"
+                    {...stylex.props(styles.lastCardImage)}
                   />
                 </span>
               ) : (
-                <span className="text-[0.62rem] text-white/35">--</span>
+                <span {...stylex.props(styles.lastCardEmpty)}>--</span>
               )}
             </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
-        <div className="rounded-lg bg-white/10 px-2 py-1 text-right">
-          <div className="text-[0.62rem] font-bold tracking-wide text-white/45 uppercase">
-            Round
-          </div>
-          <div className="text-sm font-black">{round}</div>
+      <div {...stylex.props(styles.metaGroup)}>
+        <div {...stylex.props(styles.stat)}>
+          <div {...stylex.props(styles.statLabel)}>Round</div>
+          <div {...stylex.props(styles.statValue)}>{round}</div>
         </div>
-        <div className="rounded-lg bg-white/10 px-2 py-1 text-right">
-          <div className="text-[0.62rem] font-bold tracking-wide text-white/45 uppercase">
-            Seq
-          </div>
-          <div className="text-sm font-black">
+        <div {...stylex.props(styles.stat)}>
+          <div {...stylex.props(styles.statLabel)}>Seq</div>
+          <div {...stylex.props(styles.statValue)}>
             {counts[1]}/{counts[2]}/{counts[3]}
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
@@ -8,8 +9,40 @@ import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
 import { useLogout } from '@/lib/use-logout.ts';
 import { useRequireSession } from '@/lib/use-session.ts';
+import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
 
 import { CreateGameForm } from './create-game-form.tsx';
+
+const styles = stylex.create({
+  loading: {
+    display: 'flex',
+    minHeight: '100vh',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xxxl,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  page: {
+    display: 'flex',
+    minHeight: '100vh',
+    flexDirection: 'column',
+  },
+  main: {
+    marginInline: 'auto',
+    display: 'flex',
+    width: '100%',
+    maxWidth: '28rem',
+    flexDirection: 'column',
+    gap: space.xxl,
+    padding: space.lg,
+  },
+  heading: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: color.text,
+  },
+});
 
 /**
  * Create-game screen (p05-t06). Gated on a session. Submits to `game.create`
@@ -23,11 +56,7 @@ import { CreateGameForm } from './create-game-form.tsx';
 export default function CreatePage() {
   return (
     <Suspense
-      fallback={
-        <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
-          Loading…
-        </main>
-      }
+      fallback={<main {...stylex.props(styles.loading)}>Loading…</main>}
     >
       <CreatePageInner />
     </Suspense>
@@ -54,22 +83,18 @@ function CreatePageInner() {
   );
 
   if (session.isPending || !session.isAuthenticated) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
-        Loading…
-      </main>
-    );
+    return <main {...stylex.props(styles.loading)}>Loading…</main>;
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div {...stylex.props(styles.page)}>
       <AuthenticatedHeader
         userInitial={(session.user?.name ?? '?').charAt(0).toUpperCase()}
         onLogout={logout}
         isSigningOut={isSigningOut}
       />
-      <main className="mx-auto flex w-full max-w-md flex-col gap-6 p-4">
-        <h1 className="text-2xl font-bold">New game</h1>
+      <main {...stylex.props(styles.main)}>
+        <h1 {...stylex.props(styles.heading)}>New game</h1>
         <CreateGameForm
           defaultLocal={params.get('local') === '1'}
           submitError={submitError}

@@ -1,5 +1,6 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -20,10 +21,58 @@ import { PlayerRail } from '@/app/game/[id]/components/PlayerRail/PlayerRail.tsx
 import { Badge } from '@/components/badge.tsx';
 import { Button } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
+import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
 
 import { Stage, StageGrid } from './stage.tsx';
 
 const noop = () => {};
+
+const styles = stylex.create({
+  // Horizontal wrap row for primitive previews (buttons, badges).
+  controlRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  badgeRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  // Centered vertical preview column with a constrained width.
+  previewColumn: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: '42rem',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: color.text,
+  },
+  cardBody: {
+    margin: 0,
+    marginBlockStart: space.xs,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  caption: {
+    margin: 0,
+    fontSize: fontSize.xs,
+    color: color.textMuted,
+  },
+  // Constrained-width preview wrappers used across stories.
+  w2xl: { width: '100%', maxWidth: '42rem' },
+  w3xl: { width: '100%', maxWidth: '48rem' },
+  wXl: { width: '100%', maxWidth: '36rem' },
+  wMd: { width: '100%', maxWidth: '28rem' },
+});
 
 /** Fixture lookup that throws loudly if a slug drifts out of sync. */
 function fixture(id: string) {
@@ -39,7 +88,7 @@ function PrimitivesStory() {
         title="Button — variants"
         description="primary / secondary / ghost / danger"
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div {...stylex.props(styles.controlRow)}>
           <Button variant="primary">Primary</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
@@ -50,15 +99,15 @@ function PrimitivesStory() {
         </div>
       </Stage>
       <Stage title="Button — sizes" description="md / lg">
-        <div className="flex flex-wrap items-center gap-3">
+        <div {...stylex.props(styles.controlRow)}>
           <Button size="md">Medium</Button>
           <Button size="lg">Large</Button>
         </div>
       </Stage>
       <Stage title="Card" background="cream">
-        <Card className="w-full max-w-sm">
-          <p className="text-sm font-bold text-black">Surface container</p>
-          <p className="mt-1 text-sm text-black/60">
+        <Card className={stylex.props(styles.wMd).className}>
+          <p {...stylex.props(styles.cardTitle)}>Surface container</p>
+          <p {...stylex.props(styles.cardBody)}>
             Cream/white surface used across dashboard, history, and join.
           </p>
         </Card>
@@ -67,7 +116,7 @@ function PrimitivesStory() {
         title="Badge — tones"
         description="frozen / saved / neutral / win / loss"
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div {...stylex.props(styles.badgeRow)}>
           <Badge tone="frozen">Frozen</Badge>
           <Badge tone="saved">Saved</Badge>
           <Badge tone="neutral">Neutral</Badge>
@@ -89,7 +138,7 @@ function InteractiveBoard() {
     selectedIndex,
   });
   return (
-    <div className="flex w-full max-w-2xl flex-col items-center gap-3">
+    <div {...stylex.props(styles.previewColumn)}>
       <GameBoard
         board={snapshot.board}
         validTargets={selection?.validTargets}
@@ -103,7 +152,7 @@ function InteractiveBoard() {
           setSelectedIndex((current) => (current === index ? null : index))
         }
       />
-      <p className="text-xs text-black/55">
+      <p {...stylex.props(styles.caption)}>
         Tap a card to preview its valid targets on the board.
       </p>
     </div>
@@ -122,7 +171,7 @@ function BoardStory() {
         title="Sequence choice"
         description="Overline run pending the locking five"
       >
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <GameBoard
             board={choice.board}
             pendingChoiceCells={choice.pendingChoice?.cells}
@@ -131,7 +180,7 @@ function BoardStory() {
         </div>
       </Stage>
       <Stage title="Game over — winning cells">
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <GameBoard
             board={finished.board}
             winningCells={winningSequenceCells}
@@ -148,12 +197,12 @@ function HandStory() {
   return (
     <StageGrid>
       <Stage title="Tap mode" background="felt">
-        <div className="w-full max-w-xl">
+        <div {...stylex.props(styles.wXl)}>
           <CardHand hand={active.hand} mode="tap" onSelectCard={noop} />
         </div>
       </Stage>
       <Stage title="Tap mode — dead card dimmed" background="felt">
-        <div className="w-full max-w-xl">
+        <div {...stylex.props(styles.wXl)}>
           <CardHand
             hand={dead.hand}
             mode="tap"
@@ -163,7 +212,7 @@ function HandStory() {
         </div>
       </Stage>
       <Stage title="Drag mode" background="felt">
-        <div className="w-full max-w-xl">
+        <div {...stylex.props(styles.wXl)}>
           <CardHand
             hand={active.hand}
             mode="drag"
@@ -183,7 +232,7 @@ function PlayerRailStory() {
   return (
     <StageGrid>
       <Stage title="Active — timed turn">
-        <div className="w-full max-w-3xl">
+        <div {...stylex.props(styles.w3xl)}>
           <PlayerRail
             players={yourTurn.players}
             currentSeat={yourTurn.currentSeat}
@@ -198,7 +247,7 @@ function PlayerRailStory() {
         </div>
       </Stage>
       <Stage title="Active — no timer, opponent on the clock">
-        <div className="w-full max-w-3xl">
+        <div {...stylex.props(styles.w3xl)}>
           <PlayerRail
             players={noTimer.players}
             currentSeat={noTimer.currentSeat}
@@ -211,7 +260,7 @@ function PlayerRailStory() {
         </div>
       </Stage>
       <Stage title="Finished — sequence counts">
-        <div className="w-full max-w-3xl">
+        <div {...stylex.props(styles.w3xl)}>
           <PlayerRail
             players={finished.players}
             currentSeat={finished.currentSeat}
@@ -232,7 +281,7 @@ function LobbyStory() {
   return (
     <StageGrid>
       <Stage title="Four players, no timer">
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <LobbyTeams
             inviteCode={lobby.inviteCode}
             playerCount={4}
@@ -249,7 +298,7 @@ function LobbyStory() {
         </div>
       </Stage>
       <Stage title="Two players, 30s turn timer">
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <LobbyTeams
             inviteCode={lobby.inviteCode}
             playerCount={2}
@@ -273,7 +322,7 @@ function HandoffStory() {
   return (
     <StageGrid>
       <Stage title="With last move" background="cream">
-        <div className="w-full max-w-md">
+        <div {...stylex.props(styles.wMd)}>
           <HandoffScreen
             playerName="Marcus"
             lastMoveLabel="KH to 1KH"
@@ -282,7 +331,7 @@ function HandoffStory() {
         </div>
       </Stage>
       <Stage title="First turn (no last move)" background="cream">
-        <div className="w-full max-w-md">
+        <div {...stylex.props(styles.wMd)}>
           <HandoffScreen playerName="Riya" onReveal={noop} />
         </div>
       </Stage>
@@ -295,7 +344,7 @@ function GameOverStory() {
   return (
     <StageGrid>
       <Stage title="Win">
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <GameOver
             winnerTeam={finished.winnerTeam}
             endReason="win"
@@ -305,7 +354,7 @@ function GameOverStory() {
         </div>
       </Stage>
       <Stage title="Conceded">
-        <div className="w-full max-w-2xl">
+        <div {...stylex.props(styles.w2xl)}>
           <GameOver
             winnerTeam={null}
             endReason="concede"

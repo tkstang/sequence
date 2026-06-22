@@ -1,9 +1,17 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useState } from 'react';
 
 import { Badge } from '@/components/badge.tsx';
 import { Button } from '@/components/button.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import type { SnapshotPlayer } from '../game-state.ts';
 
@@ -24,32 +32,239 @@ export interface LobbyTeamsProps {
   isMutating?: boolean;
 }
 
-const TEAM_META: Record<
-  TeamId,
-  { name: string; text: string; border: string; bg: string; dot: string }
-> = {
+const TEAM_META: Record<TeamId, { name: string }> = {
+  1: { name: 'Blue' },
+  2: { name: 'Green' },
+  3: { name: 'Red' },
+};
+
+const teamStyles = stylex.create({
   1: {
-    name: 'Blue',
-    text: 'text-team-blue',
-    border: 'border-team-blue',
-    bg: 'bg-[#e3ecf7]',
-    dot: 'var(--color-team-blue)',
+    borderColor: color.teamBlue,
+    backgroundColor: {
+      default: '#e3ecf7',
+      '@media (prefers-color-scheme: dark)': 'rgba(91,143,196,0.14)',
+    },
   },
   2: {
-    name: 'Green',
-    text: 'text-team-green',
-    border: 'border-team-green',
-    bg: 'bg-[#e2f3e8]',
-    dot: 'var(--color-team-green)',
+    borderColor: color.teamGreen,
+    backgroundColor: {
+      default: '#e2f3e8',
+      '@media (prefers-color-scheme: dark)': 'rgba(59,185,110,0.14)',
+    },
   },
   3: {
-    name: 'Red',
-    text: 'text-team-red',
-    border: 'border-team-red',
-    bg: 'bg-[#f9e4e2]',
-    dot: 'var(--color-team-red)',
+    borderColor: color.teamRed,
+    backgroundColor: {
+      default: '#f9e4e2',
+      '@media (prefers-color-scheme: dark)': 'rgba(215,90,81,0.14)',
+    },
   },
-};
+});
+
+const teamTextStyles = stylex.create({
+  1: { color: color.teamBlue },
+  2: { color: color.teamGreen },
+  3: { color: color.teamRed },
+});
+
+const teamDotStyles = stylex.create({
+  1: { backgroundColor: color.teamBlue },
+  2: { backgroundColor: color.teamGreen },
+  3: { backgroundColor: color.teamRed },
+});
+
+const styles = stylex.create({
+  main: {
+    backgroundColor: color.bg,
+    marginInline: 'auto',
+    display: 'flex',
+    minHeight: '100vh',
+    width: '100%',
+    maxWidth: '36rem',
+    flexDirection: 'column',
+  },
+  header: {
+    backgroundColor: color.slate,
+    paddingInline: space.lg,
+    paddingBlock: space.xl,
+    textAlign: 'center',
+    color: color.textOnDark,
+  },
+  eyebrow: {
+    fontSize: '0.68rem',
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  code: {
+    marginBlockStart: space.xs,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.black,
+    letterSpacing: '0.18em',
+  },
+  copyButton: {
+    marginBlockStart: space.xs,
+    borderWidth: 0,
+    borderStyle: 'solid',
+    borderRadius: radius.sm,
+    paddingInline: space.sm,
+    paddingBlock: space.xs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    cursor: 'pointer',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': 'rgba(255,255,255,0.1)',
+    },
+    color: { default: 'rgba(255,255,255,0.7)', ':hover': color.textOnDark },
+    transitionProperty: 'background-color, color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: 'rgba(255,255,255,0.7)',
+    outlineOffset: '2px',
+  },
+  summary: {
+    marginBlockStart: space.xs,
+    fontSize: fontSize.xs,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  teamsSection: {
+    display: 'flex',
+    flexGrow: 1,
+    flexDirection: 'column',
+    gap: space.md,
+    padding: space.md,
+  },
+  teamBand: {
+    borderRadius: radius.md,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    padding: space.md,
+  },
+  teamHeading: {
+    marginBlockEnd: space.sm,
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.black,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+  },
+  dot: {
+    height: '10px',
+    width: '10px',
+    borderRadius: radius.pill,
+  },
+  slotRow: {
+    display: 'flex',
+    minWidth: 0,
+    gap: space.sm,
+  },
+  emptySlot: {
+    minHeight: '48px',
+    minWidth: 0,
+    flexGrow: 1,
+    flexBasis: 0,
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'dashed',
+    borderColor: color.borderStrong,
+    backgroundColor: { default: color.surface, ':hover': color.surfaceSunken },
+    paddingInline: space.sm,
+    paddingBlock: space.sm,
+    textAlign: 'center',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: color.textFaint,
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  filledSlot: {
+    minHeight: '48px',
+    minWidth: 0,
+    flexGrow: 1,
+    flexBasis: 0,
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: color.border,
+    backgroundColor: color.surface,
+    paddingInline: space.sm,
+    paddingBlock: space.sm,
+    fontSize: fontSize.sm,
+    color: color.text,
+  },
+  slotInner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  playerName: {
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    fontWeight: fontWeight.semibold,
+  },
+  youLabel: {
+    fontSize: fontSize.xs,
+    color: color.textFaint,
+  },
+  kickButton: {
+    marginInlineStart: 'auto',
+    borderWidth: 0,
+    borderStyle: 'solid',
+    borderRadius: radius.sm,
+    paddingInline: space.xs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: color.teamRed,
+    backgroundColor: { default: 'transparent', ':hover': color.hoverWash },
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  disabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  footer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+    paddingInline: space.lg,
+    paddingBlockEnd: space.lg,
+    textAlign: 'center',
+  },
+  turnOrder: {
+    fontSize: fontSize.xs,
+    color: color.textMuted,
+  },
+  waiting: {
+    borderRadius: radius.md,
+    backgroundColor: color.surface,
+    paddingInline: space.md,
+    paddingBlock: space.md,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+});
 
 function teamCountForPlayers(playerCount: LobbyTeamsProps['playerCount']) {
   if (playerCount === 3 || playerCount === 6) return 3;
@@ -135,7 +350,7 @@ function TeamSlot({
         type="button"
         onClick={onJoin}
         disabled={isMutating}
-        className="min-h-12 min-w-0 flex-1 rounded-lg border border-dashed border-black/30 bg-white/60 px-2 py-2 text-center text-xs font-semibold text-black/45 disabled:cursor-not-allowed disabled:opacity-50"
+        {...stylex.props(styles.emptySlot, isMutating && styles.disabled)}
       >
         tap to join
       </button>
@@ -143,19 +358,19 @@ function TeamSlot({
   }
 
   return (
-    <div className="min-h-12 min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-2 py-2 text-sm">
-      <div className="flex items-center gap-1.5">
-        <span className="min-w-0 truncate font-semibold">{player.name}</span>
+    <div {...stylex.props(styles.filledSlot)}>
+      <div {...stylex.props(styles.slotInner)}>
+        <span {...stylex.props(styles.playerName)}>{player.name}</span>
         {player.isCreator ? <Badge tone="neutral">Host</Badge> : null}
         {player.seat === mySeat ? (
-          <span className="text-xs text-black/40">you</span>
+          <span {...stylex.props(styles.youLabel)}>you</span>
         ) : null}
         {isCreator && !player.isCreator ? (
           <button
             type="button"
             onClick={onKick}
             disabled={isMutating}
-            className="text-team-red hover:bg-team-red/10 ml-auto rounded px-1 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+            {...stylex.props(styles.kickButton, isMutating && styles.disabled)}
             aria-label={`Kick ${player.name}`}
           >
             x
@@ -203,28 +418,24 @@ export function LobbyTeams({
   }
 
   return (
-    <main className="bg-cream mx-auto flex min-h-screen w-full max-w-xl flex-col">
-      <section className="bg-slate px-4 py-5 text-center text-white">
-        <div className="text-[0.68rem] font-bold tracking-[0.18em] text-white/50 uppercase">
-          Invite code
-        </div>
-        <div className="mt-1 text-2xl font-black tracking-[0.18em]">
-          {inviteCode}
-        </div>
+    <main {...stylex.props(styles.main)}>
+      <section {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.eyebrow)}>Invite code</div>
+        <div {...stylex.props(styles.code)}>{inviteCode}</div>
         <button
           type="button"
           onClick={copyInvite}
-          className="mt-1 rounded px-2 py-1 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white"
+          {...stylex.props(styles.copyButton)}
         >
           {copied ? 'copied' : 'copy link'}
         </button>
-        <p className="mt-1 text-xs text-white/55">
+        <p {...stylex.props(styles.summary)}>
           {playerCount} players · {teamCount} teams · {mode} mode ·{' '}
           {timerLabel(timerSeconds)}
         </p>
       </section>
 
-      <section className="flex flex-1 flex-col gap-3 p-3">
+      <section {...stylex.props(styles.teamsSection)}>
         {teams.map((team) => {
           const meta = TEAM_META[team];
           const seated = playersForTeam(players, team);
@@ -235,19 +446,16 @@ export function LobbyTeams({
           return (
             <section
               key={team}
-              className={`rounded-lg border-2 ${meta.border} ${meta.bg} p-3`}
+              {...stylex.props(styles.teamBand, teamStyles[team])}
             >
-              <div
-                className={`mb-2 flex items-center gap-2 text-xs font-black tracking-wide uppercase ${meta.text}`}
-              >
+              <div {...stylex.props(styles.teamHeading, teamTextStyles[team])}>
                 <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: meta.dot }}
+                  {...stylex.props(styles.dot, teamDotStyles[team])}
                   aria-hidden
                 />
                 {meta.name}
               </div>
-              <div className="flex min-w-0 gap-2">
+              <div {...stylex.props(styles.slotRow)}>
                 {slots.map((player, index) => (
                   <TeamSlot
                     key={player?.seat ?? `${team}-${index}`}
@@ -265,8 +473,8 @@ export function LobbyTeams({
         })}
       </section>
 
-      <footer className="flex flex-col gap-2 px-4 pb-4 text-center">
-        <p className="text-xs text-black/55">{turnOrder(players)}</p>
+      <footer {...stylex.props(styles.footer)}>
+        <p {...stylex.props(styles.turnOrder)}>{turnOrder(players)}</p>
         {isCreator ? (
           <Button
             variant="ghost"
@@ -285,7 +493,7 @@ export function LobbyTeams({
             {startLabel(playerCount, players)}
           </Button>
         ) : (
-          <div className="rounded-lg bg-white px-3 py-3 text-sm text-black/60">
+          <div {...stylex.props(styles.waiting)}>
             Waiting for the host to start.
           </div>
         )}

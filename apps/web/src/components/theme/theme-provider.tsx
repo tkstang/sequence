@@ -83,10 +83,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Safe default when no provider is mounted (e.g. a header rendered in isolation
+// in tests). The real app always wraps the tree in <ThemeProvider> via the root
+// layout, so this only affects out-of-tree renders, where the toggle is inert.
+const FALLBACK_THEME: ThemeContextValue = {
+  mode: 'system',
+  setMode: () => {},
+  resolved: 'light',
+};
+
 export function useTheme(): ThemeContextValue {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return ctx;
+  return useContext(ThemeContext) ?? FALLBACK_THEME;
 }

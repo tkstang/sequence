@@ -1,12 +1,31 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useState } from 'react';
 
 import { signIn } from '@/lib/auth-client.ts';
+import { color, fontSize, space } from '@/styles/tokens.stylex.ts';
 
 import { AuthForm } from './auth-form.tsx';
+
+const styles = stylex.create({
+  main: {
+    display: 'flex',
+    minHeight: '100vh',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xxl,
+    padding: space.xxxl,
+    backgroundColor: color.bg,
+  },
+  loading: {
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+});
 
 const DEFAULT_NEXT = '/dashboard';
 
@@ -32,9 +51,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-sm text-black/50">
-          Loading...
-        </main>
+        <main {...stylex.props(styles.main, styles.loading)}>Loading...</main>
       }
     >
       <LoginPageInner />
@@ -50,7 +67,7 @@ function LoginPageInner() {
   const nextPath = sanitizeNextPath(searchParams.get('next'));
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
+    <main {...stylex.props(styles.main)}>
       <AuthForm
         mode="login"
         submitError={submitError}

@@ -1,10 +1,18 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { Button } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import { timerOptions } from './timer-options.ts';
 
@@ -33,6 +41,120 @@ const MODE_EXPLANATION: Record<PlayMode, string> = {
   tap: 'Tap a card to reveal its legal cells, then tap a cell to play. Dead cards are marked for you. The friendlier mode.',
   drag: 'Drag a chip onto the board — no hints. You judge legality yourself and the server confirms. The harder, table-like mode.',
 };
+
+const styles = stylex.create({
+  form: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: '28rem',
+    flexDirection: 'column',
+    gap: space.xl,
+  },
+  fieldset: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+    borderWidth: 0,
+    margin: 0,
+    padding: 0,
+  },
+  legend: {
+    padding: 0,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: color.text,
+  },
+  optionRow: {
+    display: 'flex',
+    gap: space.sm,
+  },
+  optionButton: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderStyle: 'solid',
+    borderWidth: '1.5px',
+    paddingBlock: space.sm,
+    paddingInline: space.sm,
+    fontFamily: 'inherit',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    cursor: 'pointer',
+    transitionProperty: 'background-color, border-color, color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  optionButtonIdle: {
+    backgroundColor: { default: color.surface, ':hover': color.surfaceSunken },
+    color: color.text,
+    borderColor: color.borderStrong,
+  },
+  optionButtonActive: {
+    backgroundColor: color.slate,
+    color: color.textOnDark,
+    borderColor: color.slate,
+  },
+  capitalize: {
+    textTransform: 'capitalize',
+  },
+  explanationCard: {
+    backgroundColor: color.bg,
+    fontSize: fontSize.xs,
+    color: color.textMuted,
+    lineHeight: 1.5,
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.xs,
+  },
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: color.text,
+  },
+  control: {
+    borderRadius: radius.md,
+    borderStyle: 'solid',
+    borderWidth: '1px',
+    borderColor: color.borderStrong,
+    backgroundColor: color.surface,
+    color: color.text,
+    paddingBlock: space.sm,
+    paddingInline: space.md,
+    fontFamily: 'inherit',
+    fontSize: fontSize.sm,
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  toggleGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  toggleLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: color.text,
+  },
+  hint: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.regular,
+    color: color.textMuted,
+  },
+  error: {
+    fontSize: fontSize.sm,
+    color: color.teamRed,
+  },
+});
 
 /**
  * The create-game form (p05-t06, FR2). Player count, play mode with an in-UI
@@ -77,26 +199,29 @@ export function CreateGameForm({
     });
   }
 
+  const explanationProps = stylex.props(styles.explanationCard);
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-md flex-col gap-5"
+      {...stylex.props(styles.form)}
       aria-label="Create game"
     >
-      <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-semibold">Players</legend>
-        <div className="flex gap-2">
+      <fieldset {...stylex.props(styles.fieldset)}>
+        <legend {...stylex.props(styles.legend)}>Players</legend>
+        <div {...stylex.props(styles.optionRow)}>
           {PLAYER_COUNTS.map((count) => (
             <button
               key={count}
               type="button"
               aria-pressed={playerCount === count}
               onClick={() => chooseCount(count)}
-              className={`flex-1 rounded-lg border-[1.5px] py-2 font-semibold ${
+              {...stylex.props(
+                styles.optionButton,
                 playerCount === count
-                  ? 'border-slate bg-slate text-white'
-                  : 'text-slate border-black/20 bg-white'
-              }`}
+                  ? styles.optionButtonActive
+                  : styles.optionButtonIdle,
+              )}
             >
               {count}
             </button>
@@ -104,32 +229,37 @@ export function CreateGameForm({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-semibold">Play mode</legend>
-        <div className="flex gap-2">
+      <fieldset {...stylex.props(styles.fieldset)}>
+        <legend {...stylex.props(styles.legend)}>Play mode</legend>
+        <div {...stylex.props(styles.optionRow)}>
           {(['tap', 'drag'] as PlayMode[]).map((m) => (
             <button
               key={m}
               type="button"
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
-              className={`flex-1 rounded-lg border-[1.5px] py-2 font-semibold capitalize ${
+              {...stylex.props(
+                styles.optionButton,
+                styles.capitalize,
                 mode === m
-                  ? 'border-slate bg-slate text-white'
-                  : 'text-slate border-black/20 bg-white'
-              }`}
+                  ? styles.optionButtonActive
+                  : styles.optionButtonIdle,
+              )}
             >
               {m}
             </button>
           ))}
         </div>
-        <Card className="bg-cream p-3 text-xs text-black/70">
+        <Card
+          className={explanationProps.className}
+          style={explanationProps.style}
+        >
           {MODE_EXPLANATION[mode]}
         </Card>
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="timer-select" className="text-sm font-semibold">
+      <div {...stylex.props(styles.field)}>
+        <label htmlFor="timer-select" {...stylex.props(styles.label)}>
           Turn timer
         </label>
         <select
@@ -140,7 +270,7 @@ export function CreateGameForm({
               e.target.value === 'off' ? null : Number(e.target.value),
             )
           }
-          className="rounded-lg border border-black/20 bg-white px-3 py-2"
+          {...stylex.props(styles.control)}
         >
           {options.map((o) => (
             <option
@@ -153,8 +283,8 @@ export function CreateGameForm({
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label className="flex items-center gap-2 text-sm font-semibold">
+      <div {...stylex.props(styles.toggleGroup)}>
+        <label {...stylex.props(styles.toggleLabel)}>
           <input
             type="checkbox"
             aria-label="Pass and play on this device"
@@ -164,14 +294,12 @@ export function CreateGameForm({
           />
           Pass &amp; play on this device
           {!localAvailable ? (
-            <span className="text-xs font-normal text-black/50">
-              (2 players only)
-            </span>
+            <span {...stylex.props(styles.hint)}>(2 players only)</span>
           ) : null}
         </label>
         {local ? (
-          <div className="flex flex-col gap-1">
-            <label htmlFor="opponent-name" className="text-sm">
+          <div {...stylex.props(styles.field)}>
+            <label htmlFor="opponent-name" {...stylex.props(styles.label)}>
               Opponent name
             </label>
             <input
@@ -181,14 +309,14 @@ export function CreateGameForm({
               aria-label="Opponent name"
               onChange={(e) => setOpponentName(e.target.value)}
               placeholder="e.g. Sarah"
-              className="rounded-lg border border-black/20 bg-white px-3 py-2"
+              {...stylex.props(styles.control)}
             />
           </div>
         ) : null}
       </div>
 
       {(error ?? submitError) ? (
-        <p role="alert" className="text-team-red text-sm">
+        <p role="alert" {...stylex.props(styles.error)}>
           {error ?? submitError}
         </p>
       ) : null}

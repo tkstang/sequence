@@ -1,10 +1,25 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import { useState } from 'react';
 
 import { Button } from '@/components/button.tsx';
+import { space } from '@/styles/tokens.stylex.ts';
 
 type PendingAction = 'save' | 'concede' | null;
+
+const styles = stylex.create({
+  controls: {
+    marginInline: 'auto',
+    display: { default: 'grid', '@media (min-width: 640px)': 'flex' },
+    width: '100%',
+    maxWidth: 'min(94vw, 680px)',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: space.sm,
+    alignItems: { '@media (min-width: 640px)': 'center' },
+    justifyContent: { '@media (min-width: 640px)': 'flex-end' },
+  },
+});
 
 export interface ActiveGameControlsProps {
   isSaving: boolean;
@@ -34,7 +49,7 @@ export function ActiveGameControls({
   return (
     <section
       aria-label="Game lifecycle controls"
-      className="mx-auto grid w-full max-w-[min(94vw,680px)] grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end"
+      {...stylex.props(styles.controls)}
     >
       {pendingAction === 'save' ? (
         <>
