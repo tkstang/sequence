@@ -1,7 +1,10 @@
 import { createRequire } from 'node:module';
 
-// `apps/web` is an ESM package; bridge to the CommonJS Babel config so the
-// PostCSS plugin extracts StyleX with the exact same plugin options Next uses.
+// This PostCSS config itself is ESM (it is a `.mjs` file), but the `apps/web`
+// package is intentionally NOT `"type": "module"` — Next's Babel loader rejects
+// `.cjs`/`.mjs` config, so the Babel config must stay CommonJS `babel.config.js`.
+// Use `createRequire` to load that CommonJS Babel config from this ESM file so
+// the PostCSS plugin extracts StyleX with the exact same plugin options Next uses.
 const require = createRequire(import.meta.url);
 const babelConfig = require('./babel.config.js');
 
