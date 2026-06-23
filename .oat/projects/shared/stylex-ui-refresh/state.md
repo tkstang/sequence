@@ -16,11 +16,11 @@ oat_phase_status: complete # Status: in_progress | complete | pr_open
 oat_workflow_mode: quick # spec-driven | quick | import
 oat_workflow_origin: captured # native | imported | captured
 oat_docs_updated: complete # null | skipped | complete — documentation sync status
-oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
+oat_pr_status: ready # null | ready | open | closed | merged — actual PR state for the current project
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-23T01:36:09.757Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-23T01:49:26.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-23T01:57:30.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: true
 ---
 
@@ -51,13 +51,19 @@ Implement — complete. This project was captured retroactively
 - ✓ Implementation captured from commit history (14/14 tasks)
 - ✓ Summary written
 - ✓ Documentation synced (`docs/styling.md` + `/dev` playground docs)
-- ⧗ Completion (`oat-project-complete`) — user-run
+- ✓ Final PR description drafted (`pr/project-pr-2026-06-22.md`, base `main`)
+- ⧗ External code review by Codex (in progress)
+- ⧗ PR open + completion (`oat-project-complete`) — user-run
 
 ## Blockers
 
-None
+None — holding the PR push/open pending the Codex review.
 
 ## Next Milestone
 
-Run `oat-project-complete` (user-run). Note: no final code review was run, so the
-completion review gate will emit a non-blocking warning — confirm through it.
+PR description is drafted and ready (base `main`). **Holding the push + PR open
+until the Codex review lands.**
+
+- If review has feedback: address it, refresh the PR draft, then push + open.
+- If review is clean: push branch `stylex` and `gh pr create --base main`, then
+  `oat-project-complete`.
