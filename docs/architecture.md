@@ -105,8 +105,11 @@ prop-driven, including:
 - `GameOver`
 - `HandoffScreen`
 
-This shape is the right fixture surface for a future dev-only UI playground or
-Storybook setup. That playground is tracked as backlog and does not exist yet.
+This shape backs the dev-only UI playground at `/dev`, which renders the leaf
+components in isolation from reusable fixtures (viewport switcher, per-component
+Expand, and a chrome-less `/dev-frame` target). See
+[`development.md`](development.md#dev-ui-playground). The UI is styled with StyleX
+(design tokens plus light/dark themes); see [`styling.md`](styling.md).
 
 ## Current Scaling Limits
 

@@ -33,8 +33,28 @@ Vitest/jsdom (no browser) and fails.
   shape; keep them usable from tests and future fixtures.
 - The `@/` alias maps to `apps/web/src` (mirrors `tsconfig.json`).
 
+## Styling
+
+- The UI is styled with **StyleX** (`stylex.create` + `stylex.props`) — no
+  Tailwind. Design tokens and light/dark themes live in `src/styles/`
+  (`tokens.stylex.ts`, `themes.stylex.ts`); dark mode is handled in
+  `components/theme/`. Pull values from the tokens and add new colors to both
+  themes.
+- Vitest aliases `@stylexjs/stylex` to a no-op stub (`src/test/stylex-mock.ts`),
+  so component tests render without real styles — verify visuals in `/dev`.
+- StyleX compiles via `babel.config.js` + `postcss.config.mjs`; this is why
+  `package.json` does not set `"type": "module"`. See `docs/styling.md`.
+
+## Dev playground
+
+- `/dev` is a dev-only component playground (section stories, viewport switcher,
+  per-component Expand) with a chrome-less `/dev-frame/[section]` iframe target,
+  under `src/app/dev/` and `src/app/dev-frame/`. Development-only; don't link it
+  from the shipped app. See `docs/development.md`.
+
 ## References
 
 - `apps/web/README.md` — routes, responsibilities, testing
 - `docs/architecture.md` — web boundary, tRPC split transport, UI state shape
-- `docs/development.md` — Playwright setup and UI iteration
+- `docs/styling.md` — StyleX tokens, themes, dark mode, and build pipeline
+- `docs/development.md` — Playwright setup, the `/dev` playground, and UI iteration

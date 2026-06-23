@@ -13,7 +13,8 @@ see the root [`../README.md`](../README.md); the pages below go deeper.
 
 ### Getting started
 
-- [`development.md`](development.md) — local setup, running the app, test gates, database workflow, and UI iteration.
+- [`development.md`](development.md) — local setup, running the app, test gates, database workflow, the `/dev` playground, and UI iteration.
+- [`styling.md`](styling.md) — the StyleX styling system: tokens, light/dark themes, the build pipeline, and conventions.
 - [`configuration.md`](configuration.md) — canonical environment-variable reference for API, web, and deploy.
 - [`testing.md`](testing.md) — test layers (unit, integration, e2e) and the test-database workflow.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — prerequisites, quality gates, commit convention, and code rules.
