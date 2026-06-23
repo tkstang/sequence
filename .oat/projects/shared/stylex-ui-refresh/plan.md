@@ -1,189 +1,129 @@
 ---
 oat_status: complete
-oat_ready_for: null
+oat_ready_for: oat-project-implement
 oat_blockers: []
 oat_last_updated: 2026-06-22
 oat_phase: plan
 oat_phase_status: complete
-oat_plan_hill_phases: [] # phases to pause AFTER completing (empty = every phase)
-oat_plan_parallel_groups: [] # groups of phases that run concurrently in worktrees; [] = fully sequential
-oat_plan_source: quick # spec-driven | quick | imported
-oat_import_reference: null # e.g., references/imported-plan.md
-oat_import_source_path: null # original source path provided by user
-oat_import_provider: null # codex | cursor | claude | null
+oat_plan_hill_phases: []
+oat_plan_parallel_groups: []
+oat_plan_source: quick
+oat_import_reference: null
+oat_import_source_path: null
+oat_import_provider: null
 oat_generated: false
 ---
 
 # Implementation Plan: stylex-ui-refresh
 
-> **Captured project — no forward plan.** This project was created retroactively
-> with `oat-project-capture` from the `stylex` branch; the work was already done.
-> The authoritative record of what shipped is **`implementation.md`** (14 tasks /
-> 3 phases) and **`design.md`**. This scaffold remains only to satisfy the project
-> structure and was intentionally not authored as forward plan tasks.
+> **Captured project.** Created retroactively with `oat-project-capture` from the
+> `stylex` branch; the original 14-task / 3-phase work is recorded in
+> **`implementation.md`** and **`design.md`** (not re-authored here). The only
+> forward plan below is the **Review Fixes** phase, added from the final code
+> review (`oat-project-review-receive`).
 
-**Goal:** {Brief goal statement from spec}
-
-**Architecture:** {1-2 sentence architecture summary from design}
-
-**Tech Stack:** {Key technologies from design}
-
-**Commit Convention:** `{type}({scope}): {description}` - e.g., `feat(p01-t01): add user auth endpoint`
-
-## Planning Checklist
-
-- [ ] Confirmed HiLL checkpoints with user
-- [ ] Set `oat_plan_hill_phases` in frontmatter
-- [ ] Evaluated phases for parallelism opportunities
-- [ ] Set `oat_plan_parallel_groups` in frontmatter
+**Commit Convention:** `{type}({scope}): {description}`
 
 ---
 
-## Parallelism
+## Phase p-rev1: Review Fixes (final code review)
 
-Phases that have no overlapping file modifications may run concurrently. To declare parallelism:
+Source: `reviews/archived/final-review-2026-06-22.md` (final / code).
 
-```yaml
-oat_plan_parallel_groups: [['p02', 'p03']]
-```
-
-Each inner array is a group of phases that execute in parallel (each in its own worktree) and merge back in plan order after all pass. Groups themselves run sequentially.
-
-Default is `[]` (fully sequential, no worktrees). Only declare parallelism when phases are genuinely file-disjoint — overlap will produce merge conflicts that stop the run.
-
----
-
-## Dispatch Profile
-
-_Optional override surface. Use only for explicit user-authored constraints or preferences. Omit this section when runtime selection should choose the lowest confident tier._
-
-Blank or `auto` means there is no explicit constraint for that provider. Do not generate rows by default; a missing phase row uses runtime selection.
-
-| Phase | Claude model              | Codex effort                   | Rationale                     |
-| ----- | ------------------------- | ------------------------------ | ----------------------------- |
-| pNN   | haiku\|sonnet\|opus\|auto | low\|medium\|high\|xhigh\|auto | why this constraint is needed |
-
-Codex effort values are preferred controls. `oat-project-implement` caps them against the resolved OAT dispatch ceiling and maps selected efforts to pinned implementer variants. Codex provider default effort is informational for base/unpinned roles and is not an OAT ceiling.
-
----
-
-## Phase 1: {Phase Name}
-
-### Task p01-t01: {Task Name}
+### Task prev1-t01: (review) Exclude the `/dev` playground from the production bundle
 
 **Files:**
 
-- Create: `{path/to/file.ts}`
-- Modify: `{path/to/existing.ts}`
+- Modify: `apps/web/src/app/dev/layout.tsx` (and/or the `/dev` + `/dev-frame`
+  route entrypoints / playground shell imports)
 
-**Step 1: Write test (RED)**
+**Step 1: Understand the issue**
 
-```typescript
-// {path/to/file.test.ts}
-describe('{feature}', () => {
-  it('{test case}', () => {
-    // Test implementation
-  });
-});
-```
+Review finding (I1): The production guard lives in the `/dev` **layout**, which
+runs after the playground pages and their static imports are already in the route
+graph. `next start` returns `404` for `/dev`, `/dev/board`, and `/dev-frame/board`,
+but the 404 response body still includes the playground Flight payload
+(`Component playground`, section links) and route chunks — contradicting the
+"development-only / never ships to users" claim in `design.md` and `AGENTS.md`.
+Location: `apps/web/src/app/dev/layout.tsx:107`.
 
-Run: `pnpm --filter {package-name} exec vitest run {path/to/file.test.ts}`
-Expected: Test fails (RED)
+**Step 2: Implement fix**
 
-**Step 2: Implement (GREEN)**
+Move the production guard ahead of any playground module import. A practical shape:
+a minimal server layout/page that checks `process.env.NODE_ENV === 'production'`
+and calls `notFound()` **before** dynamically importing the playground shell /
+stories (so the playground modules are not statically pulled into the production
+route graph), or move the playground out of the production `app` route tree and
+expose it through a dev-only entry. Apply to both `/dev` and `/dev-frame`.
 
-```typescript
-// {path/to/file.ts}
-// Implementation code or interface signatures
-```
-
-Run: `pnpm --filter {package-name} exec vitest run {path/to/file.test.ts}`
-Expected: Test passes (GREEN)
-
-Use the actual runner command that scopes to the intended file or test target. Do not write a package-level shortcut unless it truly executes only the scope the task claims.
-
-**Step 3: Refactor**
-
-{Any cleanup or improvements while tests stay green}
-
-**Step 4: Verify**
-
-Run: `pnpm lint && pnpm type-check`
-Expected: No errors
-
-**Step 5: Commit**
+**Step 3: Verify**
 
 ```bash
-git add {files}
-git commit -m "feat(p01-t01): {description}"
+pnpm --filter @sequence/web typecheck
+pnpm --filter @sequence/web test
+pnpm --filter @sequence/web build
+pnpm --filter @sequence/web exec next start --port 3210
+curl -i -s http://localhost:3210/dev | sed -n '1,40p'
+curl -i -s http://localhost:3210/dev/board | sed -n '1,40p'
+curl -i -s http://localhost:3210/dev-frame/board | sed -n '1,40p'
+```
+
+Expected: `/dev*` return `404` AND the response bodies contain only the generic
+404 payload — no playground text (`Component playground`, section links) or
+playground chunks. Dev (`next dev`) still serves the playground normally.
+
+**Step 4: Commit**
+
+```bash
+git commit -m "fix(prev1-t01): exclude /dev playground from the production bundle"
 ```
 
 ---
 
-### Task p01-t02: {Task Name}
+### Task prev1-t02: (review) Fix the misleading PostCSS config comment
 
 **Files:**
 
-- {File list}
+- Modify: `apps/web/postcss.config.mjs`
 
-**Step 1: Write test (RED)**
+**Step 1: Understand the issue**
 
-{Test code}
+Review finding (m1): the comment says "`apps/web` is an ESM package," but
+`package.json` intentionally removed `"type": "module"` for the Babel-config
+workaround. The file is ESM because it is `postcss.config.mjs`; the package is
+not. Location: `apps/web/postcss.config.mjs:3`.
 
-**Step 2: Implement (GREEN)**
+**Step 2: Implement fix**
 
-{Implementation code or signatures}
+Reword the comment to state that the PostCSS config itself is ESM (`.mjs`) and
+uses `createRequire` to load the CommonJS Babel config — and that the package is
+intentionally not `"type": "module"`.
 
-**Step 3: Refactor**
-
-{Optional cleanup}
-
-**Step 4: Verify**
-
-Run: `{verification command}`
-Expected: {output}
-
-Verification commands should be behaviorally accurate. If the task claims a file-scoped or test-scoped check, use the concrete runner invocation that really scopes to that target.
-
-**Step 5: Commit**
+**Step 3: Verify**
 
 ```bash
-git add {files}
-git commit -m "feat(p01-t02): {description}"
+pnpm --filter @sequence/web build
 ```
 
----
+Expected: build still compiles (comment-only change).
 
-## Phase 2: {Phase Name}
+**Step 4: Commit**
 
-### Task p02-t01: {Task Name}
-
-{Continue TDD pattern...}
+```bash
+git commit -m "docs(prev1-t02): clarify PostCSS/Babel module-mode comment"
+```
 
 ---
 
 ## Reviews
 
-{Track reviews here after running the oat-project-review-provide and oat-project-review-receive skills.}
-
-{Keep both code + artifact rows below. Add additional code rows (p03, p04, etc.) as needed, but do not delete `spec`/`design`.}
-
-| Scope  | Type     | Status  | Date | Artifact |
-| ------ | -------- | ------- | ---- | -------- |
-| p01    | code     | pending | -    | -        |
-| p02    | code     | pending | -    | -        |
-| final  | code     | pending | -    | -        |
-| spec   | artifact | pending | -    | -        |
-| design | artifact | pending | -    | -        |
+| Scope  | Type     | Status      | Date       | Artifact                                      |
+| ------ | -------- | ----------- | ---------- | --------------------------------------------- |
+| final  | code     | fixes_added | 2026-06-22 | reviews/archived/final-review-2026-06-22.md   |
+| spec   | artifact | n/a         | -          | - (quick mode — no spec)                      |
+| design | artifact | n/a         | -          | -                                             |
 
 **Status values:** `pending` → `received` → `fixes_added` → `fixes_completed` → `passed`
-
-**Meaning:**
-
-- `received`: review artifact exists (not yet converted into fix tasks)
-- `fixes_added`: fix tasks were added to the plan (work queued)
-- `fixes_completed`: fix tasks implemented, awaiting re-review
-- `passed`: re-review run and recorded as passing (no Critical/Important)
 
 ---
 
@@ -191,18 +131,17 @@ git commit -m "feat(p01-t02): {description}"
 
 **Summary:**
 
-- Phase 1: {N} tasks - {Description}
-- Phase 2: {N} tasks - {Description}
+- Original captured work: 14 tasks across 3 phases (see `implementation.md`).
+- Review Fixes (`p-rev1`): 2 tasks — `prev1-t01` (prod `/dev` exclusion),
+  `prev1-t02` (PostCSS comment).
 
-**Total: {N} tasks**
-
-Ready for code review and merge.
+**Total: 16 tasks** (14 captured + 2 review fixes)
 
 ---
 
 ## References
 
-- Design: `design.md` (required in spec-driven mode; optional in quick/import mode)
-- Spec: `spec.md` (required in spec-driven mode; optional in quick/import mode)
+- Design: `design.md`
 - Discovery: `discovery.md`
-- Imported Source: `references/imported-plan.md` (when `oat_plan_source: imported`)
+- Implementation: `implementation.md`
+- Review: `reviews/archived/final-review-2026-06-22.md`

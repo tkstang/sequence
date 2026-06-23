@@ -1,9 +1,9 @@
 ---
-oat_status: complete
+oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-22
-oat_current_task_id: null
+oat_current_task_id: prev1-t01
 oat_generated: true
 ---
 
@@ -298,6 +298,30 @@ fullscreen attempt), preserving component state.
 | Web tests (final spotlight)   | 103/103, 23 files                               |
 | typecheck / lint / format     | clean                                           |
 | `pnpm build` (web)            | compiles under Next 16 + Turbopack              |
+
+## Review Received: final
+
+**Date:** 2026-06-22
+**Review artifact:** reviews/archived/final-review-2026-06-22.md
+
+**Findings:** Critical 0 · Important 1 · Medium 0 · Minor 1
+
+**New tasks added:** `prev1-t01` (I1 — exclude `/dev` playground from the
+production bundle), `prev1-t02` (m1 — fix misleading PostCSS comment).
+
+**Dispositions:**
+
+- **I1** (Important) → converted to `prev1-t01`. Agreed: the production `/dev`
+  404 still ships the playground Flight payload + route chunks (guard sits in the
+  layout, after imports enter the route graph), contradicting the
+  development-only claim in `design.md` / `AGENTS.md`.
+- **m1** (Minor) → converted to `prev1-t02` (user chose convert). One-line
+  comment correction in `postcss.config.mjs`.
+- No Medium findings; no deferrals.
+
+**Next:** Execute `prev1-t01` and `prev1-t02`; verify with gates + a production
+`next start` smoke check; then set the review row to `fixes_completed` and
+re-review to reach `passed`.
 
 ## Final Summary (for PR/docs)
 
