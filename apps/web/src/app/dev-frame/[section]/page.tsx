@@ -19,6 +19,10 @@ const styles = stylex.create({
 /** Bare render of a single playground section, loaded inside the viewport iframe. */
 export default function DevFramePage() {
   const params = useParams<{ section: string }>();
+  // Exclude the playground from production payloads (guard before rendering).
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
   if (params.section === 'overview') {
     return (
       <div {...stylex.props(styles.body)}>

@@ -14,9 +14,13 @@ import {
 
 import { SECTIONS } from './_playground/sections.ts';
 
-export const metadata = {
-  title: 'UI Playground · Sequence',
-};
+// Dev-only title. Resolved via generateMetadata (not a static `metadata` export)
+// and omitted in production so it never appears on the 404 the guard returns —
+// route metadata is collected statically even when the component calls notFound().
+export function generateMetadata() {
+  if (process.env.NODE_ENV === 'production') return {};
+  return { title: 'UI Playground · Sequence' };
+}
 
 const styles = stylex.create({
   root: {

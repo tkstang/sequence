@@ -1,4 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
+import { notFound } from 'next/navigation';
 
 import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
 
@@ -33,6 +34,14 @@ const styles = stylex.create({
 
 /** Playground landing: overview and links into each preview section. */
 export default function DevIndexPage() {
+  // Guard before rendering: in App Router the page renders to produce the
+  // layout's `children`, so a layout-only guard still serializes this content
+  // into the (404) response. notFound() here keeps the playground out of the
+  // production payload entirely.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   return (
     <div {...stylex.props(styles.page)}>
       <header {...stylex.props(styles.header)}>

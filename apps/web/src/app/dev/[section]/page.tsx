@@ -43,6 +43,11 @@ export default function DevSectionPage() {
   if (!meta || !Story) {
     notFound();
   }
+  // Exclude the playground from production payloads (guard before rendering;
+  // the /dev layout guard alone runs after this page has already rendered).
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
 
   return (
     <div {...stylex.props(styles.page)}>
