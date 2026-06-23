@@ -26,7 +26,7 @@ oat_generated: true
 
 # Project State: stylex-ui-refresh
 
-**Status:** Implementation complete (captured) — ready for documentation + completion
+**Status:** Implementation complete (captured) + docs synced — ready for completion
 **Started:** 2026-06-21
 **Last Updated:** 2026-06-22
 
@@ -50,7 +50,7 @@ Implement — complete. This project was captured retroactively
 - ✓ Design captured (as-built)
 - ✓ Implementation captured from commit history (14/14 tasks)
 - ✓ Summary written
-- ⧗ Documentation sync (`oat-project-document`)
+- ✓ Documentation synced (`docs/styling.md` + `/dev` playground docs)
 - ⧗ Completion (`oat-project-complete`) — user-run
 
 ## Blockers
@@ -59,4 +59,5 @@ None
 
 ## Next Milestone
 
-Run `oat-project-document`, then `oat-project-complete`.
+Run `oat-project-complete` (user-run). Note: no final code review was run, so the
+completion review gate will emit a non-blocking warning — confirm through it.
