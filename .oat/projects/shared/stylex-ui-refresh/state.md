@@ -15,12 +15,12 @@ oat_phase: implement # Current phase: discovery | spec | design | plan | impleme
 oat_phase_status: complete # Status: in_progress | complete | pr_open
 oat_workflow_mode: quick # spec-driven | quick | import
 oat_workflow_origin: captured # native | imported | captured
-oat_docs_updated: null # null | skipped | complete — documentation sync status
+oat_docs_updated: complete # null | skipped | complete — documentation sync status
 oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-23T01:36:09.757Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-23T01:40:52.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-23T01:49:26.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: true
 ---
 
