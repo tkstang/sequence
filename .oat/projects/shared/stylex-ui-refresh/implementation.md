@@ -1,9 +1,9 @@
 ---
-oat_status: in_progress
+oat_status: complete
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-06-22
-oat_current_task_id: prev1-t01
+oat_current_task_id: null
 oat_generated: true
 ---
 
@@ -319,9 +319,17 @@ production bundle), `prev1-t02` (m1 — fix misleading PostCSS comment).
   comment correction in `postcss.config.mjs`.
 - No Medium findings; no deferrals.
 
-**Next:** Execute `prev1-t01` and `prev1-t02`; verify with gates + a production
-`next start` smoke check; then set the review row to `fixes_completed` and
-re-review to reach `passed`.
+**Fixes completed (2026-06-22):**
+
+- `prev1-t01` (commit `a6303d0`) — page-level `NODE_ENV` guards (before render) +
+  dev-only `generateMetadata`. Verified with `next start`: `/dev`, `/dev/board`,
+  and `/dev-frame/board` return 404 with **0** playground markers
+  (content/chunks/title), `/` still 200, and `next dev` still serves the
+  playground (`/dev/board` → 200). Web tests 103/103; typecheck/lint/build green.
+- `prev1-t02` (commit `0b5f90c`) — corrected the PostCSS module-mode comment.
+
+Review status: `fixes_completed`. Re-review (fix-tasks scope) to reach `passed`,
+or accept the verification above and proceed to PR.
 
 ## Final Summary (for PR/docs)
 

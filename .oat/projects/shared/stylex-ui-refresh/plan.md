@@ -117,9 +117,9 @@ git commit -m "docs(prev1-t02): clarify PostCSS/Babel module-mode comment"
 
 ## Reviews
 
-| Scope  | Type     | Status      | Date       | Artifact                                      |
-| ------ | -------- | ----------- | ---------- | --------------------------------------------- |
-| final  | code     | fixes_added | 2026-06-22 | reviews/archived/final-review-2026-06-22.md   |
+| Scope  | Type     | Status          | Date       | Artifact                                    |
+| ------ | -------- | --------------- | ---------- | ------------------------------------------- |
+| final  | code     | fixes_completed | 2026-06-22 | reviews/archived/final-review-2026-06-22.md |
 | spec   | artifact | n/a         | -          | - (quick mode — no spec)                      |
 | design | artifact | n/a         | -          | -                                             |
 

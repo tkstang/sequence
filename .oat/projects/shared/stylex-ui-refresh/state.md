@@ -1,6 +1,6 @@
 ---
-oat_current_task: prev1-t01
-oat_last_commit: 929bc1e
+oat_current_task: null
+oat_last_commit: 0b5f90c
 oat_blockers: []
 associated_issues: [{type: backlog, ref: "bl-d319"}, {type: backlog, ref: "bl-2ae1"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -12,7 +12,7 @@ oat_hill_checkpoints: [] # Configured: which phases require human-in-the-loop li
 oat_hill_completed: [] # Progress: which HiLL checkpoints have been completed
 oat_parallel_execution: false
 oat_phase: implement # Current phase: discovery | spec | design | plan | implement | decomposition
-oat_phase_status: in_progress # Status: in_progress | complete | pr_open
+oat_phase_status: complete # Status: in_progress | complete | pr_open
 oat_workflow_mode: quick # spec-driven | quick | import
 oat_workflow_origin: captured # native | imported | captured
 oat_docs_updated: complete # null | skipped | complete — documentation sync status
@@ -20,13 +20,13 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-23T01:36:09.757Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-23T03:01:15.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-06-23T03:10:51.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: true
 ---
 
 # Project State: stylex-ui-refresh
 
-**Status:** Final code review received — fixing 1 Important + 1 Minor (`p-rev1`)
+**Status:** Review fixes complete + verified — `fixes_completed` (awaiting re-review / PR)
 **Started:** 2026-06-21
 **Last Updated:** 2026-06-22
 
@@ -53,8 +53,8 @@ Implement — complete. This project was captured retroactively
 - ✓ Documentation synced (`docs/styling.md` + `/dev` playground docs)
 - ✓ Final PR description drafted (`pr/project-pr-2026-06-22.md`, base `main`)
 - ✓ Final code review received (Codex): 1 Important + 1 Minor → `p-rev1`
-- ⧗ Execute fix tasks `prev1-t01`, `prev1-t02`
-- ⧗ Re-review → `passed`, then push + open PR, then `oat-project-complete`
+- ✓ Fix tasks complete + verified (`prev1-t01` a6303d0, `prev1-t02` 0b5f90c)
+- ⧗ Re-review → `passed` (or accept verification), then push + open PR, then `oat-project-complete`
 
 ## Blockers
 
@@ -62,7 +62,8 @@ None.
 
 ## Next Milestone
 
-Execute the `p-rev1` fix tasks (`prev1-t01` prod `/dev` exclusion; `prev1-t02`
-PostCSS comment), verify (gates + production `next start` smoke check), then mark
-the review `fixes_completed`, re-review to `passed`, refresh the PR draft, and
-push + open the PR against `main`.
+Review is `fixes_completed`: I1 (prod `/dev` exclusion) and m1 (PostCSS comment)
+are fixed and verified (prod `/dev*` = 404 with 0 playground markers; dev
+playground intact; tests 103/103; build green). Next: re-review the fix commits
+(fix-tasks scope) to reach `passed`, or accept the verification and push +
+`gh pr create --base main`, then `oat-project-complete`.
