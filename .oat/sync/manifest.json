@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "oatVersion": "0.1.24",
+  "oatVersion": "0.1.32",
   "entries": [
     {
       "canonicalPath": ".agents/skills/analyze",

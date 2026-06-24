@@ -1,17 +1,19 @@
 ---
-id: bl-821f
-title: 'Explore symbolic Sequence board rendering'
-status: open # open | in_progress | closed | wont_do
-priority: medium # urgent | high | medium | low | none
-scope: feature # idea | task | feature | initiative
-scope_estimate: M # XS | S | M | L | XL | XXL
-labels: [web, game-ui, visual-design]
+id: BL-260614-explore-symbolic-sequence
+title: Explore symbolic Sequence board rendering
+status: open
+priority: medium
+scope: feature
+scope_estimate: M
+labels:
+  - web
+  - game-ui
+  - visual-design
 assignee: null
-created: '2026-06-14T00:05:00.000Z'
-updated: '2026-06-14T00:05:00.000Z'
+created: 2026-06-14T00:05:00.000Z
+updated: 2026-06-14T00:05:00.000Z
 associated_issues: []
-oat_template: false
-oat_template_name: backlog-item
+legacy_id: bl-821f
 ---
 
 ## Description

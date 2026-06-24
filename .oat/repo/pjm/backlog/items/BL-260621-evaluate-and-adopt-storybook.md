@@ -1,17 +1,21 @@
 ---
-id: bl-b0e7
-title: 'Evaluate and adopt Storybook for web UI components'
-status: open # open | in_progress | closed | wont_do
-priority: low # urgent | high | medium | low | none
-scope: feature # idea | task | feature | initiative
-scope_estimate: M # XS | S | M | L | XL | XXL
-labels: [web, game-ui, dx, tooling, storybook]
+id: BL-260621-evaluate-and-adopt-storybook
+title: Evaluate and adopt Storybook for web UI components
+status: open
+priority: low
+scope: feature
+scope_estimate: M
+labels:
+  - web
+  - game-ui
+  - dx
+  - tooling
+  - storybook
 assignee: null
-created: '2026-06-21T18:55:00.000Z'
-updated: '2026-06-21T18:55:00.000Z'
+created: 2026-06-21T18:55:00.000Z
+updated: 2026-06-21T18:55:00.000Z
 associated_issues: []
-oat_template: false
-oat_template_name: backlog-item
+legacy_id: bl-b0e7
 ---
 
 ## Description
