@@ -1,17 +1,22 @@
 ---
-id: bl-3fcf
-title: 'Migrate to absolute path-alias imports (drop relative paths and file extensions)'
-status: open # open | in_progress | closed | wont_do
-priority: medium # urgent | high | medium | low | none
-scope: task # idea | task | feature | initiative
-scope_estimate: M # XS | S | M | L | XL | XXL
-labels: [dx, build, api, game-logic, tech-debt]
+id: BL-260621-migrate-to-absolute-path-alias
+title: Migrate to absolute path-alias imports (drop relative paths and file
+  extensions)
+status: open
+priority: medium
+scope: task
+scope_estimate: M
+labels:
+  - dx
+  - build
+  - api
+  - game-logic
+  - tech-debt
 assignee: null
-created: '2026-06-21T17:51:08.000Z'
-updated: '2026-06-21T17:51:08.000Z'
+created: 2026-06-21T17:51:08.000Z
+updated: 2026-06-21T17:51:08.000Z
 associated_issues: []
-oat_template: false
-oat_template_name: backlog-item
+legacy_id: bl-3fcf
 ---
 
 ## Description
