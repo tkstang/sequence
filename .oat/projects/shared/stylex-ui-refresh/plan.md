@@ -117,13 +117,18 @@ git commit -m "docs(prev1-t02): clarify PostCSS/Babel module-mode comment"
 
 ## Reviews
 
-| Scope  | Type     | Status          | Date       | Artifact                                    |
-| ------ | -------- | --------------- | ---------- | ------------------------------------------- |
-| final  | code     | fixes_completed | 2026-06-22 | reviews/archived/final-review-2026-06-22.md |
-| spec   | artifact | n/a         | -          | - (quick mode — no spec)                      |
-| design | artifact | n/a         | -          | -                                             |
+| Scope  | Type     | Status | Date       | Artifact                                    |
+| ------ | -------- | ------ | ---------- | ------------------------------------------- |
+| final  | code     | passed | 2026-07-02 | reviews/archived/final-review-2026-06-22.md |
+| spec   | artifact | n/a    | -          | - (quick mode — no spec)                    |
+| design | artifact | n/a    | -          | -                                           |
 
 **Status values:** `pending` → `received` → `fixes_added` → `fixes_completed` → `passed`
+
+> `passed`: the two `p-rev1` fixes were verified against the reviewer's own
+> verification commands (prod `next start` smoke check clean; gates green;
+> 396/396). Accepted in lieu of a separate fix-scope re-review at the user's
+> direction (accept-and-open). Branch rebased onto `origin/main` (past `#7`).
 
 ---
 

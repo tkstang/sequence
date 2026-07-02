@@ -328,8 +328,9 @@ production bundle), `prev1-t02` (m1 — fix misleading PostCSS comment).
   playground (`/dev/board` → 200). Web tests 103/103; typecheck/lint/build green.
 - `prev1-t02` (commit `0b5f90c`) — corrected the PostCSS module-mode comment.
 
-Review status: `fixes_completed`. Re-review (fix-tasks scope) to reach `passed`,
-or accept the verification above and proceed to PR.
+Review status: `passed` (2026-07-02) — the fixes were verified against the
+reviewer's own commands and accepted in lieu of a separate fix-scope re-review
+(accept-and-open). Branch rebased onto `origin/main` (past `#7`) before PR.
 
 ## Final Summary (for PR/docs)
 
