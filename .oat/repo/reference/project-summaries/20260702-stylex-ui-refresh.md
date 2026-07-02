@@ -2,9 +2,9 @@
 oat_status: complete
 oat_ready_for: null
 oat_blockers: []
-oat_last_updated: 2026-06-22
+oat_last_updated: 2026-07-02
 oat_generated: true
-oat_summary_last_task: p03-t05
+oat_summary_last_task: prev1-t02
 oat_summary_revision_count: 0
 oat_summary_includes_revisions: []
 ---
@@ -35,6 +35,11 @@ used as the moment to actually improve the UI rather than port it 1:1.
   iframe at real device widths, auto-grows to content height, scales to fit, and
   rotates) and a per-component **Expand** overlay that maximizes one preview into
   the app layout for close inspection.
+- **Production hardening (from final review):** the `/dev` playground had been
+  leaking its Flight payload + chunks into production 404 responses; page-level
+  `NODE_ENV` guards (plus a dev-only `generateMetadata`) now keep it fully out of
+  the production bundle — `/dev*` return a generic 404, while `next dev` still
+  serves it.
 
 ## Key Decisions
 
