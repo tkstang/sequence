@@ -134,6 +134,15 @@ It is implemented under `apps/web/src/app/dev/` (with the `_playground/`
 helpers) and `apps/web/src/app/dev-frame/`, gated to development and not part of
 the shipped app surface.
 
+**Production exclusion.** Each `/dev` and `/dev-frame` page guards on
+`process.env.NODE_ENV === 'production'` and calls `notFound()` *before* rendering
+any playground content, and the `/dev` layout uses a dev-only `generateMetadata`.
+So in a production build `/dev`, `/dev/board`, and `/dev-frame/board` return a
+generic 404 with no playground markup, chunks, or title — the page-level guard is
+what keeps the playground out of the production payload (a layout-only guard
+still serializes the page into the 404 response). Keep the guard at the page
+level when adding `/dev` routes. Verify with `next start` + a `curl` of `/dev*`.
+
 The board currently renders full playing-card SVG assets from
 `apps/web/public/cards` with `object-fit: contain`. A symbolic/physical-board
 rendering exploration is tracked separately as backlog item `bl-821f`.
