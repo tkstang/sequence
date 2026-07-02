@@ -92,11 +92,11 @@ used as the moment to actually improve the UI rather than port it 1:1.
 
 ## Follow-up Items
 
-- **`bl-2ae1`** — spike `@stylexswc` (Rust/SWC) to drop the Babel pipeline,
+- **`BL-260622-spike-stylex-swc-plugin`** — spike `@stylexswc` (Rust/SWC) to drop the Babel pipeline,
   restore `"type": "module"`, and remove the Turbopack `rootDir` workaround.
 - React Strict DOM adoption to share styles with the future native app.
 
 ## Associated Issues
 
 - Relates to `bl-d319` (dev UI playground) — extended here with viewport + Expand
-  tooling. Spawned `bl-2ae1`.
+  tooling. Spawned `BL-260622-spike-stylex-swc-plugin`.

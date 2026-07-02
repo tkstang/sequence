@@ -58,7 +58,7 @@ is the single most load-bearing piece of the setup — keep `rootDir` derived fr
 
 Replacing the Babel pipeline with the SWC-based `@stylexswc` compiler (which would
 let `apps/web` restore `"type": "module"` and drop the `rootDir` workaround) is a
-scoped spike, tracked as backlog `bl-2ae1`.
+scoped spike, tracked as backlog `BL-260622-spike-stylex-swc-plugin`.
 
 ## Tests
 

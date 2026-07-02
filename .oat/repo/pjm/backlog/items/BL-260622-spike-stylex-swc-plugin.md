@@ -1,17 +1,20 @@
 ---
-id: bl-2ae1
+id: BL-260622-spike-stylex-swc-plugin
 title: 'Spike: evaluate stylex-swc to drop the StyleX Babel pipeline'
-status: open # open | in_progress | closed | wont_do
-priority: medium # urgent | high | medium | low | none
-scope: task # idea | task | feature | initiative
-scope_estimate: M # XS | S | M | L | XL | XXL
-labels: [stylex, build, dx, spike]
+status: open
+priority: medium
+scope: task
+scope_estimate: M
+labels:
+  - stylex
+  - build
+  - dx
+  - spike
 assignee: null
-created: '2026-06-22T15:35:34Z'
-updated: '2026-06-22T15:35:34Z'
+created: 2026-06-22T15:35:34.000Z
+updated: 2026-07-02T22:35:00.000Z
 associated_issues: []
-oat_template: true
-oat_template_name: backlog-item
+legacy_id: bl-2ae1
 ---
 
 ## Description

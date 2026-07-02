@@ -15,7 +15,7 @@
 | BL-260621-dev-only-ui-component | Dev-only UI component playground for fast UI iteration | in_progress | medium | task | S |
 | BL-260614-explore-symbolic-sequence | Explore symbolic Sequence board rendering | open | medium | feature | M |
 | BL-260621-migrate-to-absolute-path-alias | Migrate to absolute path-alias imports (drop relative paths and file extensions) | open | medium | task | M |
-| bl-2ae1 | Spike: evaluate stylex-swc to drop the StyleX Babel pipeline | open | medium | task | M |
+| BL-260622-spike-stylex-swc-plugin | Spike: evaluate stylex-swc to drop the StyleX Babel pipeline | open | medium | task | M |
 | BL-260621-evaluate-and-adopt-storybook | Evaluate and adopt Storybook for web UI components | open | low | feature | M |
 <!-- END OAT BACKLOG-INDEX -->
 

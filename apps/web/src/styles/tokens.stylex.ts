@@ -7,7 +7,7 @@ import * as stylex from '@stylexjs/stylex';
  * `defineVars` and is the single source of truth for the visual language. It is
  * deliberately free of React/Next/DOM specifics so a future React Native app
  * (via React Strict DOM) can consume or mirror the same token shapes. See
- * `.superpowers/specs/2026-06-21-tailwind-to-stylex-design.md`.
+ * `docs/styling.md`.
  *
  * Colors carry a `default` (light) and a `@media (prefers-color-scheme: dark)`
  * value, so system dark mode works with zero JS. An explicit user override
