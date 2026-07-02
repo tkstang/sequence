@@ -1,6 +1,6 @@
 ---
 oat_current_task: null
-oat_last_commit: 0b5f90c
+oat_last_commit: 296b17a
 oat_blockers: []
 associated_issues: [{type: backlog, ref: "bl-d319"}, {type: backlog, ref: "bl-2ae1"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -12,49 +12,46 @@ oat_hill_checkpoints: [] # Configured: which phases require human-in-the-loop li
 oat_hill_completed: [] # Progress: which HiLL checkpoints have been completed
 oat_parallel_execution: false
 oat_phase: implement # Current phase: discovery | spec | design | plan | implement | decomposition
-oat_phase_status: complete # Status: in_progress | complete | pr_open
+oat_phase_status: pr_open # Status: in_progress | complete | pr_open
 oat_workflow_mode: quick # spec-driven | quick | import
 oat_workflow_origin: captured # native | imported | captured
 oat_docs_updated: complete # null | skipped | complete — documentation sync status
-oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
-oat_pr_url: null # null | string — tracked PR URL when a PR exists
+oat_pr_status: open # null | ready | open | closed | merged — actual PR state for the current project
+oat_pr_url: "https://github.com/tkstang/sequence/pull/8" # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-06-23T01:36:09.757Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-06-23T03:10:51.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-02T22:01:06.000Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: true
 ---
 
 # Project State: stylex-ui-refresh
 
-**Status:** Review fixes complete + verified — `fixes_completed` (awaiting re-review / PR)
+**Status:** PR open ([#8](https://github.com/tkstang/sequence/pull/8)) — awaiting review; ready for `oat-project-complete`
 **Started:** 2026-06-21
-**Last Updated:** 2026-06-22
+**Last Updated:** 2026-07-02
 
 ## Current Phase
 
-Implement — complete. This project was captured retroactively
-(`oat-project-capture`) from the `stylex` branch (16 commits beyond `main`).
+Implementation — PR open, awaiting human review. Captured retroactively
+(`oat-project-capture`) from the `stylex` branch; rebased onto `origin/main`
+(past `#7`) before the PR.
 
 ## Artifacts
 
 - **Discovery:** `discovery.md` (complete)
-- **Design:** `design.md` (complete — added at user request; captures the StyleX
-  pipeline, theming, playground, and board rendering)
-- **Plan:** `plan.md` (scaffold template — not authored; work was retroactive)
-- **Implementation:** `implementation.md` (complete — 14 tasks / 3 phases)
+- **Design:** `design.md` (complete)
+- **Plan:** `plan.md` (captured scaffold + `p-rev1` review-fix phase)
+- **Implementation:** `implementation.md` (complete — 14 captured + 2 review-fix tasks)
 - **Summary:** `summary.md` (complete)
 
 ## Progress
 
-- ✓ Discovery captured from conversation context
-- ✓ Design captured (as-built)
-- ✓ Implementation captured from commit history (14/14 tasks)
-- ✓ Summary written
+- ✓ Discovery / Design / Implementation / Summary captured
 - ✓ Documentation synced (`docs/styling.md` + `/dev` playground docs)
-- ✓ Final PR description drafted (`pr/project-pr-2026-06-22.md`, base `main`)
-- ✓ Final code review received (Codex): 1 Important + 1 Minor → `p-rev1`
-- ✓ Fix tasks complete + verified (`prev1-t01` a6303d0, `prev1-t02` 0b5f90c)
-- ⧗ Re-review → `passed` (or accept verification), then push + open PR, then `oat-project-complete`
+- ✓ Final code review (Codex): 1 Important + 1 Minor → fixed + verified (`p-rev1`)
+- ✓ Review `passed` (accepted); branch rebased onto `origin/main`; gates green (396/396)
+- ✓ PR created — [#8](https://github.com/tkstang/sequence/pull/8) (base `main`)
+- ⧗ Awaiting human review / merge
 
 ## Blockers
 
@@ -62,8 +59,7 @@ None.
 
 ## Next Milestone
 
-Review is `fixes_completed`: I1 (prod `/dev` exclusion) and m1 (PostCSS comment)
-are fixed and verified (prod `/dev*` = 404 with 0 playground markers; dev
-playground intact; tests 103/103; build green). Next: re-review the fix commits
-(fix-tasks scope) to reach `passed`, or accept the verification and push +
-`gh pr create --base main`, then `oat-project-complete`.
+PR [#8](https://github.com/tkstang/sequence/pull/8) is open for review.
+
+- To incorporate feedback: run `oat-project-revise`.
+- When approved/merged: run `oat-project-complete`.
