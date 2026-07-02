@@ -1,8 +1,17 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 
 import { Card } from '@/components/card.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import type { SnapshotPlayer } from '../game-state.ts';
 
@@ -14,6 +23,92 @@ export interface GameOverProps {
   isRematching?: boolean;
   onRematch: () => void;
 }
+
+const styles = stylex.create({
+  card: {
+    marginInline: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.lg,
+    width: '100%',
+    maxWidth: 'min(94vw, 680px)',
+    borderColor: color.teamGreen,
+  },
+  eyebrow: {
+    margin: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.black,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    color: color.textFaint,
+  },
+  title: {
+    margin: 0,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.black,
+    lineHeight: lineHeight.tight,
+    color: color.text,
+  },
+  winners: {
+    marginBlock: 0,
+    marginBlockStart: space.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: color.textMuted,
+  },
+  conceded: {
+    marginBlock: 0,
+    marginBlockStart: space.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: color.teamRed,
+  },
+  actions: {
+    display: 'flex',
+    flexDirection: { default: 'column', '@media (min-width: 640px)': 'row' },
+    flexWrap: { default: 'nowrap', '@media (min-width: 640px)': 'wrap' },
+    gap: space.sm,
+  },
+  actionBase: {
+    borderRadius: radius.md,
+    paddingBlock: space.sm,
+    paddingInline: space.lg,
+    fontFamily: 'inherit',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
+    textDecoration: 'none',
+    transitionProperty: 'background-color, border-color, color, filter',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  rematch: {
+    borderWidth: 0,
+    borderStyle: 'solid',
+    backgroundColor: {
+      default: color.teamGreen,
+      ':hover': color.accentHover,
+    },
+    color: color.accentText,
+    cursor: 'pointer',
+  },
+  rematchDisabled: {
+    backgroundColor: { default: color.slateSoft, ':hover': color.slateSoft },
+    color: color.textFaint,
+    cursor: 'not-allowed',
+  },
+  dashboard: {
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: { default: color.border, ':hover': color.borderStrong },
+    backgroundColor: { default: 'transparent', ':hover': color.hoverWash },
+    color: color.textMuted,
+  },
+});
 
 function resultTitle(winnerTeam?: number | null, endReason?: string | null) {
   if (endReason === 'concede') return 'Game conceded';
@@ -34,37 +129,37 @@ export function GameOver({
     : [];
 
   return (
-    <Card className="border-team-green mx-auto flex w-full max-w-[min(94vw,680px)] flex-col gap-4 bg-white">
+    <Card {...stylex.props(styles.card)}>
       <div>
-        <p className="text-xs font-black tracking-wide text-black/45 uppercase">
-          Final
-        </p>
-        <h1 className="text-2xl font-black text-black">
+        <p {...stylex.props(styles.eyebrow)}>Final</p>
+        <h1 {...stylex.props(styles.title)}>
           {resultTitle(winnerTeam, endReason)}
         </h1>
         {winners.length > 0 ? (
-          <p className="mt-1 text-sm font-medium text-black/60">
+          <p {...stylex.props(styles.winners)}>
             {winners.map((player) => player.name).join(', ')}
           </p>
         ) : null}
         {endReason === 'concede' && concededTeam ? (
-          <p className="text-team-red mt-1 text-sm font-bold">
-            Team {concededTeam} conceded
-          </p>
+          <p {...stylex.props(styles.conceded)}>Team {concededTeam} conceded</p>
         ) : null}
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div {...stylex.props(styles.actions)}>
         <button
           type="button"
           disabled={isRematching}
           onClick={onRematch}
-          className="bg-team-green disabled:bg-slate/30 rounded-md px-4 py-2 text-sm font-bold text-white disabled:text-black/40"
+          {...stylex.props(
+            styles.actionBase,
+            styles.rematch,
+            isRematching && styles.rematchDisabled,
+          )}
         >
           Rematch
         </button>
         <Link
           href="/dashboard"
-          className="rounded-md border border-black/15 px-4 py-2 text-center text-sm font-bold text-black/70"
+          {...stylex.props(styles.actionBase, styles.dashboard)}
         >
           Dashboard
         </Link>

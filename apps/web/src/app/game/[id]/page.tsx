@@ -1,6 +1,7 @@
 'use client';
 
 import type { Position } from '@sequence/game-logic';
+import * as stylex from '@stylexjs/stylex';
 import { useMutation } from '@tanstack/react-query';
 import { useSubscription } from '@trpc/tanstack-react-query';
 import Link from 'next/link';
@@ -12,6 +13,13 @@ import { Badge } from '@/components/badge.tsx';
 import { buttonClassName } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
 import { useTRPC } from '@/lib/trpc/client.ts';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 import { ActiveGameControls } from './components/ActiveGameControls/ActiveGameControls.tsx';
 import { CardHand } from './components/CardHand/CardHand.tsx';
@@ -58,6 +66,190 @@ type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'error';
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
 type PlayerCount = 2 | 3 | 4 | 6;
 type RecoveryCursor = { seq: number; offset: 0 | 1 };
+
+const styles = stylex.create({
+  centerMain: {
+    display: 'flex',
+    minHeight: '100vh',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xxl,
+  },
+  loadingMain: {
+    display: 'flex',
+    minHeight: '100vh',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xxxl,
+    fontSize: fontSize.sm,
+    color: color.textFaint,
+  },
+  errorSection: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: '28rem',
+    flexDirection: 'column',
+    gap: space.lg,
+    textAlign: 'center',
+  },
+  errorTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: color.text,
+  },
+  errorBody: {
+    marginBlockStart: space.sm,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  errorActions: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: space.sm,
+  },
+  gameMain: {
+    marginInline: 'auto',
+    display: 'flex',
+    minHeight: '100vh',
+    width: '100%',
+    maxWidth: '64rem',
+    flexDirection: 'column',
+    gap: { default: space.md, '@media (min-width: 640px)': space.lg },
+    padding: { default: space.sm, '@media (min-width: 640px)': space.lg },
+  },
+  statusCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.md,
+  },
+  statusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  connectedText: {
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  playerGrid: {
+    display: 'grid',
+    gap: space.sm,
+    gridTemplateColumns: {
+      default: '1fr',
+      '@media (min-width: 640px)': 'repeat(2, minmax(0, 1fr))',
+    },
+  },
+  playerCell: {
+    display: 'flex',
+    minWidth: 0,
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: color.border,
+    backgroundColor: color.bg,
+    padding: space.sm,
+    fontSize: fontSize.sm,
+    color: color.text,
+  },
+  playerDot: {
+    height: '12px',
+    width: '12px',
+    flexShrink: 0,
+    borderRadius: radius.round,
+  },
+  playerName: {
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    fontWeight: fontWeight.medium,
+  },
+  turnTag: {
+    flexShrink: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: color.teamGreen,
+  },
+  boardSection: {
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  dragBar: {
+    marginInline: 'auto',
+    display: 'flex',
+    width: '100%',
+    maxWidth: 'min(94vw, 680px)',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  playChip: {
+    display: 'flex',
+    minHeight: '48px',
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: color.teamBlue,
+    backgroundColor: `color-mix(in srgb, ${color.teamBlue} 12%, transparent)`,
+    paddingInline: space.lg,
+    paddingBlock: space.sm,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: color.teamBlue,
+    cursor: 'grab',
+    transitionProperty: 'background-color, border-color',
+    transitionDuration: '140ms',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  playChipDot: {
+    display: 'block',
+    height: '28px',
+    width: '28px',
+    borderRadius: radius.round,
+    backgroundColor: color.teamBlue,
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.18)',
+  },
+  discard: {
+    display: 'flex',
+    minHeight: '48px',
+    minWidth: '112px',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'dashed',
+    borderColor: color.borderStrong,
+    backgroundColor: 'transparent',
+    paddingInline: space.lg,
+    paddingBlock: space.sm,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: color.textMuted,
+    cursor: 'pointer',
+    transitionProperty: 'background-color, border-color',
+    transitionDuration: '140ms',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+  discardActive: {
+    borderColor: color.teamRed,
+    backgroundColor: `color-mix(in srgb, ${color.teamRed} 12%, transparent)`,
+  },
+});
+
+const teamDotColor = stylex.create({
+  tint: (value: string) => ({ backgroundColor: value }),
+});
 
 function reducer(
   state: GameViewState | null,
@@ -113,17 +305,17 @@ function GameLoadError({
   const loginHref = `/login?next=${encodeURIComponent(`/game/${gameId}`)}`;
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <section className="flex w-full max-w-md flex-col gap-4 text-center">
+    <main {...stylex.props(styles.centerMain)}>
+      <section {...stylex.props(styles.errorSection)}>
         <div>
-          <h1 className="text-2xl font-bold">Game unavailable</h1>
-          <p className="mt-2 text-sm text-black/60">
+          <h1 {...stylex.props(styles.errorTitle)}>Game unavailable</h1>
+          <p {...stylex.props(styles.errorBody)}>
             {isAuthzError
               ? 'Log in with the account that created or joined this game.'
               : 'The game stream could not start. Try again in a moment.'}
           </p>
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div {...stylex.props(styles.errorActions)}>
           {isAuthzError ? (
             <Link
               href={loginHref}
@@ -388,7 +580,7 @@ function GameRoutePlaceholder({
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-3 p-2 sm:gap-4 sm:p-4">
+    <main {...stylex.props(styles.gameMain)}>
       <PlayerRail
         players={state.players}
         currentSeat={state.currentSeat}
@@ -401,43 +593,39 @@ function GameRoutePlaceholder({
         status={state.status}
       />
 
-      <Card className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+      <Card {...stylex.props(styles.statusCard)}>
+        <div {...stylex.props(styles.statusRow)}>
           <Badge tone={state.status === 'frozen' ? 'frozen' : 'neutral'}>
             {screen}
           </Badge>
-          <span className="text-sm text-black/60">
+          <span {...stylex.props(styles.connectedText)}>
             {connected}/{state.playerCount} connected
           </span>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {state.players.map((player) => (
-            <div
-              key={player.seat}
-              className="bg-cream flex min-w-0 items-center gap-2 rounded-lg border border-black/10 p-2 text-sm"
-            >
-              <span
-                className="h-3 w-3 rounded-full"
-                style={{
-                  backgroundColor:
-                    player.team === 1
-                      ? 'var(--color-team-blue)'
-                      : player.team === 2
-                        ? 'var(--color-team-green)'
-                        : 'var(--color-team-red)',
-                }}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate font-medium">
-                {player.name}
-              </span>
-              {player.seat === state.currentSeat ? (
-                <span className="text-team-green shrink-0 text-xs font-bold">
-                  turn
-                </span>
-              ) : null}
-            </div>
-          ))}
+        <div {...stylex.props(styles.playerGrid)}>
+          {state.players.map((player) => {
+            const dotColor =
+              player.team === 1
+                ? color.teamBlue
+                : player.team === 2
+                  ? color.teamGreen
+                  : color.teamRed;
+            return (
+              <div key={player.seat} {...stylex.props(styles.playerCell)}>
+                <span
+                  {...stylex.props(
+                    styles.playerDot,
+                    teamDotColor.tint(dotColor),
+                  )}
+                  aria-hidden
+                />
+                <span {...stylex.props(styles.playerName)}>{player.name}</span>
+                {player.seat === state.currentSeat ? (
+                  <span {...stylex.props(styles.turnTag)}>turn</span>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </Card>
 
@@ -454,7 +642,7 @@ function GameRoutePlaceholder({
         />
       ) : null}
 
-      <section className="flex justify-center">
+      <section {...stylex.props(styles.boardSection)}>
         <GameBoard
           board={state.board}
           validTargets={tapSelection?.validTargets}
@@ -539,7 +727,7 @@ function GameRoutePlaceholder({
       ) : null}
 
       {!gameFinished && dragMode ? (
-        <section className="mx-auto flex w-full max-w-[min(94vw,680px)] items-center justify-between gap-3">
+        <section {...stylex.props(styles.dragBar)}>
           <button
             type="button"
             draggable
@@ -550,12 +738,9 @@ function GameRoutePlaceholder({
               setDragIntent({ kind: 'place' });
             }}
             onDragEnd={clearDrag}
-            className="border-team-blue bg-team-blue/10 text-team-blue flex min-h-12 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold"
+            {...stylex.props(styles.playChip)}
           >
-            <span
-              aria-hidden
-              className="bg-team-blue block h-7 w-7 rounded-full shadow-inner"
-            />
+            <span aria-hidden {...stylex.props(styles.playChipDot)} />
             Play chip
           </button>
           <button
@@ -570,7 +755,12 @@ function GameRoutePlaceholder({
               event.preventDefault();
             }}
             onDrop={handleDiscardDrop}
-            className="data-[active=true]:border-team-red data-[active=true]:bg-team-red/10 flex min-h-12 min-w-28 items-center justify-center rounded-lg border border-dashed border-black/25 px-4 py-2 text-sm font-bold text-black/60"
+            {...stylex.props(
+              styles.discard,
+              (dragIntent?.kind === 'removeChip' ||
+                dragIntent?.kind === 'turnInDeadCard') &&
+                styles.discardActive,
+            )}
           >
             Discard
           </button>
@@ -693,9 +883,7 @@ export default function GamePage() {
       ) : showInitialLoadError ? (
         <GameLoadError gameId={gameId} errorCode={subscriptionErrorCode} />
       ) : (
-        <main className="flex min-h-screen items-center justify-center p-8 text-sm text-black/50">
-          Loading game…
-        </main>
+        <main {...stylex.props(styles.loadingMain)}>Loading game…</main>
       )}
       {showOverlay && !showInitialLoadError ? (
         <ConnectionBanner

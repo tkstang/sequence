@@ -59,8 +59,11 @@ Canonical commands live in `package.json`; see the gates below.
   version guards, redaction, timers, and realtime subscriptions.
 - The current board uses full card SVGs with contained image rendering. The
   symbolic/physical-board direction is backlog work, not current behavior.
-- The dev-only UI playground is backlog work. Do not document `/dev` routes as
-  existing until they are implemented.
+- The web UI is styled with StyleX (not Tailwind); design tokens and light/dark
+  themes live in `apps/web/src/styles/`. See `docs/styling.md`.
+- A dev-only component playground exists at `/dev` (with a chrome-less
+  `/dev-frame` render target). It is development-only — do not link to it from the
+  shipped app. See `docs/development.md`.
 
 ## Documentation
 

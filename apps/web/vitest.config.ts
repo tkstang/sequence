@@ -19,6 +19,13 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // StyleX is compiled by @stylexjs/babel-plugin at build time; Vitest does
+      // not run that plugin, so its uncompiled runtime throws on defineVars/
+      // create. Component tests assert behavior, not CSS, so swap in a no-op
+      // stub. See src/test/stylex-mock.ts.
+      '@stylexjs/stylex': fileURLToPath(
+        new URL('./src/test/stylex-mock.ts', import.meta.url),
+      ),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },

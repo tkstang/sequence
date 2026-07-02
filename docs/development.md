@@ -113,9 +113,35 @@ database.
 
 ## UI Development
 
-Current UI iteration uses the real app and tests. There is no `/dev` playground
-yet. The backlog item `bl-d319` tracks a future dev-only component playground
-backed by reusable `GameSnapshotView` fixtures.
+The web UI is styled with StyleX (tokens + light/dark themes); see
+[`styling.md`](styling.md) for the model and build pipeline.
+
+### Dev UI playground
+
+`/dev` is a dev-only component playground (do not link to it from the shipped
+app). Each section page renders production-faithful previews ("stories") of UI
+components from reusable `GameSnapshotView` fixtures. It provides:
+
+- a **viewport switcher** (Fit / Mobile / Mobile L / Tablet / Desktop) that
+  renders a story inside an iframe at the real device width — so media queries
+  respond correctly — auto-grown to content height and scaled to fit the panel,
+  with a Rotate (width/height swap) control;
+- a per-component **Expand** control that maximizes one preview into an in-app
+  overlay (covering the layout, not OS fullscreen) for close inspection;
+- a chrome-less `/dev-frame/[section]` render target used as the iframe source.
+
+It is implemented under `apps/web/src/app/dev/` (with the `_playground/`
+helpers) and `apps/web/src/app/dev-frame/`, gated to development and not part of
+the shipped app surface.
+
+**Production exclusion.** Each `/dev` and `/dev-frame` page guards on
+`process.env.NODE_ENV === 'production'` and calls `notFound()` *before* rendering
+any playground content, and the `/dev` layout uses a dev-only `generateMetadata`.
+So in a production build `/dev`, `/dev/board`, and `/dev-frame/board` return a
+generic 404 with no playground markup, chunks, or title — the page-level guard is
+what keeps the playground out of the production payload (a layout-only guard
+still serializes the page into the 404 response). Keep the guard at the page
+level when adding `/dev` routes. Verify with `next start` + a `curl` of `/dev*`.
 
 The board currently renders full playing-card SVG assets from
 `apps/web/public/cards` with `object-fit: contain`. A symbolic/physical-board
@@ -123,8 +149,10 @@ rendering exploration is tracked separately as backlog item `bl-821f`.
 
 When making visual changes:
 
-1. Use the local app to view the full game surface.
-2. Check both desktop and 375px mobile widths.
+1. Iterate on individual components in the `/dev` playground, or use the local
+   app to view the full game surface.
+2. Check both desktop and 375px mobile widths (the playground viewport switcher
+   makes this quick).
 3. Keep the board, hand, and player rail visible together.
 4. Run focused web tests and Playwright when the change affects flows.
 

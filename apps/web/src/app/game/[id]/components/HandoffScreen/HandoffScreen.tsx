@@ -1,8 +1,16 @@
 'use client';
 
 import type { Card } from '@sequence/game-logic';
+import * as stylex from '@stylexjs/stylex';
 
-import { Card as Surface } from '@/components/card.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  shadow,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 export interface VisibleHandInput {
   local: boolean;
@@ -30,24 +38,72 @@ export interface HandoffScreenProps {
   onReveal: () => void;
 }
 
+const styles = stylex.create({
+  surface: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: space.md,
+    marginInline: 'auto',
+    width: '100%',
+    maxWidth: 'min(94vw, 680px)',
+    paddingInline: space.lg,
+    paddingBlock: space.xl,
+    borderRadius: radius.lg,
+    backgroundColor: color.slate,
+    color: color.textOnDark,
+    textAlign: 'center',
+    boxShadow: shadow.lg,
+  },
+  lastMove: {
+    margin: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: color.textMuted,
+  },
+  prompt: {
+    margin: 0,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.black,
+  },
+  button: {
+    borderWidth: 0,
+    borderStyle: 'solid',
+    borderRadius: radius.md,
+    paddingInline: space.xl,
+    paddingBlock: space.sm,
+    backgroundColor: {
+      default: color.teamGreen,
+      ':hover': color.accentHover,
+    },
+    color: color.textOnDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    cursor: 'pointer',
+    transitionProperty: 'background-color, filter',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+  },
+});
+
 export function HandoffScreen({
   playerName,
   lastMoveLabel,
   onReveal,
 }: HandoffScreenProps) {
   return (
-    <Surface className="bg-slate mx-auto flex w-full max-w-[min(94vw,680px)] flex-col items-center gap-3 px-4 py-5 text-center text-white">
+    <div {...stylex.props(styles.surface)}>
       {lastMoveLabel ? (
-        <p className="text-xs font-semibold text-white/65">{lastMoveLabel}</p>
+        <p {...stylex.props(styles.lastMove)}>{lastMoveLabel}</p>
       ) : null}
-      <p className="text-lg font-black">Pass to {playerName}</p>
-      <button
-        type="button"
-        onClick={onReveal}
-        className="bg-team-green rounded-md px-5 py-2 text-sm font-bold text-white"
-      >
+      <p {...stylex.props(styles.prompt)}>Pass to {playerName}</p>
+      <button type="button" onClick={onReveal} {...stylex.props(styles.button)}>
         Show hand
       </button>
-    </Surface>
+    </div>
   );
 }

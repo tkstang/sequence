@@ -1,5 +1,5 @@
 import type { Position } from '@sequence/game-logic';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -38,10 +38,13 @@ describe('<GameBoard>', () => {
       />,
     );
 
+    const grid = screen.getByRole('grid', { name: /sequence board/i });
+    expect(grid).toBeInTheDocument();
+    // 100 cells live inside the grid; the Rotate control sits outside it.
+    expect(within(grid).getAllByRole('button')).toHaveLength(100);
     expect(
-      screen.getByRole('grid', { name: /sequence board/i }),
+      screen.getByRole('button', { name: /rotate board/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('button')).toHaveLength(100);
     expect(screen.getByLabelText(/team 1 chip/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/team 2 chip locked/i)).toBeInTheDocument();
   });

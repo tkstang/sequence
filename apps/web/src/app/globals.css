@@ -1,49 +1,51 @@
-@import 'tailwindcss';
-
 /*
- * Design tokens (wireframes/README.md). The visual language:
- *  - slate `#2d3142` chrome (headers, dark surfaces)
- *  - felt-green board / cream surface
- *  - team colors: blue / green / red
- * Tailwind v4 is CSS-configured; these custom properties become utility
- * classes (e.g. `bg-slate`, `text-team-blue`, `bg-cream`).
+ * Global stylesheet. The design tokens that used to live here as a Tailwind v4
+ * `@theme` block now live in `src/styles/tokens.stylex.ts` (StyleX defineVars).
+ * This file carries only a tiny element reset plus the `@stylex;` directive,
+ * which `@stylexjs/postcss-plugin` replaces with the generated atomic CSS.
+ *
+ * `resets` is declared before `@stylex;` so StyleX's layers take precedence
+ * over the reset (component styles win over the base reset).
  */
-@theme {
-  --color-slate: #2d3142;
-  --color-slate-soft: #3a3f54;
-  --color-cream: #f6f3ee;
-  --color-felt: #2e7d4f;
-  --color-felt-dark: #1f5c39;
+@layer resets {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-  --color-team-blue: #3a6ea5;
-  --color-team-green: #2e9e5b;
-  --color-team-red: #c0453c;
+  * {
+    margin: 0;
+    padding: 0;
+  }
 
-  /* Badge palettes (dashboard FROZEN/SAVED). */
-  --color-frozen-bg: #fdebc8;
-  --color-frozen-fg: #9a6b00;
-  --color-saved-bg: #ddeafa;
-  --color-saved-fg: #2d5b96;
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Lists are unstyled by default (matches the prior Tailwind preflight); add
+     list markers explicitly where a component wants them. */
+  ol,
+  ul {
+    list-style: none;
+  }
 }
 
-:root {
-  color-scheme: light;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background-color: var(--color-cream);
-  color: var(--color-slate);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-}
+@stylex;

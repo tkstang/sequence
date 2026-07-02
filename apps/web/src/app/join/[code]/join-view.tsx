@@ -1,11 +1,155 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { Badge } from '@/components/badge.tsx';
 import { Button } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
+import {
+  color,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
+
+const styles = stylex.create({
+  main: {
+    marginInline: 'auto',
+    display: 'flex',
+    width: '100%',
+    maxWidth: '28rem',
+    flexDirection: 'column',
+    gap: space.xl,
+    padding: space.lg,
+  },
+  heading: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    lineHeight: lineHeight.tight,
+    color: color.text,
+    margin: 0,
+  },
+  settings: {
+    marginBlock: space.xs,
+    marginInline: 0,
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  sectionLabel: {
+    margin: 0,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    color: color.textFaint,
+  },
+  emptyRoster: {
+    margin: 0,
+    fontSize: fontSize.sm,
+    color: color.textFaint,
+  },
+  roster: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+    fontSize: fontSize.sm,
+    color: color.text,
+  },
+  rosterRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  dot: {
+    display: 'inline-block',
+    width: '12px',
+    height: '12px',
+    flexShrink: 0,
+    borderRadius: radius.round,
+  },
+  dotColor: (c: string) => ({
+    backgroundColor: c,
+  }),
+  guestTag: {
+    fontSize: fontSize.xs,
+    color: color.textFaint,
+  },
+  notice: {
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  guestSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.md,
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: color.text,
+  },
+  input: {
+    borderRadius: radius.md,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: { default: color.border, ':focus': color.focusRing },
+    backgroundColor: color.surface,
+    color: color.text,
+    paddingBlock: space.sm,
+    paddingInline: space.md,
+    fontFamily: 'inherit',
+    fontSize: fontSize.sm,
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+    transitionProperty: 'border-color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+  },
+  fieldError: {
+    fontSize: fontSize.xs,
+    color: color.danger,
+  },
+  loginPrompt: {
+    margin: 0,
+    textAlign: 'center',
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+  },
+  loginLink: {
+    fontWeight: fontWeight.semibold,
+    color: { default: color.teamBlue, ':hover': color.accentHover },
+    textDecorationLine: { default: 'none', ':hover': 'underline' },
+  },
+  error: {
+    margin: 0,
+    fontSize: fontSize.sm,
+    color: color.danger,
+  },
+});
+
+const TEAM_COLORS: Record<number, string> = {
+  1: color.teamBlue,
+  2: color.teamGreen,
+};
 
 /** The public preview shape (mirrors `GamePreview` from the api). */
 export interface JoinPreview {
@@ -65,38 +209,31 @@ export function JoinView({
   const joinable = open && !full && !preview.local;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-5 p-4">
+    <main {...stylex.props(styles.main)}>
       <div>
-        <h1 className="text-2xl font-bold">You’re invited to a game</h1>
-        <p className="text-sm text-black/60">{describeSettings(preview)}</p>
+        <h1 {...stylex.props(styles.heading)}>You’re invited to a game</h1>
+        <p {...stylex.props(styles.settings)}>{describeSettings(preview)}</p>
       </div>
 
-      <Card className="flex flex-col gap-2">
-        <h2 className="text-xs font-bold tracking-wide text-black/50 uppercase">
-          Players
-        </h2>
+      <Card {...stylex.props(styles.card)}>
+        <h2 {...stylex.props(styles.sectionLabel)}>Players</h2>
         {preview.players.length === 0 ? (
-          <p className="text-sm text-black/50">No one has joined yet.</p>
+          <p {...stylex.props(styles.emptyRoster)}>No one has joined yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1.5 text-sm">
+          <ul {...stylex.props(styles.roster)}>
             {preview.players.map((p) => (
-              <li key={p.seat} className="flex items-center gap-2">
+              <li key={p.seat} {...stylex.props(styles.rosterRow)}>
                 <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{
-                    backgroundColor:
-                      p.team === 1
-                        ? 'var(--color-team-blue)'
-                        : p.team === 2
-                          ? 'var(--color-team-green)'
-                          : 'var(--color-team-red)',
-                  }}
+                  {...stylex.props(
+                    styles.dot,
+                    styles.dotColor(TEAM_COLORS[p.team] ?? color.teamRed),
+                  )}
                   aria-hidden
                 />
                 <span>{p.name}</span>
                 {p.isCreator ? <Badge tone="neutral">Host</Badge> : null}
                 {p.isGuest ? (
-                  <span className="text-xs text-black/40">guest</span>
+                  <span {...stylex.props(styles.guestTag)}>guest</span>
                 ) : null}
               </li>
             ))}
@@ -105,7 +242,7 @@ export function JoinView({
       </Card>
 
       {!joinable ? (
-        <Card className="bg-cream text-sm text-black/70">
+        <Card {...stylex.props(styles.notice)}>
           {preview.local
             ? 'This is a local pass-and-play game and can’t be joined remotely.'
             : full
@@ -117,9 +254,9 @@ export function JoinView({
           {isJoining ? 'Joining…' : 'Join game'}
         </Button>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="guest-name" className="text-sm font-semibold">
+        <div {...stylex.props(styles.guestSection)}>
+          <div {...stylex.props(styles.field)}>
+            <label htmlFor="guest-name" {...stylex.props(styles.label)}>
               Play as a guest
             </label>
             <input
@@ -129,10 +266,10 @@ export function JoinView({
               aria-label="Guest name"
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="Your name"
-              className="rounded-lg border border-black/20 bg-white px-3 py-2"
+              {...stylex.props(styles.input)}
             />
             {nameError ? (
-              <span role="alert" className="text-team-red text-xs">
+              <span role="alert" {...stylex.props(styles.fieldError)}>
                 {nameError}
               </span>
             ) : null}
@@ -151,11 +288,11 @@ export function JoinView({
           >
             {isJoining ? 'Joining…' : 'Join as guest'}
           </Button>
-          <p className="text-center text-sm text-black/60">
+          <p {...stylex.props(styles.loginPrompt)}>
             or{' '}
             <Link
               href={`/login?next=/join/${preview.inviteCode}`}
-              className="text-team-blue font-semibold"
+              {...stylex.props(styles.loginLink)}
             >
               log in
             </Link>{' '}
@@ -165,7 +302,7 @@ export function JoinView({
       )}
 
       {joinError ? (
-        <p role="alert" className="text-team-red text-sm">
+        <p role="alert" {...stylex.props(styles.error)}>
           {joinError}
         </p>
       ) : null}

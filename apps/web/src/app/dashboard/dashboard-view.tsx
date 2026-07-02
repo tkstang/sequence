@@ -1,13 +1,121 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 
 import { AuthenticatedHeader } from '@/components/authenticated-header.tsx';
 import { Badge } from '@/components/badge.tsx';
-import { buttonClassName } from '@/components/button.tsx';
+import { buttonProps } from '@/components/button.tsx';
 import { Card } from '@/components/card.tsx';
+import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
 
 import { ExpiryCountdown } from './expiry-countdown.tsx';
+
+const styles = stylex.create({
+  fullWidth: {
+    width: '100%',
+  },
+  cardBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.xs,
+    fontSize: fontSize.sm,
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  resumeName: {
+    fontWeight: fontWeight.medium,
+  },
+  resumeLink: {
+    marginInlineStart: 'auto',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: { default: color.teamGreen, ':hover': color.accentHover },
+    textDecorationLine: { default: 'none', ':hover': 'underline' },
+    transitionProperty: 'color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+    borderRadius: '4px',
+  },
+  cardMeta: {
+    fontSize: fontSize.xs,
+    color: color.textMuted,
+    marginBlock: 0,
+  },
+  resultRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: space.sm,
+    fontSize: fontSize.sm,
+    color: color.text,
+  },
+  page: {
+    display: 'flex',
+    minHeight: '100vh',
+    flexDirection: 'column',
+  },
+  main: {
+    marginInline: 'auto',
+    display: 'flex',
+    width: '100%',
+    maxWidth: '36rem',
+    flexDirection: 'column',
+    gap: space.xxl,
+    padding: space.lg,
+  },
+  actions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  sectionHeading: {
+    marginBlockStart: 0,
+    marginBlockEnd: space.sm,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    color: color.textMuted,
+  },
+  emptyText: {
+    fontSize: fontSize.sm,
+    color: color.textMuted,
+    marginBlock: 0,
+  },
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  stackTight: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.xs,
+  },
+  historyLink: {
+    marginBlockStart: space.md,
+    display: 'inline-block',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: { default: color.teamBlue, ':hover': color.accentHover },
+    textDecorationLine: { default: 'none', ':hover': 'underline' },
+    transitionProperty: 'color',
+    transitionDuration: '140ms',
+    transitionTimingFunction: 'ease',
+    outlineStyle: { default: 'none', ':focus-visible': 'solid' },
+    outlineWidth: { default: '0', ':focus-visible': '2px' },
+    outlineColor: color.focusRing,
+    outlineOffset: '2px',
+    borderRadius: '4px',
+  },
+});
 
 /** The dashboard card shape (mirrors `MyGameCard` from the api). */
 export interface DashboardGame {
@@ -51,22 +159,28 @@ function ResumableCard({ game }: { game: DashboardGame }) {
   // links there by id.
   const href = `/game/${game.gameId}`;
   return (
-    <Card className="flex flex-col gap-1 p-3 text-sm">
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{describeOpponents(game)}</span>
-        <Badge tone={isFrozen ? 'frozen' : 'saved'}>
-          {isFrozen ? 'FROZEN' : 'SAVED'}
-        </Badge>
-        <Link href={href} className="text-team-green ml-auto text-xs font-bold">
-          {isFrozen ? 'Rejoin →' : 'Resume →'}
-        </Link>
+    <Card>
+      <div {...stylex.props(styles.cardBody)}>
+        <div {...stylex.props(styles.cardHeader)}>
+          <span {...stylex.props(styles.resumeName)}>
+            {describeOpponents(game)}
+          </span>
+          <Badge tone={isFrozen ? 'frozen' : 'saved'}>
+            {isFrozen ? 'FROZEN' : 'SAVED'}
+          </Badge>
+          <Link href={href} {...stylex.props(styles.resumeLink)}>
+            {isFrozen ? 'Rejoin →' : 'Resume →'}
+          </Link>
+        </div>
+        <p {...stylex.props(styles.cardMeta)}>
+          Round {game.round}
+          {isFrozen ? ' · everyone must return' : ''}
+          {game.expiresAt ? ' · ' : ''}
+          {game.expiresAt ? (
+            <ExpiryCountdown expiresAt={game.expiresAt} />
+          ) : null}
+        </p>
       </div>
-      <p className="text-xs text-black/50">
-        Round {game.round}
-        {isFrozen ? ' · everyone must return' : ''}
-        {game.expiresAt ? ' · ' : ''}
-        {game.expiresAt ? <ExpiryCountdown expiresAt={game.expiresAt} /> : null}
-      </p>
     </Card>
   );
 }
@@ -81,7 +195,7 @@ function ResultRow({ game }: { game: DashboardGame }) {
       <Badge tone="neutral">No result</Badge>
     );
   return (
-    <div className="flex items-center gap-2 text-sm text-black/70">
+    <div {...stylex.props(styles.resultRow)}>
       {badge}
       <span>
         {describeOpponents(game)}
@@ -108,45 +222,45 @@ export function DashboardView({
   recents,
   isLoading = false,
 }: DashboardViewProps) {
+  const createProps = buttonProps({ size: 'lg' });
+  const localProps = buttonProps({ variant: 'secondary' });
+  const createFull = stylex.props(styles.fullWidth);
   return (
-    <div className="flex min-h-screen flex-col">
+    <div {...stylex.props(styles.page)}>
       <AuthenticatedHeader
         userInitial={userInitial}
         onLogout={onLogout}
         isSigningOut={isSigningOut}
       />
 
-      <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4">
-        <section className="flex flex-col gap-2">
+      <main {...stylex.props(styles.main)}>
+        <section {...stylex.props(styles.actions)}>
           <Link
             href="/create"
-            className={buttonClassName({ size: 'lg', className: 'w-full' })}
+            className={`${createProps.className ?? ''} ${createFull.className ?? ''}`.trim()}
+            style={{ ...createProps.style, ...createFull.style }}
           >
             + Create game
           </Link>
           <Link
             href="/create?local=1"
-            className={buttonClassName({
-              variant: 'secondary',
-              className: 'w-full',
-            })}
+            className={`${localProps.className ?? ''} ${createFull.className ?? ''}`.trim()}
+            style={{ ...localProps.style, ...createFull.style }}
           >
             Pass &amp; play (local)
           </Link>
         </section>
 
         <section>
-          <h2 className="mb-2 text-xs font-bold tracking-wide text-black/50 uppercase">
-            Your games
-          </h2>
+          <h2 {...stylex.props(styles.sectionHeading)}>Your games</h2>
           {isLoading ? (
-            <p className="text-sm text-black/50">Loading…</p>
+            <p {...stylex.props(styles.emptyText)}>Loading…</p>
           ) : resumables.length === 0 ? (
-            <p className="text-sm text-black/50">
+            <p {...stylex.props(styles.emptyText)}>
               No games to resume right now.
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div {...stylex.props(styles.stack)}>
               {resumables.map((g) => (
                 <ResumableCard key={g.gameId} game={g} />
               ))}
@@ -155,24 +269,19 @@ export function DashboardView({
         </section>
 
         <section>
-          <h2 className="mb-2 text-xs font-bold tracking-wide text-black/50 uppercase">
-            Recent results
-          </h2>
+          <h2 {...stylex.props(styles.sectionHeading)}>Recent results</h2>
           {isLoading ? (
-            <p className="text-sm text-black/50">Loading…</p>
+            <p {...stylex.props(styles.emptyText)}>Loading…</p>
           ) : recents.length === 0 ? (
-            <p className="text-sm text-black/50">No finished games yet.</p>
+            <p {...stylex.props(styles.emptyText)}>No finished games yet.</p>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div {...stylex.props(styles.stackTight)}>
               {recents.map((g) => (
                 <ResultRow key={g.gameId} game={g} />
               ))}
             </div>
           )}
-          <Link
-            href="/history"
-            className="text-team-blue mt-3 inline-block text-xs font-semibold"
-          >
+          <Link href="/history" {...stylex.props(styles.historyLink)}>
             Full history &amp; head-to-head →
           </Link>
         </section>

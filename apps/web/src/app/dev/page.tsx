@@ -1,33 +1,62 @@
-import Link from 'next/link';
+import * as stylex from '@stylexjs/stylex';
+import { notFound } from 'next/navigation';
 
-import { SECTIONS } from './_playground/sections.ts';
+import { color, fontSize, fontWeight, space } from '@/styles/tokens.stylex.ts';
+
+import { Overview } from './_playground/overview.tsx';
+import { ViewportPreview } from './_playground/viewport-preview.tsx';
+
+const styles = stylex.create({
+  page: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.xxl,
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: space.sm,
+  },
+  heading: {
+    margin: 0,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.black,
+    color: color.text,
+  },
+  lede: {
+    margin: 0,
+    maxWidth: '42rem',
+    fontSize: fontSize.sm,
+    lineHeight: 1.5,
+    color: color.textMuted,
+  },
+});
 
 /** Playground landing: overview and links into each preview section. */
 export default function DevIndexPage() {
+  // Guard before rendering: in App Router the page renders to produce the
+  // layout's `children`, so a layout-only guard still serializes this content
+  // into the (404) response. notFound() here keeps the playground out of the
+  // production payload entirely.
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
+
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h2 className="text-2xl font-black text-black">Component playground</h2>
-        <p className="max-w-2xl text-sm text-black/60">
+    <div {...stylex.props(styles.page)}>
+      <header {...stylex.props(styles.header)}>
+        <h2 {...stylex.props(styles.heading)}>Component playground</h2>
+        <p {...stylex.props(styles.lede)}>
           Render the shared UI and game components in isolation across their key
           visual states — no login, no live game subscription. Previews use the
-          production Tailwind/typography pipeline, so they are visually faithful
-          to what ships. This subtree is excluded from production builds.
+          production StyleX token and theming pipeline, so they are visually
+          faithful to what ships. This subtree is excluded from production
+          builds.
         </p>
       </header>
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {SECTIONS.map((section) => (
-          <li key={section.slug}>
-            <Link
-              href={`/dev/${section.slug}`}
-              className="block h-full rounded-xl border border-black/10 bg-white p-4 shadow-sm hover:border-black/25"
-            >
-              <p className="text-sm font-bold text-black">{section.title}</p>
-              <p className="mt-1 text-xs text-black/55">{section.blurb}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <ViewportPreview slug="overview">
+        <Overview />
+      </ViewportPreview>
     </div>
   );
 }

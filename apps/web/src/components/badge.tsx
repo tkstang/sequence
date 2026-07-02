@@ -1,4 +1,13 @@
+import * as stylex from '@stylexjs/stylex';
 import type { ReactNode } from 'react';
+
+import {
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  space,
+} from '@/styles/tokens.stylex.ts';
 
 type BadgeTone = 'frozen' | 'saved' | 'neutral' | 'win' | 'loss';
 
@@ -8,13 +17,38 @@ export interface BadgeProps {
   className?: string;
 }
 
-const tones: Record<BadgeTone, string> = {
-  frozen: 'bg-frozen-bg text-frozen-fg',
-  saved: 'bg-saved-bg text-saved-fg',
-  neutral: 'bg-black/10 text-slate',
-  win: 'bg-team-green text-white',
-  loss: 'bg-team-red text-white',
-};
+const styles = stylex.create({
+  base: {
+    display: 'inline-block',
+    borderRadius: radius.md,
+    paddingInline: space.sm,
+    paddingBlock: space.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+  },
+  frozen: {
+    backgroundColor: color.frozenBg,
+    color: color.frozenFg,
+  },
+  saved: {
+    backgroundColor: color.savedBg,
+    color: color.savedFg,
+  },
+  neutral: {
+    backgroundColor: color.neutralBadgeBg,
+    color: color.slate,
+  },
+  win: {
+    backgroundColor: color.teamGreen,
+    color: color.textOnDark,
+  },
+  loss: {
+    backgroundColor: color.teamRed,
+    color: color.textOnDark,
+  },
+});
 
 /** Small status pill (dashboard FROZEN/SAVED, history W/L, etc.). */
 export function Badge({
@@ -22,9 +56,11 @@ export function Badge({
   children,
   className = '',
 }: BadgeProps) {
+  const props = stylex.props(styles.base, styles[tone]);
   return (
     <span
-      className={`inline-block rounded-lg px-2 py-0.5 text-xs font-bold tracking-wide uppercase ${tones[tone]} ${className}`}
+      className={`${props.className ?? ''} ${className}`.trim()}
+      style={props.style}
     >
       {children}
     </span>
