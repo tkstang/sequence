@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "oatVersion": "0.1.32",
+  "oatVersion": "0.1.37",
   "entries": [
     {
       "canonicalPath": ".agents/skills/analyze",
@@ -1241,7 +1241,27 @@
       "contentHash": null,
       "isFile": true,
       "lastSynced": "2026-06-21T15:43:35.911Z"
+    },
+    {
+      "canonicalPath": ".agents/skills/oat-pjm-decision",
+      "providerPath": ".claude/skills/oat-pjm-decision",
+      "provider": "claude",
+      "contentType": "skill",
+      "strategy": "symlink",
+      "contentHash": null,
+      "isFile": false,
+      "lastSynced": "2026-07-02T22:37:35.857Z"
+    },
+    {
+      "canonicalPath": ".agents/skills/oat-pjm-decision",
+      "providerPath": ".cursor/skills/oat-pjm-decision",
+      "provider": "cursor",
+      "contentType": "skill",
+      "strategy": "symlink",
+      "contentHash": null,
+      "isFile": false,
+      "lastSynced": "2026-07-02T22:37:35.859Z"
     }
   ],
-  "lastUpdated": "2026-06-21T15:43:35.911Z"
+  "lastUpdated": "2026-07-02T22:37:35.859Z"
 }

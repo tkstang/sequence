@@ -35,7 +35,7 @@
   ],
   "workflow": {
     "archiveOnComplete": true,
-    "autoReviewAtHillCheckpoints": true,
-    "postImplementSequence": "pr"
+    "postImplementSequence": "pr",
+    "autoReviewAtHillCheckpoints": true
   }
 }
