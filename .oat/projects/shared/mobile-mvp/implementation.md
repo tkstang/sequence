@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p03-t04
+oat_current_task_id: p03-t05
 oat_generated: false
 ---
 
@@ -28,9 +28,9 @@ oat_generated: false
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
-| Phase 3 | in_progress | 8     | 3/8       |
+| Phase 3 | in_progress | 8     | 4/8       |
 
-**Total:** 16/85 tasks completed
+**Total:** 17/85 tasks completed
 
 ---
 
@@ -805,6 +805,61 @@ oat_generated: false
 
 ---
 
+### Task p03-t04: Full token vars + ThemeProvider + useTheme
+
+**Status:** completed
+**Commit:** a0ca075
+
+**Outcome:**
+
+- Replaced the temporary RSD spike variables with a full light/dark
+  `css.defineVars` wrapper sourced from `@sequence/design-tokens`.
+- Added a mobile `ThemeProvider` and `useTheme()` hook that expose
+  `{ mode, setMode, scheme, colors }` with a safe provider-less fallback.
+- Persisted the theme mode under `sequence-theme`, wired native appearance
+  overrides for explicit light/dark modes, and kept `system` mode synced to
+  `Appearance` changes.
+- Wrapped the Expo Router stack in the theme provider and removed the temporary
+  `/rsd-spike` route.
+
+**Files changed:**
+
+- `apps/mobile/src/theme/vars.css.ts` - full token variable wrapper.
+- `apps/mobile/src/theme/theme-provider.tsx` - persisted provider and native
+  appearance bridge.
+- `apps/mobile/src/theme/use-theme.ts` - theme context, types, storage key, and
+  fallback hook behavior.
+- `apps/mobile/src/theme/theme-provider.test.tsx` - provider persistence,
+  override, system-follow, and fallback tests.
+- `apps/mobile/src/app/_layout.tsx` - wraps the app in `ThemeProvider`.
+- `apps/mobile/src/app/rsd-spike.tsx` - removed after RSD sign-off.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - AsyncStorage dependency.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`
+- Result: pass, 1 file / 4 tests.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile test`
+- Result: pass, 4 suites / 9 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`
+- Result: pass; native rebuild succeeded and included
+  `Pods/AsyncStorage-AsyncStorage_resources`.
+
+**Notes / Decisions:**
+
+- React Native 0.86 types `ColorSchemeName` as `light | dark | unspecified`;
+  returning to system mode therefore calls
+  `Appearance.setColorScheme('unspecified')`.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -897,7 +952,8 @@ Chronological log of implementation progress.
 - [x] p03-t01 fix: remove token test lint warning - 6d3da25
 - [x] p03-t02: Web consumes design-tokens - 1ef4f5d
 - [x] p03-t03: RSD spike passes on SDK 57 - 7bb701d
-- [ ] p03-t04: Full token vars + ThemeProvider + useTheme - next
+- [x] p03-t04: Full token vars + ThemeProvider + useTheme - a0ca075
+- [ ] p03-t05: Chrome kit — Button + TextField - next
 
 **What changed (high level):**
 
@@ -915,6 +971,9 @@ Chronological log of implementation progress.
 - Design tokens now live in a framework-free workspace package, web StyleX
   token/theme files are generated from that package, and the RSD spike passed
   on the iOS simulator with light/dark token values.
+- Mobile theming now has full RSD token vars, persisted light/dark/system mode,
+  native appearance overrides, and a root `ThemeProvider`; the temporary
+  `/rsd-spike` route is removed.
 
 ---
 
@@ -926,7 +985,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | ------------- | --------------- | -------------------- | ----------------- | ------ | --------------- | --------- |
 | p02-t05       | plan.md         | Expo MCP screenshot, tap `home.ping` by testID, read logs, then Argent a11y-tree read | Expo MCP covered screenshot, `home.ping` find, and logs; Argent covered native-tree read and tap at the `pong: true` point | Expo MCP `automation_tap` was unreliable on this host; user approved Argent fallback where Expo MCP does not cover the flow | `apps/mobile/AGENTS.md`; `references/using-expo-mcp-learnings.md` | Re-evaluate Expo MCP tap reliability when distilling the final skill |
 | p03-t02       | plan.md         | Web StyleX themes consume `@sequence/design-tokens` imports directly if static evaluation allows it | Web StyleX files are generated from `@sequence/design-tokens` by script | Uses the plan's codegen contingency while preserving the package as source of truth | `packages/design-tokens/scripts/write-web-stylex.ts` | Keep generated StyleX files in sync with token changes |
-| p03-t03       | plan.md         | `pnpm --filter @sequence/mobile ios` for the RSD spike proof | Existing installed dev client plus Metro LAN mode verified the JS/Babel spike | The inherited `expo run:ios` process stalled; p03-t03 did not require a native rebuild, and simulator visual gate passed | `/tmp/p03-t03-rsd-light-clean.png`; `/tmp/p03-t03-rsd-dark-clean.png` | Re-run a full dev-client build when the next native dependency lands |
+| p03-t03       | plan.md         | `pnpm --filter @sequence/mobile ios` for the RSD spike proof | Existing installed dev client plus Metro LAN mode verified the JS/Babel spike | The inherited `expo run:ios` process stalled; p03-t03 did not require a native rebuild, and simulator visual gate passed | `/tmp/p03-t03-rsd-light-clean.png`; `/tmp/p03-t03-rsd-dark-clean.png` | Completed by the p03-t04 native rebuild when AsyncStorage landed |
 
 ## Test Results
 
@@ -936,7 +995,7 @@ Track test execution during implementation.
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
-| 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png` | yes    | 0      | -        |
+| 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
