@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t03
+oat_current_task_id: p04-t04
 oat_generated: false
 ---
 
@@ -29,9 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 2/7       |
+| Phase 4 | in_progress | 7     | 3/7       |
 
-**Total:** 23/85 tasks completed
+**Total:** 24/85 tasks completed
 
 ---
 
@@ -1247,6 +1247,51 @@ oat_generated: false
 
 ---
 
+### Task p04-t03: Cookie-header transport in tRPC client
+
+**Status:** completed
+**Commit:** 4d3e24c
+
+**Outcome:**
+
+- Added `buildCookieHeader()` for explicit native `Cookie` header assembly
+  from the Better Auth Expo session cookie and, when available, a game-scoped
+  guest token.
+- Added the temporary guest-token lookup stub that p06-t05 will replace with
+  the SecureStore-backed guest store.
+- Wired the mobile tRPC HTTP batch link to send the assembled `Cookie` header
+  while keeping native fetch on `credentials: 'omit'`.
+- Added coverage for session-only cookies, merged guest cookies, absent
+  credentials, and the guest-token stub.
+
+**Files changed:**
+
+- `apps/mobile/src/api/cookies.ts` - explicit cookie-header helper and guest
+  token lookup stub.
+- `apps/mobile/src/api/cookies.test.ts` - cookie-header behavior tests.
+- `apps/mobile/src/api/client.ts` - tRPC HTTP link now injects the explicit
+  cookie header and keeps `credentials: 'omit'`.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/api/cookies.test.ts`
+- Result: pass, 1 suite / 4 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Design calls for explicit cookie-header transport over relying on native
+  cookie jars; this task keeps that boundary in `apps/mobile/src/api`.
+- Guest-token persistence remains intentionally stubbed until p06-t05.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1346,7 +1391,8 @@ Chronological log of implementation progress.
 - [x] p03-t08: Both-scheme visual verification - b2083f8
 - [x] p04-t01: API — Better Auth expo() plugin + trustedOrigins - eb58299
 - [x] p04-t02: Mobile auth client + SecureStore session - 24088c1
-- [ ] p04-t03: Cookie-header transport in tRPC client - next
+- [x] p04-t03: Cookie-header transport in tRPC client - 4d3e24c
+- [ ] p04-t04: Login/signup/logout + protected routing - next
 
 **What changed (high level):**
 
@@ -1386,6 +1432,8 @@ Chronological log of implementation progress.
   trusts native/development origins according to environment.
 - The mobile app now has a Better Auth Expo client with SecureStore-backed
   session storage and env-derived API base URL.
+- The mobile tRPC HTTP client now sends explicit Better Auth and guest-token
+  cookies while keeping native fetch cookie-jar behavior disabled.
 
 ---
 
@@ -1415,6 +1463,7 @@ Track test execution during implementation.
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm format:check`; scratch-token proof (`pnpm --filter @sequence/mobile typecheck` failed while dark palette missed `scratchProbe`, then passed after completed scratch propagation through mobile vars and web StyleX generation); dev-client screenshots `/tmp/p03-t08-{light,dark}-{index,button,text-field,card,badge,screen}.png` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/api exec vitest run src/user/auth-expo.test.ts`; `pnpm --filter @sequence/api test` (subagent; DB-backed suites skipped because `DATABASE_URL_TEST` absent); `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/mobile exec jest src/api/cookies.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
