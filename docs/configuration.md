@@ -20,9 +20,10 @@ fails fast with a `ZodError` rather than surfacing later as a runtime error.
 ## Variable Reference
 
 `Scope` is where a variable is read: **API** (validated by the API env schema),
-**Web** (`NEXT_PUBLIC_*`, read in the browser/Next.js build), or **Deploy**
-(used only by tooling/CI/deploy, not parsed by the API schema). `Required?`
-marks whether the API refuses to boot without it.
+**Web** (`NEXT_PUBLIC_*`, read in the browser/Next.js build), **Mobile**
+(`EXPO_PUBLIC_*`, read by Expo config), or **Deploy** (used only by tooling/CI/
+deploy, not parsed by the API schema). `Required?` marks whether the API refuses
+to boot without it.
 
 | Variable | Scope | Required? | Default | Validation / Notes |
 | --- | --- | --- | --- | --- |
@@ -42,6 +43,8 @@ marks whether the API refuses to boot without it.
 | `GOOGLE_CLIENT_SECRET` | API | No | none | Non-empty string when set. Presence-gated (with id) to enable Google OAuth. |
 | `NEXT_PUBLIC_API_URL` | Web | No | `http://localhost:3001` | API origin for tRPC HTTP and Better Auth. Set to the public API origin in production. |
 | `NEXT_PUBLIC_WS_URL` | Web | No | `ws://localhost:3001` | WebSocket origin for tRPC subscriptions. Set to the `wss://` API origin in production. |
+| `EXPO_PUBLIC_API_URL` | Mobile | No | `http://localhost:3001` | Copied into Expo config as `extra.apiUrl`; used by mobile tRPC HTTP and Better Auth (`/api/auth`). Set to the public API origin for production-like simulator sessions and release builds. |
+| `EXPO_PUBLIC_WS_URL` | Mobile | No | `ws://localhost:3001` | Copied into Expo config as `extra.wsUrl`; used by mobile tRPC subscriptions. Set to the `wss://` API origin for production-like simulator sessions and release builds. |
 | `RAILWAY_TOKEN` | Deploy | No | none | Railway deploy credential (shell env / CI). Not parsed by the API. |
 | `VERCEL_TOKEN` | Deploy | No | none | Vercel deploy credential (shell env / CI). Not parsed by the API. |
 
@@ -95,6 +98,35 @@ it is optional in production but gates testing: the integration harness skips
 cleanly when it is absent, and Playwright only starts its API/web servers when
 `DATABASE_URL_TEST` is present (see `development.md`). Point `DATABASE_URL` at
 production only for an intentional production deploy or migration.
+
+## Mobile API URLs (`extra.apiUrl` / `extra.wsUrl`)
+
+The Expo app config reads `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_WS_URL` and
+publishes them to `extra.apiUrl` and `extra.wsUrl`
+(`apps/mobile/app.config.ts`). At runtime, the mobile API env module reads those
+`extra` values from `Constants.expoConfig`; if either value is missing or blank,
+it falls back to local development endpoints:
+
+- `extra.apiUrl`: `http://localhost:3001`
+- `extra.wsUrl`: `ws://localhost:3001`
+
+`extra.apiUrl` is the origin used for tRPC HTTP and the Better Auth client. The
+auth client appends `/api/auth`, so configure the origin only, not the auth path.
+`extra.wsUrl` is the WebSocket origin used for tRPC subscriptions.
+
+For local simulator work against the repo API, leave the defaults and run
+`pnpm --filter @sequence/api dev` from a separate terminal after creating
+`packages/api/.env`. For a production-like simulator session or release build,
+start Expo with the public API origins:
+
+```bash
+EXPO_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app \
+EXPO_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app \
+pnpm --filter @sequence/mobile start
+```
+
+These mobile variables are not API secrets and must not contain credentials.
+They are resolved by Expo config and can be embedded in the mobile bundle.
 
 ## Social OAuth (`GITHUB_*`, `GOOGLE_*`)
 

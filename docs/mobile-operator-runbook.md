@@ -70,6 +70,10 @@ repeated for any new Mac that will build the iOS dev client.
    pnpm --filter @sequence/mobile ios
    ```
 
+9. For auth-slice simulator checks, choose the API endpoint before starting
+   Metro. The mobile app reads `extra.apiUrl` and `extra.wsUrl` from Expo config;
+   see `configuration.md#mobile-api-urls-extraapiurl--extrawsurl`.
+
 ### Verify
 
 Run these checks from the repository root:
@@ -98,6 +102,10 @@ Watchman respond, and the mobile typecheck passes.
 - If `pnpm --filter @sequence/mobile ios` installs the app but Expo cannot
   activate Simulator through `osascript`, use the documented `simctl launch
   --initialUrl` fallback in `apps/mobile/AGENTS.md`.
+- If auth persistence behaves unexpectedly after changing native auth peers or
+  Expo config plugins, rebuild the dev client before retesting. The Phase 4
+  simulator pass required the native `@better-auth/expo` peers and plugin state
+  to match the installed client.
 - Generated native folders (`apps/mobile/ios`, `apps/mobile/android`),
   `.expo`, and `expo-env.d.ts` are local build artifacts and must stay
   untracked.
