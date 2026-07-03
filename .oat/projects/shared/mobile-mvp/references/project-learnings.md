@@ -136,6 +136,11 @@ value. Expo MCP and Argent usage details belong in
   auth client initialized; install both `expo-network` and `expo-web-browser`
   for the plugin and add the `expo-web-browser` config plugin manually when
   using dynamic `app.config.ts`.
+- After adding an Expo package, run Expo's compatibility check for the exact
+  package, not just package-manager install/typecheck. In this project,
+  `expo-haptics@~15.0.8` installed and typed but `expo install
+  expo-haptics --check` reported it incompatible with Expo SDK 57; the
+  compatible spec was `expo-haptics@~57.0.0`.
 - Adding or changing Expo native modules requires a dev-client rebuild before
   simulator proof. JS tests and Metro can pass while the installed native app is
   still missing modules such as `ExpoSecureStore`, `ExpoNetwork`, or
