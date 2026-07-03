@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p03-t07
+oat_current_task_id: p03-t08
 oat_generated: false
 ---
 
@@ -28,9 +28,9 @@ oat_generated: false
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
-| Phase 3 | in_progress | 8     | 6/8       |
+| Phase 3 | in_progress | 8     | 7/8       |
 
-**Total:** 19/85 tasks completed
+**Total:** 20/85 tasks completed
 
 ---
 
@@ -962,6 +962,72 @@ oat_generated: false
 
 ---
 
+### Task p03-t07: Dev playground scaffold + kit stories
+
+**Status:** completed
+**Commit:** de17181
+**Fix Commit:** f28fae6
+
+**Outcome:**
+
+- Added the dev-only `/dev` playground route group with a production-mode route
+  guard, story list, story detail route, kit fixture registry, and in-playground
+  theme toggle.
+- Added fixtures for Button, TextField, Card, Badge, and Screen so the chrome
+  kit can be inspected from a running development build.
+- Moved the production-mode route guard test out of `src/app` after Metro
+  proved route-local tests can be bundled by Expo Router during dev-client
+  startup.
+- Stabilized the visual playground by switching layout-sensitive app chrome
+  primitives and route wrappers to native-backed `View` / `Text` / `Pressable`
+  / `ScrollView` surfaces while keeping the public component APIs intact.
+
+**Files changed:**
+
+- `apps/mobile/src/app/dev/_layout.tsx` - development-only route guard and
+  stack registration.
+- `apps/mobile/src/app/dev/index.tsx` - kit playground story list and theme
+  toggle.
+- `apps/mobile/src/app/dev/[story].tsx` - kit story detail route and fixtures.
+- `apps/mobile/src/dev/stories.ts` - chrome-kit story registry.
+- `apps/mobile/src/dev/dev-layout.test.tsx` - production-mode route guard test.
+- `apps/mobile/src/components/Button.tsx` - native-backed button visual
+  implementation.
+- `apps/mobile/src/components/Card.tsx` - native-backed card visual
+  implementation.
+- `apps/mobile/src/components/Screen.tsx` - native-backed screen and header
+  scaffold.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/components src/dev/dev-layout.test.tsx`
+- Result: pass, 6 suites / 16 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: Metro LAN dev server, `xcrun simctl openurl booted "sequence:///dev"`,
+  and simulator screenshots.
+- Result: pass. Evidence:
+  `/tmp/p03-t07-dev-playground-accepted.png` and
+  `/tmp/p03-t07-dev-story-button-final.png`.
+
+**Notes / Decisions:**
+
+- Metro startup failed when the `_layout` test lived in `src/app/dev` because
+  Expo Router bundled the route-local test and pulled in Testing Library's Node
+  stdlib imports. The test now lives under `src/dev`.
+- Simulator proof showed RSD `html.button` and route/card wrappers producing
+  oversized or stretched native layouts. `Button`, `Card`, `Screen`, and the
+  dev routes now use native layout primitives with theme-token colors.
+- `simctl io booted screenshot` wrote the target PNGs and then hung; evidence
+  files were valid after interrupting the command.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1057,7 +1123,8 @@ Chronological log of implementation progress.
 - [x] p03-t04: Full token vars + ThemeProvider + useTheme - a0ca075
 - [x] p03-t05: Chrome kit — Button + TextField - 9444737
 - [x] p03-t06: Chrome kit — Card, Badge, Screen scaffold - b5214b2
-- [ ] p03-t07: Dev playground scaffold + kit stories - next
+- [x] p03-t07: Dev playground scaffold + kit stories - de17181 / f28fae6
+- [ ] p03-t08: Both-scheme visual verification - next
 
 **What changed (high level):**
 
@@ -1083,6 +1150,10 @@ Chronological log of implementation progress.
   sizes.
 - The chrome kit now also includes Card, Badge, and a safe-area Screen scaffold
   with a native ScrollView-backed scroll mode.
+- The development-only kit playground now exposes list and detail story routes
+  with a theme toggle and simulator screenshot evidence.
+- Device visual proof moved layout-sensitive chrome and dev-route wrappers to
+  native-backed primitives while preserving the exported component APIs.
 
 ---
 
@@ -1095,6 +1166,8 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p02-t05       | plan.md         | Expo MCP screenshot, tap `home.ping` by testID, read logs, then Argent a11y-tree read | Expo MCP covered screenshot, `home.ping` find, and logs; Argent covered native-tree read and tap at the `pong: true` point | Expo MCP `automation_tap` was unreliable on this host; user approved Argent fallback where Expo MCP does not cover the flow | `apps/mobile/AGENTS.md`; `references/using-expo-mcp-learnings.md` | Re-evaluate Expo MCP tap reliability when distilling the final skill |
 | p03-t02       | plan.md         | Web StyleX themes consume `@sequence/design-tokens` imports directly if static evaluation allows it | Web StyleX files are generated from `@sequence/design-tokens` by script | Uses the plan's codegen contingency while preserving the package as source of truth | `packages/design-tokens/scripts/write-web-stylex.ts` | Keep generated StyleX files in sync with token changes |
 | p03-t03       | plan.md         | `pnpm --filter @sequence/mobile ios` for the RSD spike proof | Existing installed dev client plus Metro LAN mode verified the JS/Babel spike | The inherited `expo run:ios` process stalled; p03-t03 did not require a native rebuild, and simulator visual gate passed | `/tmp/p03-t03-rsd-light-clean.png`; `/tmp/p03-t03-rsd-dark-clean.png` | Completed by the p03-t04 native rebuild when AsyncStorage landed |
+| p03-t07       | plan.md         | Dev route guard test at `apps/mobile/src/app/dev/_layout.test.tsx` | Test lives at `apps/mobile/src/dev/dev-layout.test.tsx` | Expo Router bundled the route-local test into Metro and pulled in test-only Node stdlib imports | `apps/mobile/src/dev/dev-layout.test.tsx` | Keep route tests outside `src/app` unless Expo Router behavior changes |
+| p03-t07       | plan.md / design.md | RSD `html.*` wrappers for chrome-kit and dev playground layout | Layout-sensitive `Button`, `Card`, `Screen`, and dev-route wrappers are native-backed while preserving public APIs | Simulator screenshots showed oversized and stretched RSD native layouts; native primitives matched the intended mobile chrome | `apps/mobile/src/components/Button.tsx`; `apps/mobile/src/components/Card.tsx`; `apps/mobile/src/components/Screen.tsx`; `apps/mobile/src/app/dev/` | p03-t08 continues light/dark story verification across the kit |
 
 ## Test Results
 
@@ -1105,6 +1178,7 @@ Track test execution during implementation.
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; `pnpm --filter @sequence/mobile exec jest src/components/Button.test.tsx src/components/TextField.test.tsx`; `pnpm --filter @sequence/mobile exec jest src/components` | yes    | 0      | -        |
+| 3     | `pnpm --filter @sequence/mobile exec jest src/components src/dev/dev-layout.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; dev-client screenshots `/tmp/p03-t07-dev-playground-accepted.png`, `/tmp/p03-t07-dev-story-button-final.png` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
