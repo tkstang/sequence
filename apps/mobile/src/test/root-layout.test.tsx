@@ -67,7 +67,7 @@ describe('RootLayout protected routing', () => {
     expect(mockRenderedScreenNames).toEqual(['(auth)/login', '(auth)/signup']);
   });
 
-  it('exposes the home route when authenticated', async () => {
+  it('exposes the signed-in routes when authenticated', async () => {
     mockSession = {
       data: { user: { email: 'ada@example.test' } },
       isPending: false,
@@ -76,6 +76,6 @@ describe('RootLayout protected routing', () => {
     await render(<RootLayout />);
 
     expect(mockProtectedGuards).toEqual([true, false]);
-    expect(mockRenderedScreenNames).toEqual(['index']);
+    expect(mockRenderedScreenNames).toEqual(['index', 'create']);
   });
 });
