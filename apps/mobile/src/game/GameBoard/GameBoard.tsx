@@ -4,7 +4,7 @@ import type {
 } from '@sequence/client-state';
 import type { Position, Team } from '@sequence/game-logic';
 import { BOARD_MAP, BOARD_SIZE, isCorner } from '@sequence/game-logic';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { useTheme } from '../../theme/use-theme.ts';
@@ -25,6 +25,7 @@ interface SequenceLookup {
 }
 
 const BOARD_PADDING = 8;
+const CARD_ASPECT_RATIO = 224.225 / 312.808;
 
 export function GameBoard({
   board,
@@ -36,10 +37,11 @@ export function GameBoard({
   const { colors } = useTheme();
   const window = useWindowDimensions();
   const boardWidth = Math.min(maxWidth ?? window.width - 24, 430);
-  const cellSize = Math.max(
+  const cellWidth = Math.max(
     24,
     Math.floor((boardWidth - BOARD_PADDING * 2) / BOARD_SIZE),
   );
+  const cellHeight = Math.round(cellWidth / CARD_ASPECT_RATIO);
   const sequenceLookup = useMemo(
     () => buildSequenceLookup(sequences),
     [sequences],
@@ -50,6 +52,27 @@ export function GameBoard({
     3: colors.teamRed,
   } as const satisfies Record<Team, string>;
 
+  useEffect(() => {
+    if (!layoutMap) return;
+
+    layoutMap.clear();
+    for (let rowIndex = 0; rowIndex < BOARD_MAP.length; rowIndex += 1) {
+      const row = BOARD_MAP[rowIndex]!;
+      for (let colIndex = 0; colIndex < row.length; colIndex += 1) {
+        layoutMap.registerFrame(row[colIndex]!, {
+          height: cellHeight,
+          width: cellWidth,
+          x: BOARD_PADDING + colIndex * cellWidth,
+          y: BOARD_PADDING + rowIndex * cellHeight,
+        });
+      }
+    }
+
+    return () => {
+      layoutMap.clear();
+    };
+  }, [cellHeight, cellWidth, layoutMap]);
+
   return (
     <View
       accessibilityLabel="Sequence board"
@@ -57,8 +80,9 @@ export function GameBoard({
         styles.root,
         {
           backgroundColor: colors.feltDark,
+          height: cellHeight * BOARD_SIZE + BOARD_PADDING * 2,
           padding: BOARD_PADDING,
-          width: cellSize * BOARD_SIZE + BOARD_PADDING * 2,
+          width: cellWidth * BOARD_SIZE + BOARD_PADDING * 2,
         },
       ]}
       testID="board.grid"
@@ -79,9 +103,9 @@ export function GameBoard({
             return (
               <BoardCell
                 key={position}
-                cellSize={cellSize}
+                cellHeight={cellHeight}
+                cellWidth={cellWidth}
                 chip={chip}
-                layoutMap={layoutMap}
                 lockedBy={lockedBy}
                 onRender={onCellRender}
                 position={position}

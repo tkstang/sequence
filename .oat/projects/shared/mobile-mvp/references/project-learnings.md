@@ -92,6 +92,11 @@ value. Expo MCP and Argent usage details belong in
   while representing the same card; `CardFace` should compare `rank`, `suit`,
   `size`, `style`, and `testID` so SVG faces do not repaint across equal-value
   rerenders.
+- Mobile board layout maps should store board-local frames computed from the
+  board grid, not row-local `onLayout` values from individual cell parents.
+  The Sequence board uses portrait card-aspect cells, so frame registration and
+  visual sizing must use the same card aspect ratio to keep future drag
+  hit-testing aligned with what the player sees.
 
 ## Verification Mechanics
 

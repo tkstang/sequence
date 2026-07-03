@@ -1,7 +1,7 @@
 import { palette } from '@sequence/design-tokens';
 import type { Position, Team } from '@sequence/game-logic';
 import { BOARD_MAP, BOARD_SIZE } from '@sequence/game-logic';
-import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { cleanup, render, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { ViewStyle } from 'react-native';
 
@@ -121,23 +121,23 @@ describe('GameBoard', () => {
     expect(renders.size).toBe(BOARD_SIZE * BOARD_SIZE);
   });
 
-  it('registers cell frames in the board layout map', async () => {
+  it('registers board-local card-aspect cell frames in the board layout map', async () => {
     const layoutMap = createBoardLayoutMap();
-    const { getByTestId } = await render(
-      <GameBoard board={{}} layoutMap={layoutMap} />,
-    );
+    await render(<GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />);
 
-    fireEvent(getByTestId('board.cell.1AC'), 'layout', {
-      nativeEvent: {
-        layout: { height: 33, width: 34, x: 12, y: 6 },
-      },
-    });
-
-    expect(layoutMap.getFrame('1AC')).toEqual({
-      height: 33,
-      width: 34,
-      x: 12,
-      y: 6,
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+      expect(layoutMap.getFrame('1AD')).toEqual({
+        height: 45,
+        width: 32,
+        x: 8,
+        y: 53,
+      });
     });
   });
 });

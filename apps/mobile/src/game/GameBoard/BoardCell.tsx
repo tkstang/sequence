@@ -1,17 +1,15 @@
 import type { Position, Rank, Suit, Team } from '@sequence/game-logic';
 import { isCorner, parseBoardCell } from '@sequence/game-logic';
 import { memo } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { testId } from '../../test/test-ids.ts';
 import { CardFace } from '../cards/CardFace.tsx';
-import type { BoardLayoutMap } from './layout-map.ts';
 
 export interface BoardCellProps {
-  cellSize: number;
+  cellHeight: number;
+  cellWidth: number;
   chip?: Team;
-  layoutMap?: BoardLayoutMap;
   lockedBy?: number;
   onRender?: (position: Position) => void;
   position: Position;
@@ -19,9 +17,9 @@ export interface BoardCellProps {
 }
 
 function BoardCellImpl({
-  cellSize,
+  cellHeight,
+  cellWidth,
   chip,
-  layoutMap,
   lockedBy,
   onRender,
   position,
@@ -32,21 +30,16 @@ function BoardCellImpl({
   const corner = isCorner(position);
   const cellTestId = testId('board', 'cell', position);
 
-  function handleLayout(event: LayoutChangeEvent) {
-    layoutMap?.registerFrame(position, event.nativeEvent.layout);
-  }
-
   return (
     <View
       accessibilityLabel={
         corner ? 'wild corner' : `${position.slice(1)} board cell`
       }
-      onLayout={handleLayout}
       style={[
         styles.root,
         {
-          height: cellSize,
-          width: cellSize,
+          height: cellHeight,
+          width: cellWidth,
         },
         corner ? styles.corner : null,
       ]}
@@ -59,7 +52,7 @@ function BoardCellImpl({
       ) : (
         <CardFace
           card={cardForPosition(position)}
-          size={Math.max(18, cellSize - 6)}
+          size={Math.max(18, cellWidth - 6)}
           testID={`${cellTestId}.card`}
         />
       )}
@@ -97,9 +90,9 @@ function cardForPosition(position: Position): { rank: Rank; suit: Suit } {
 export const BoardCell = memo(
   BoardCellImpl,
   (previous, next) =>
-    previous.cellSize === next.cellSize &&
+    previous.cellHeight === next.cellHeight &&
+    previous.cellWidth === next.cellWidth &&
     previous.chip === next.chip &&
-    previous.layoutMap === next.layoutMap &&
     previous.lockedBy === next.lockedBy &&
     previous.onRender === next.onRender &&
     previous.position === next.position &&
