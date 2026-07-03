@@ -83,6 +83,10 @@ value. Expo MCP and Argent usage details belong in
   gates legality, so fixed-capacity team slots can accidentally hide players;
   render at least `max(team capacity, seated players)` slots and cover that edge
   in tests.
+- Guest-token transport must be proven on both HTTP and WebSocket paths. Mobile
+  HTTP mutations can infer `gameId` from tRPC operation input, but subscriptions
+  need an explicit active game context so the React Native WebSocket constructor
+  can attach `sequence_guest` before opening the stream.
 
 ## Verification Mechanics
 

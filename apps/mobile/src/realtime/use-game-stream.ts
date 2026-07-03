@@ -99,6 +99,17 @@ export function useGameStream(
     [lifecycle],
   );
 
+  useEffect(() => {
+    if (!gameId) return;
+
+    setActiveGameCookieGameId(gameId);
+    return () => {
+      if (getActiveGameCookieGameId() === gameId) {
+        setActiveGameCookieGameId(undefined);
+      }
+    };
+  }, [gameId]);
+
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
       recoveryEventId === null
@@ -135,17 +146,6 @@ export function useGameStream(
       },
     ),
   );
-
-  useEffect(() => {
-    if (!gameId) return;
-
-    setActiveGameCookieGameId(gameId);
-    return () => {
-      if (getActiveGameCookieGameId() === gameId) {
-        setActiveGameCookieGameId(undefined);
-      }
-    };
-  }, [gameId]);
 
   const resubscribe = useCallback(() => {
     const nextEventId = lastEventIdRef.current;
