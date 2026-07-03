@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t04
+oat_current_task_id: p07-t05
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 3/9       |
+| Phase 7 | in_progress | 9     | 4/9       |
 
-**Total:** 46/85 tasks completed
+**Total:** 47/85 tasks completed
 
 ---
 
@@ -2528,6 +2528,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   drag hit-testing.
 - Added selection-gated GameBoard spotlight targeting backed by
   `validPlacements`, with dim/target overlays for selected-card legal targets.
+- Added the mobile `CardHand` with card-face rendering, controlled and
+  uncontrolled selection, hard-mode dead-card badges, and drag-mode turn-in
+  affordances.
 
 **Verification:**
 
@@ -2552,6 +2555,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`
 - Result: pass, 3 suites / 14 tests; Watchman emitted the existing recrawl
   warning only.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`
+- Result: pass, 1 suite / 7 tests; Watchman emitted the existing recrawl
+  warning only.
 
 **Notes / Decisions:**
 
@@ -2569,6 +2575,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the p07-t03 follow-up fix commit because spotlight
   should activate only when `validPlacements` returns at least one target,
   preserving web parity for dead or otherwise unplayable selected cards.
+- The orchestrator added the p07-t04 follow-up fix commit because dead-card
+  badges and turn-in controls belong to hard/drag mode, and nested turn-in
+  presses should not also toggle selected-card state.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2746,6 +2755,58 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Explicit absolute positioning is used for the RN overlays; this avoided
   typings friction around `StyleSheet.absoluteFillObject` in this workspace.
 
+### Task p07-t04: CardHand
+
+**Status:** completed
+**Commit:** 7172173
+**Fix Commit:** 6d11693
+
+**Outcome:**
+
+- Added a native-backed bottom-docked `CardHand` component using the shared
+  mobile `CardFace` renderer.
+- Supported controlled and uncontrolled selected-card state with tap-to-select
+  and tap-to-deselect behavior.
+- Derived dead-card badges with `findDeadCards` over the snapshot board
+  converted into the rules-engine board shape.
+- Kept dead-card badges and turn-in affordances in drag mode, where users must
+  notice and turn in dead cards manually.
+- Isolated the nested turn-in press so it invokes `onTurnInDeadCard` without
+  toggling selected-card state.
+
+**Files changed:**
+
+- `apps/mobile/src/game/CardHand/CardHand.tsx` - native hand dock, card fan,
+  selection state, dead-card badge logic, and turn-in control.
+- `apps/mobile/src/game/CardHand/CardHand.test.tsx` - stable card testIDs,
+  selection toggling, controlled selected state, dead-card badges, drag-only
+  turn-in affordance, and nested press isolation coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the hard-mode dead-card affordance learning.
+
+**Verification:**
+
+- RED run: `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`
+- Result: failed before implementation because `CardHand.tsx` was missing.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`
+- Result: pass, 1 suite / 7 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Move submission and turn-in mutation wiring remain p07-t06/p07-t07 scope.
+- The snapshot-board to rules-board converter now exists in both
+  `GameBoard/spotlight.ts` and `CardHand.tsx`; extract a shared mobile helper
+  if a third consumer appears.
+
 ---
 
 ## Orchestration Runs
@@ -2870,7 +2931,8 @@ Chronological log of implementation progress.
 - [x] p07-t01: SVG card pipeline - fa42027 / 08645c8
 - [x] p07-t02: GameBoard grid + chips + sequences - 136bfb6 / d6a2c5a
 - [x] p07-t03: Spotlight targeting - 06dfe66 / e358852
-- [ ] p07-t04: CardHand - next
+- [x] p07-t04: CardHand - 7172173 / 6d11693
+- [ ] p07-t05: PlayerRail + TimerBadge - next
 
 **What changed (high level):**
 
@@ -2979,6 +3041,9 @@ Chronological log of implementation progress.
 - The board now supports selection-gated spotlight targeting through
   `validPlacements`, including one-eyed jack removal targets and no-target
   selected-card parity.
+- The mobile hand fan now renders hand cards with stable testIDs, supports
+  controlled/uncontrolled selection, and exposes drag-mode dead-card turn-in
+  affordances.
 
 ---
 
@@ -3034,6 +3099,7 @@ Track test execution during implementation.
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607` | yes    | 0      | 55 card-pipeline tests; export and native rebuild passed; card-grid screenshot deferred to p07-t08 |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 GameBoard/layout-map suites, 9 tests; includes per-cell memo probe and board-local frame registration |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 GameBoard/spotlight suites, 14 tests; includes no-target selected-card parity and one-eyed jack targets |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 CardHand suite, 7 tests; includes drag-only dead-card affordance and nested press isolation |
 
 ## Final Summary (for PR/docs)
 
