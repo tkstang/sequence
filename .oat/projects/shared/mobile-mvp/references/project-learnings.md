@@ -78,6 +78,11 @@ value. Expo MCP and Argent usage details belong in
   flow, making `/join/[code]` public was insufficient because anonymous users
   also need `/join/index` to enter an invite code; route-guard tests should
   encode the whole public subtree.
+- Mobile lobby UI must render invalid intermediate team layouts, not only legal
+  capacities. `game.setTeam` permits temporary overfilled teams while `game.start`
+  gates legality, so fixed-capacity team slots can accidentally hide players;
+  render at least `max(team capacity, seated players)` slots and cover that edge
+  in tests.
 
 ## Verification Mechanics
 
