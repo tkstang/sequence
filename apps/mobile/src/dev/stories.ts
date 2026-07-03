@@ -520,6 +520,7 @@ function handPreview(
   snapshot: GameSnapshotView,
   options: {
     disabled?: boolean;
+    hand?: readonly Card[];
     mode?: 'tap' | 'drag';
     onTurnInDeadCard?: (card: Card, index: number) => void;
     selectedIndex?: number | null;
@@ -532,12 +533,16 @@ function handPreview(
     createElement(CardHand, {
       board: snapshot.board,
       disabled: options.disabled ?? false,
-      hand: snapshot.hand,
+      hand: options.hand ?? compactPreviewHand(snapshot.hand),
       mode: options.mode ?? snapshot.mode,
       onTurnInDeadCard: options.onTurnInDeadCard,
       selectedIndex: options.selectedIndex,
     }),
   );
+}
+
+function compactPreviewHand(hand: readonly Card[]): readonly Card[] {
+  return hand.slice(0, 4);
 }
 
 function railPreview(

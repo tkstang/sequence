@@ -116,6 +116,12 @@ value. Expo MCP and Argent usage details belong in
   On deadline prop changes, reset the local clock baseline immediately; on
   expiry, clamp the display to `0:00` and wait for the stream to reflect any
   server-side forfeit instead of triggering client-side expiry behavior.
+- Simulator visual proof can catch compact playground regressions that unit
+  tests and `expo export` miss. During p07-t08, the game-surface stories built
+  and bundled successfully, but screenshots showed full hand fans clipping in
+  narrow story cards and absolute player-rail status labels overlapping seat
+  text. Prefer compact representative fixture data for previews and normal
+  layout-flow status rows over absolute overlays inside small repeated cards.
 
 ## Verification Mechanics
 

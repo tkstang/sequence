@@ -1,6 +1,8 @@
 import { isValidElement } from 'react';
+import type { ReactElement } from 'react';
 
 import { findKitStory, kitStories } from './stories.ts';
+import type { KitStoryFixture } from './stories.ts';
 
 describe('dev playground stories', () => {
   it('registers game-surface stories through the shared story list', () => {
@@ -48,4 +50,34 @@ describe('dev playground stories', () => {
       ).toBe(true);
     }
   });
+
+  it('uses compact hand samples that fit the story cards', () => {
+    const story = findKitStory('game-hand');
+    const fixtures =
+      story?.fixtures.filter(
+        (fixture): fixture is Extract<KitStoryFixture, { component: 'Card' }> =>
+          fixture.component === 'Card',
+      ) ?? [];
+
+    expect(fixtures.map((fixture) => handForFixture(fixture).length)).toEqual([
+      4, 4, 4, 4,
+    ]);
+  });
 });
+
+function handForFixture(
+  fixture: Extract<KitStoryFixture, { component: 'Card' }>,
+): readonly unknown[] {
+  const preview = fixture.props.children;
+  if (!isValidElement<{ children?: unknown }>(preview)) {
+    throw new Error('Expected story preview element');
+  }
+
+  const hand = (preview.props.children as ReactElement<{ hand?: unknown }>)
+    .props.hand;
+  if (!Array.isArray(hand)) {
+    throw new Error('Expected CardHand preview hand');
+  }
+
+  return hand;
+}

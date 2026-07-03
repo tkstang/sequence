@@ -64,6 +64,12 @@ describe('PlayerRail', () => {
     expect(getByText('Seat 3')).toBeTruthy();
     expect(getAllByText('Connected')).toHaveLength(2);
     expect(getByText('Offline')).toBeTruthy();
+    expect(styleFor(getAllByText('Connected')[0]!)).not.toMatchObject({
+      position: 'absolute',
+    });
+    expect(styleFor(getByText('Offline'))).not.toMatchObject({
+      position: 'absolute',
+    });
     expect(getByText('Round 4')).toBeTruthy();
     expect(getByText('Seq 1/1/0')).toBeTruthy();
 

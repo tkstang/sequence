@@ -94,56 +94,61 @@ export function PlayerRail({
                 testID={`${playerTestId}.team`}
               />
               <View style={styles.playerText}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.playerName, { color: colors.textOnDark }]}
-                >
-                  {player.name}
-                </Text>
-                <Text style={[styles.playerMeta, { color: colors.textOnDark }]}>
-                  Seat {player.seat + 1}
-                </Text>
+                <View style={styles.playerHeader}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.playerName, { color: colors.textOnDark }]}
+                  >
+                    {player.name}
+                  </Text>
+                  {active ? (
+                    <Text
+                      style={[
+                        styles.turnBadge,
+                        {
+                          backgroundColor: colors.frozenBg,
+                          color: colors.frozenFg,
+                        },
+                      ]}
+                      testID={`${playerTestId}.turn`}
+                    >
+                      Turn
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={styles.playerMetaRow}>
+                  <Text
+                    style={[styles.playerMeta, { color: colors.textOnDark }]}
+                  >
+                    Seat {player.seat + 1}
+                  </Text>
+                  {connected ? (
+                    <Text
+                      style={[
+                        styles.connectionText,
+                        {
+                          color: colors.textOnDark,
+                        },
+                      ]}
+                    >
+                      Connected
+                    </Text>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.connectionBadge,
+                        {
+                          backgroundColor: colors.danger,
+                          color: colors.textOnDark,
+                        },
+                      ]}
+                      testID={`${playerTestId}.offline`}
+                    >
+                      Offline
+                    </Text>
+                  )}
+                </View>
               </View>
-              {active ? (
-                <Text
-                  style={[
-                    styles.turnBadge,
-                    {
-                      backgroundColor: colors.frozenBg,
-                      color: colors.frozenFg,
-                    },
-                  ]}
-                  testID={`${playerTestId}.turn`}
-                >
-                  Turn
-                </Text>
-              ) : null}
-              {!connected ? (
-                <Text
-                  style={[
-                    styles.connectionBadge,
-                    {
-                      backgroundColor: colors.danger,
-                      color: colors.textOnDark,
-                    },
-                  ]}
-                  testID={`${playerTestId}.offline`}
-                >
-                  Offline
-                </Text>
-              ) : null}
-              {connected ? (
-                <Text
-                  style={[
-                    styles.connectionText,
-                    {
-                      color: colors.textOnDark,
-                    },
-                  ]}
-                >
-                  Connected
-                </Text>
-              ) : null}
             </View>
           );
         })}
@@ -201,11 +206,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 0,
     display: 'flex',
-    flexBasis: '31%',
+    flexBasis: '47%',
     flexDirection: 'row',
     gap: 8,
     minHeight: 52,
-    minWidth: 104,
+    minWidth: 0,
     paddingHorizontal: 8,
     paddingVertical: 7,
   },
@@ -221,12 +226,28 @@ const styles = StyleSheet.create({
     display: 'flex',
     flex: 1,
     flexDirection: 'column',
+    gap: 3,
+    minWidth: 0,
+  },
+  playerHeader: {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 6,
     minWidth: 0,
   },
   playerName: {
+    flexShrink: 1,
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 17,
+  },
+  playerMetaRow: {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   playerMeta: {
     fontSize: 11,
@@ -241,29 +262,20 @@ const styles = StyleSheet.create({
     lineHeight: 12,
     paddingHorizontal: 6,
     paddingVertical: 3,
-    position: 'absolute',
-    right: 6,
-    top: 5,
   },
   connectionBadge: {
     borderRadius: 999,
-    bottom: 5,
     fontSize: 10,
     fontWeight: '900',
     lineHeight: 12,
     paddingHorizontal: 6,
     paddingVertical: 3,
-    position: 'absolute',
-    right: 6,
   },
   connectionText: {
-    bottom: 7,
     fontSize: 10,
     fontWeight: '800',
     lineHeight: 12,
     opacity: 0.72,
-    position: 'absolute',
-    right: 8,
   },
   metaRow: {
     alignItems: 'center',
