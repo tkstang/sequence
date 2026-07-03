@@ -214,8 +214,21 @@ native.
 - Guest store: after a guest `game.join`, persist the returned guest token in
   SecureStore keyed by game id; `buildCookieHeader(gameId)` merges it as the
   `sequence_guest` cookie for that game's calls/subscription.
-- Route guarding: unauthenticated users land on `(auth)/login`; guests can
-  reach only `join/*` and their joined `game/[id]`.
+- **Guest game registry (guest resume, FR2):** alongside each token, record
+  non-secret game metadata (`gameId`, `inviteCode`, `guestName`, `joinedAt`,
+  `lastKnownStatus`) in AsyncStorage. The registry is updated from stream
+  status while playing and an entry is removed — together with its SecureStore
+  token — when its game reaches `finished` or the server answers `NOT_FOUND`
+  / `FORBIDDEN` for it.
+- **Cold-start guest routing:** on an unauthenticated launch, if the registry
+  holds active entries, the login screen surfaces a "continue your game"
+  list built from the registry; tapping an entry re-enters `game/[id]` with
+  the stored token. No server query is needed to discover the games (guests
+  cannot call `game.myGames`); staleness is reconciled by the game screen's
+  subscription (which also triggers registry cleanup on terminal states).
+- Route guarding: unauthenticated users land on `(auth)/login` (with the
+  guest continue-list when present); guests can reach only `join/*` and the
+  `game/[id]` routes present in their registry.
 
 **Interfaces:**
 
@@ -225,6 +238,9 @@ export const authClient: /* better-auth expo client */;
 // src/auth/guest-store.ts
 export async function saveGuestToken(gameId: string, token: string): Promise<void>;
 export async function getGuestToken(gameId: string): Promise<string | null>;
+export async function saveGuestGame(entry: GuestGameEntry): Promise<void>;
+export async function listGuestGames(): Promise<GuestGameEntry[]>;
+export async function removeGuestGame(gameId: string): Promise<void>; // also deletes the token
 ```
 
 **Dependencies:** `better-auth` client, `@better-auth/expo`,
@@ -275,9 +291,18 @@ export async function getGuestToken(gameId: string): Promise<string | null>;
   items via `applyStreamItem`, exposes `{ view, connectionState }`.
 - Track the last applied `seq`; on resubscribe pass it as `lastEventId` so
   the server gap-replays or re-snapshots (its existing recovery contract).
-- AppState listener: on `active`, if the app was backgrounded or the
-  subscription errored/closed, force a resubscribe; rely on `keepAlive` for
-  in-session dead-socket detection.
+- AppState listener: on `active`, always run an immediate liveness check; if
+  the app was backgrounded or the subscription errored/closed, force a
+  resubscribe.
+- **Timing contract (NFR2, concrete):** `keepAlive` ping every **5s** with a
+  **2s** pong timeout — a dead socket is detected ≤7s after failure; `wsLink`
+  reconnect backoff starts at **250ms** and caps at **5s**; the inactivity
+  watchdog hard ceiling is **~15s** (two missed keepalive cycles with no
+  stream item) before forced teardown + resubscribe. End-to-end targets:
+  dead-socket detection ≤10s; reconnected **and** state-recovered (snapshot
+  or gap replay applied) ≤15s after network restoration on a good network.
+  Connection-state transitions are logged (Info) with timestamps so
+  verification asserts measured elapsed times.
 - Surface `connectionState` (`connecting` / `live` / `reconnecting`) for UI
   banners; presence/freeze semantics come from the server as on web.
 - Mutation error policy: `CONFLICT` (stale version) → "game updated"
@@ -415,6 +440,15 @@ inputs):**
 - **CardHand:** bottom-docked hand; tap to select (tap mode) or the drag
   source (drag mode); dead cards badged in hard mode with the turn-in
   affordance.
+- **Move-submit feedback (NFR3):** submitting a move gives immediate local
+  feedback without mutating the board: the played card/action enters a
+  `submitting` state (disabled + subtle progress affordance) with a light
+  haptic on tap; the state clears when the server echo (the resulting event)
+  applies or an error returns. Perceived feedback is therefore instant; the
+  authoritative echo target is **p50 ≤300ms** on a good network. Dev builds
+  log the submit→first-resulting-event round-trip per move so the target is
+  measured, not eyeballed (the API's `Server-Timing` headers separate server
+  from network time when investigating misses).
 - **Drag layer (`src/game/drag/`):** gesture-handler `Pan` + Reanimated
   shared values drive a chip ghost on the UI thread; on move, hit-test
   against the board layout map for the hover-confirm highlight; on release,
@@ -533,6 +567,19 @@ value; deleted when the game reaches `finished` (or on
 `NOT_FOUND`/`FORBIDDEN` for that game).
 
 **Storage:** iOS Keychain via `expo-secure-store`.
+
+### Guest game registry (mobile)
+
+**Schema:** AsyncStorage `sequence-guest-games` → `GuestGameEntry[]` where
+`GuestGameEntry = { gameId, inviteCode, guestName, joinedAt, lastKnownStatus }`.
+
+**Validation Rules:** Written on guest join; `lastKnownStatus` refreshed from
+the game stream; entry and its SecureStore token removed on `finished` /
+`NOT_FOUND` / `FORBIDDEN`. Contains no secrets (the token stays in
+SecureStore) — it exists so a cold start can discover which games a guest can
+resume (FR2).
+
+**Storage:** AsyncStorage (non-secret metadata only).
 
 ### Theme preference (mobile)
 
@@ -696,7 +743,7 @@ None — no schema or query changes.
 | ID | Verification | Key Scenarios |
 | --- | --- | --- |
 | FR1 | integration + manual | signup/login/logout against local API; force-quit → relaunch stays logged in (simulator); authed query + WS both work |
-| FR2 | manual + unit | preview card renders; guest join seats + plays; relaunch → guest still in game; `sequence://join/<code>` routes with code prefilled |
+| FR2 | manual + unit | preview card renders; guest join seats + plays; force-quit → relaunch: guest home lists the game from the registry and re-enters it with the stored token; registry+token cleaned up on finished/`FORBIDDEN`; `sequence://join/<code>` routes with code prefilled |
 | FR3 | unit + manual | dashboard renders resumables/recents fixtures; navigation per status |
 | FR4 | unit + manual | create form validation (counts/mode/timer/local); remote → lobby, local → active |
 | FR5 | manual + unit | two clients (mobile sim + web) see join/team/kick/randomize live; start gated on legal layout; share sheet |
@@ -715,8 +762,8 @@ None — no schema or query changes.
 | FR18 | manual (operator) | TestFlight install by external tester; production game end-to-end; smoke checklist |
 | FR19 | manual | runbook completeness review against the operator-step inventory; each step has verify instructions |
 | NFR1 | integration + manual | existing server redaction tests remain the guarantee; client store inspected for absence of foreign hands; handoff privacy |
-| NFR2 | manual | simulator scenario matrix: brief background, >replay-window background, dev-server kill/restart, force-quit mid-game; device-network cases deferred to the runbook's device checklist |
-| NFR3 | perf + manual | Argent/DevTools profile of drag + event application (simulator); device spot-check deferred to runbook checklist |
+| NFR2 | manual | simulator scenario matrix with **measured elapsed times** from connection-state logs: killed API socket → detection ≤10s, reconnect+recovery ≤15s after restart; brief background, >replay-window background, force-quit mid-game; device-network cases deferred to the runbook's device checklist |
+| NFR3 | perf + manual | submitting-state renders immediately on move submit (component test); move round-trip log asserts p50 ≤300ms against local API (agent-run sample), production spot-check via Server-Timing; Argent/DevTools profile of drag + event application; device spot-check deferred to runbook checklist |
 | NFR4 | manual | release build audit: no dev routes, no expo-mcp, https/wss only, SecureStore-only credentials |
 | NFR5 | unit + manual | testID convention spot-check; agent tap-by-testID demo |
 | NFR6 | manual | root `typecheck`/`lint`/`format:check`/`test` include mobile and pass |
