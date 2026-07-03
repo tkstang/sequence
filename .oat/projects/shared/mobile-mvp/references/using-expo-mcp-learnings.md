@@ -21,14 +21,14 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
 1. Start Metro with local Expo MCP enabled:
 
    ```bash
-   EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081
+   EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host lan --port 8081
    ```
 
 2. Launch the installed dev client directly with `simctl launch` and an
    `--initialUrl`:
 
    ```bash
-   xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'
+   xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F<lan-ip>%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'
    ```
 
 3. Call `expo-mcp` as a stdio MCP server without `--collect-logs` for tool use:
@@ -107,6 +107,19 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
 - Metro/DevTools origin warnings can appear while the app is otherwise working;
   do not treat them as proof of a failed simulator loop without a failing screen
   or tool call.
+- On this host, `expo start --dev-client --host localhost` listened only on
+  IPv6 loopback (`[::1]:8081`) during the p04-t06 run, while the iOS simulator
+  tried `127.0.0.1` and failed to fetch the bundle. LAN mode with the Mac's
+  local IP was the stable simulator route.
+- After adding Expo native modules, rebuild the dev client before retesting.
+  Metro can show JS-level module fixes while the installed app still lacks the
+  native module.
+- Argent keyboard input can be flaky in secure fields; if a password submit
+  returns a validation error after apparent entry, retap the field, clear the
+  partial value, and retype before resubmitting.
+- The Expo dev-client tools gear can overlap app controls near the top-right.
+  For coordinate taps, prefer the left side of the app control or use a
+  selector-driven tool when available.
 
 ## Evidence Captured So Far
 
@@ -126,6 +139,10 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   `pong: true`, and the toolbar icon after an Argent boot/launch.
 - Argent `gesture-tap` succeeded at the normalized `pong: true` tap point
   derived from `native-describe-screen`.
+- p04-t06 simulator auth persistence evidence:
+  `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`,
+  `/tmp/p04-t06-after-logout.png`, and
+  `/tmp/p04-t06-after-logout-relaunch.png`.
 
 ## Candidate Skill Shape
 

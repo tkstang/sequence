@@ -8,7 +8,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
-  plugins: ['expo-router'],
+  plugins: ['expo-router', 'expo-web-browser'],
   experiments: {
     reactCompiler: true,
     typedRoutes: true,

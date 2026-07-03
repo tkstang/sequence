@@ -5,6 +5,12 @@ This file captures durable execution and codebase learnings from the
 project to distill reusable skills, OAT workflow improvements, and repo-level
 agent instructions.
 
+Keep this file focused on lessons that should change future execution: OAT
+workflow behavior, subagent coordination, repo conventions that were easy to
+miss, verification mechanics, and implementation gotchas with durable reuse
+value. Expo MCP and Argent usage details belong in
+`using-expo-mcp-learnings.md`; anything broader belongs here.
+
 ## OAT Orchestration
 
 - Dispatch ceiling is a cap, not the default implementer effort. For implementer
@@ -70,6 +76,19 @@ agent instructions.
   `getCookie()` feeds the tRPC `Cookie` header and native fetch uses
   `credentials: "omit"` to avoid relying on platform cookie jars. Guest-token
   lookup stays stubbed in `api/cookies.ts` until the planned guest store task.
+- `@better-auth/expo` declares runtime peers that the app must install
+  directly. Missing `expo-network` produced a simulator redbox only when the
+  auth client initialized; install both `expo-network` and `expo-web-browser`
+  for the plugin and add the `expo-web-browser` config plugin manually when
+  using dynamic `app.config.ts`.
+- Adding or changing Expo native modules requires a dev-client rebuild before
+  simulator proof. JS tests and Metro can pass while the installed native app is
+  still missing modules such as `ExpoSecureStore`, `ExpoNetwork`, or
+  `ExpoWebBrowser`.
+- If the local API database is unavailable, a disposable Neon branch is a good
+  simulator-auth substitute for mutating local verification. Use the branch's
+  direct read-write host for `drizzle-kit push`; pooled hosts can conflict with
+  prepared-statement behavior.
 
 ## Open Follow-Ups
 
