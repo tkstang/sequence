@@ -13,7 +13,7 @@ import {
 } from './index.ts';
 
 function keysOf<T extends Record<string, unknown>>(record: T): Array<keyof T> {
-  return Object.keys(record).sort() as Array<keyof T>;
+  return Object.keys(record).toSorted() as Array<keyof T>;
 }
 
 describe('palette', () => {
