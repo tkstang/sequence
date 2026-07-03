@@ -53,6 +53,7 @@ export function createRealtimeLifecycle({
   watchdogMs = STREAM_INACTIVITY_WATCHDOG_MS,
 }: RealtimeLifecycleOptions): RealtimeLifecycle {
   let appStateSubscription: { remove: () => void } | null = null;
+  let appWasBackgrounded = appState.currentState !== 'active';
   let connectionState: RealtimeLifecycleConnectionState | null = null;
   let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -101,8 +102,12 @@ export function createRealtimeLifecycle({
 
   function checkLiveness(reason: RealtimeResubscribeReason): void {
     const socketState = getSocketState();
+    const shouldResubscribe =
+      socketState !== 'live' || (reason === 'app-active' && appWasBackgrounded);
 
-    if (socketState === 'live') {
+    appWasBackgrounded = false;
+
+    if (!shouldResubscribe) {
       return;
     }
 
@@ -139,7 +144,9 @@ export function createRealtimeLifecycle({
         (nextState) => {
           if (nextState === 'active') {
             checkLiveness('app-active');
+            return;
           }
+          appWasBackgrounded = true;
         },
       );
     },

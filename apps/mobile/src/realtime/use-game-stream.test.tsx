@@ -41,6 +41,14 @@ jest.mock('../api/client.ts', () => ({
   })),
 }));
 
+jest.mock('../lib/logger.ts', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+  },
+}));
+
 import { useGameStream } from './use-game-stream.ts';
 
 const snapshot = gameFixtures[0]!.snapshot;

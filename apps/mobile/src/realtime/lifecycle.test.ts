@@ -70,6 +70,29 @@ describe('createRealtimeLifecycle', () => {
     expect(remove).toHaveBeenCalledWith();
   });
 
+  it('resubscribes after background even when the socket still reports live', () => {
+    const { appState, emit } = createMockAppState();
+    const resubscribe = jest.fn();
+    const getSocketState = jest.fn<RealtimeSocketState, []>(() => 'live');
+    const states: string[] = [];
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState,
+      logger: { info: jest.fn() },
+      onConnectionStateChange: (state) => states.push(state),
+      onResubscribe: resubscribe,
+    });
+
+    lifecycle.start();
+    emit('background');
+    emit('active');
+
+    expect(getSocketState).toHaveBeenCalledWith();
+    expect(states).toEqual(['reconnecting']);
+    expect(resubscribe).toHaveBeenCalledWith('app-active');
+  });
+
   it('forces teardown and resubscribe at the inactivity ceiling', () => {
     const { appState } = createMockAppState();
     const resubscribe = jest.fn();
