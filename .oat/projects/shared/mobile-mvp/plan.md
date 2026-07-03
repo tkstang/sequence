@@ -1951,7 +1951,7 @@ Operator executes with agent assistance: Apple Developer Program enrollment (§2
 
 **Step 2: Verify**
 
-Run: `eas whoami`, `eas credentials` list, ASC record visible.
+Run: `cd apps/mobile && eas whoami && eas credentials` (all EAS commands run from `apps/mobile` — the monorepo root has no EAS project), ASC record visible.
 Expected: all pre-flight checks green per runbook Verify blocks.
 
 **Step 3: Commit**
@@ -1974,7 +1974,7 @@ Profiles: `development` (dev client, simulator), `preview` (internal device), `p
 
 **Step 2: Verify**
 
-Run: `pnpm --filter @sequence/mobile exec expo config --type public` under each APP_ENV; `eas build --profile production --platform ios --dry-run` (config validation path) if available, else `eas config`.
+Run: `pnpm --filter @sequence/mobile exec expo config --type public` under each APP_ENV; `cd apps/mobile && eas config --profile production --platform ios` (or `eas build:inspect`) for config validation — note `eas build` has no `--dry-run` flag.
 Expected: correct URLs per profile; config validates.
 
 **Step 3: Commit**
@@ -1990,7 +1990,7 @@ git commit -m "feat(p12-t02): EAS build profiles + production configuration"
 
 **Step 1: Implement**
 
-`eas build --profile production --platform ios` → `eas submit` (or auto-submit) → ASC processing → internal TestFlight group installs.
+`cd apps/mobile && eas build --profile production --platform ios` → `eas submit` (from `apps/mobile`; or auto-submit) → ASC processing → internal TestFlight group installs.
 
 **Step 2: Verify**
 
@@ -2088,7 +2088,7 @@ git commit -m "docs(p12-t06): deployment docs for mobile; project wrap"
 | final  | code     | pending         | -          | -                                                    |
 | spec   | artifact | pending         | -          | -                                                    |
 | design | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md |
-| plan   | artifact | passed          | 2026-07-03 | structured (in-memory; oat-reviewer, 1 fix cycle)    |
+| plan   | artifact | passed          | 2026-07-03 | structured (oat-reviewer, 1 fix cycle) + cross-provider codex gate (1 fix) |
 
 **Status values:** `pending` → `received` → `fixes_added` → `fixes_completed` → `passed`
 
