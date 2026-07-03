@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p02-t04
+oat_current_task_id: p02-t05
 oat_generated: false
 ---
 
@@ -27,9 +27,9 @@ oat_generated: false
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
-| Phase 2 | in_progress | 5     | 3/5       |
+| Phase 2 | in_progress | 5     | 4/5       |
 
-**Total:** 11/85 tasks completed
+**Total:** 12/85 tasks completed
 
 ---
 
@@ -553,6 +553,42 @@ oat_generated: false
 
 ### Task p02-t04: Operator runbook scaffold
 
+**Status:** completed
+**Commit:** 4a927c1
+
+**Outcome:**
+
+- Added the durable mobile operator runbook with Sections 0-7 scaffolded in
+  the required Why / When / Prerequisites / Steps / Verify /
+  Troubleshooting shape.
+- Authored Section 0 for local machine setup and Section 1 for Expo account
+  plus optional remote MCP OAuth.
+- Marked Sections 2-7 as authored by the phase that discovers the need and
+  executed in Phase 12.
+- Linked the runbook from the docs index Operations section.
+
+**Files changed:**
+
+- `docs/mobile-operator-runbook.md` - new mobile operator runbook.
+- `docs/index.md` - Operations link for the new runbook.
+
+**Verification:**
+
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`
+- Result: pass; the runbook exists, the index link is present, and the first,
+  second, and final sections are discoverable.
+
+**Notes / Decisions:**
+
+- Phase 12 remains the execution point for Apple, EAS signing, TestFlight,
+  physical-device, and production smoke operator work.
+
+---
+
+### Task p02-t05: FR17 agent-loop demo + evidence
+
 **Status:** pending
 **Commit:** -
 
@@ -644,7 +680,8 @@ Chronological log of implementation progress.
 - [x] p02-t01 fix: invoke Argent MCP subcommand - 3e5b0c1
 - [x] p02-t02: testID convention + identifier helper - 24b317b
 - [x] p02-t03: apps/mobile/AGENTS.md - the agent loop - 3b3b5c2
-- [ ] p02-t04: Operator runbook scaffold - next
+- [x] p02-t04: Operator runbook scaffold - 4a927c1
+- [ ] p02-t05: FR17 agent-loop demo + evidence - next
 
 **What changed (high level):**
 
@@ -653,6 +690,9 @@ Chronological log of implementation progress.
   agent loop.
 - Mobile testIDs now use the shared `testId()` helper and documented
   `screen.element[.qualifier]` convention.
+- Mobile operator setup now has a durable runbook under `docs/`, linked from
+  the Operations docs index, with local machine and Expo/MCP sections authored
+  and Phase 12 operator sections scaffolded.
 
 ---
 
@@ -671,7 +711,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section | yes    | 0      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
