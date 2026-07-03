@@ -9,7 +9,7 @@
     "test": "jest --passWithNoTests",
     "typecheck": "tsgo --noEmit",
     "lint": "oxlint src app.config.ts",
-    "format": "oxfmt src app.config.ts package.json tsconfig.json"
+    "format": "oxfmt src app.config.ts babel.config.js metro.config.js package.json tsconfig.json"
   },
   "dependencies": {
     "@expo/metro-runtime": "^57.0.2",
