@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t06
+oat_current_task_id: p01-t07
 oat_generated: false
 ---
 
@@ -26,10 +26,10 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 5/8       |
+| Phase 1 | in_progress | 8     | 6/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 5/85 tasks completed
+**Total:** 6/85 tasks completed
 
 ---
 
@@ -244,6 +244,61 @@ oat_generated: false
 
 ---
 
+### Task p01-t06: First dev build boots on the simulator
+
+**Status:** completed
+**Commit:** 5911833
+
+**Outcome:**
+
+- Added `expo-dev-client` to the mobile workspace and refreshed the lockfile.
+- Ran CNG prebuild/build flow for the iOS simulator; generated native output
+  remains ignored and untracked.
+- Relocated the home route Jest test out of `src/app` after the dev build
+  surfaced that Expo Router was bundling the route-local test file.
+- Verified the installed development build launches on iPhone 17 Pro simulator
+  and renders the home route.
+
+**Files changed:**
+
+- `apps/mobile/package.json` - adds `expo-dev-client`.
+- `pnpm-lock.yaml` - records the dev-client dependency graph.
+- `apps/mobile/.gitignore` - keeps Expo-generated `expo-env.d.ts` ignored with
+  the generated native folders.
+- `apps/mobile/tsconfig.json` - includes Expo's generated env declaration when
+  present.
+- `apps/mobile/src/test/index.test.tsx` - keeps the home-screen component test
+  out of the Expo Router route tree.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile ios`
+- Result: native build/install succeeded and Xcode reported `Build Succeeded`;
+  Expo then exited non-zero because its Simulator activation path calls
+  `osascript`, which still lacks assistive access in this shell.
+- Run: `pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`
+- Result: Metro served the dev-client bundle.
+- Run: `xcrun simctl launch --terminate-running-process 3F87B084-DD33-41D5-B4F5-88DA77989607 com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
+- Result: launched the installed dev build directly against Metro.
+- Run: `xcrun simctl io 3F87B084-DD33-41D5-B4F5-88DA77989607 screenshot /tmp/p01-t06-boot-home.png`
+- Result: pass; screenshot shows the mobile home route rendering
+  "Sequence Online".
+- Run: `git status --porcelain | grep -c apps/mobile/ios`
+- Result: `0` output, confirming `apps/mobile/ios/` is not tracked.
+- Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm --filter @sequence/mobile format && pnpm --filter @sequence/mobile test`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The Expo CLI's `openurl` path creates an iOS "Open in Sequence Online?"
+  confirmation prompt. The dev launcher supports `--initialUrl`, so simulator
+  proof used `simctl launch --initialUrl` after the native build installed.
+- Route-local `*.test.tsx` files are unsafe under the Expo Router `src/app`
+  tree because Metro's route context can collect them. Mobile route tests now
+  live under `src/test`.
+
+---
+
 ## Phase 2: {Phase Name}
 
 **Status:** pending
@@ -285,7 +340,8 @@ Chronological log of implementation progress.
 - [x] p01-t03: Shared-import spike — game-logic + AppRouter under Metro - dac6545
 - [x] p01-t04: jest-expo + Testing Library setup - 8d0205f
 - [x] p01-t05: Root gate integration - 95f1aca
-- [ ] p01-t06: First dev build boots on the simulator - next
+- [x] p01-t06: First dev build boots on the simulator - 5911833
+- [ ] p01-t07: health.ping screen via minimal tRPC client - next
 
 **What changed (high level):**
 
@@ -299,6 +355,8 @@ Chronological log of implementation progress.
   a first home-screen component test.
 - Root gates now include mobile typecheck/lint/format coverage and run mobile
   Jest after the Vitest workspace.
+- The iOS development build installs, launches, and renders the home route on
+  the iPhone 17 Pro simulator.
 
 **Decisions:**
 
@@ -307,10 +365,12 @@ Chronological log of implementation progress.
 - The Jest dependency graph resolves to `@react-native/jest-preset@0.86.0`;
   `jest-expo` 57's older peer range is accepted through pnpm
   `peerDependencyRules.allowedVersions`.
+- Expo Router route-local tests are kept outside `src/app`; otherwise Metro can
+  bundle test-only dependencies during dev-client startup.
 
 **Follow-ups / TODO:**
 
-- Boot the first local iOS dev build with `expo-dev-client` in p01-t06.
+- Add the minimal tRPC health smoke screen in p01-t07.
 
 **Blockers:**
 
