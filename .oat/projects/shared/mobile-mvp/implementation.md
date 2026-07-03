@@ -1823,6 +1823,101 @@ _In progress._
 
 ---
 
+### Task p05-t07: Two-client live + recovery-time verification
+
+**Status:** evidence recorded with caveat
+
+**Outcome:**
+
+- Ran the local API, web client, Metro LAN dev server, and installed iOS dev
+  client against a disposable local Postgres database.
+- Created a web game, signed the simulator into the same local account, and
+  subscribed from mobile on `/dev/stream?gameId=...` with the mounted
+  lifecycle stream hook.
+- Verified live two-client traffic: the web client received
+  `game.onGameEvent` subscription traffic through join/start, and the mobile
+  debug stream received snapshot/event ids through `5` after the second player
+  joined and the host started the game.
+- Measured API process kill/restart recovery from lifecycle logs:
+  detection after kill was `4.106s`, recovery from restart command was
+  `8.548s`, and recovery from actual API listen was `1.626s`.
+- Measured background/foreground recovery using non-UI simulator controls:
+  foreground command to `app-active` lifecycle transition was `0.898s`, and
+  foreground command to `live` was `0.953s`.
+- Attempted the beyond-replay-window scenario with an event-count-based test,
+  generating `502` successful `game.setTeam` events while Safari was
+  foregrounded. The iOS simulator/dev-client environment did not suspend the
+  React Native JS subscriptions: mobile received every event through id `505`,
+  so foreground resubscribed with `lastEventId: 505` and did not exercise the
+  stale-cursor snapshot fallback.
+
+**Evidence / excerpts:**
+
+- Primary game id: `4774572d-d49b-48df-b42c-5b366d7d2534`; replay-window
+  attempt game id: `8aee3a09-401a-497e-a93b-413633a81399`.
+- Scratch evidence files: `/tmp/p05-t07-summary.json`,
+  `/tmp/p05-t07-web-created-lobby.png`,
+  `/tmp/p05-t07-mobile-initial-stream.png`,
+  `/tmp/p05-t07-web-after-start.png`,
+  `/tmp/p05-t07-mobile-after-start.png`,
+  `/tmp/p05-t07-mobile-after-foreground.png`,
+  `/tmp/p05-t07-mobile-replay-window.png`.
+- Setup/driver commands included `pnpm --filter @sequence/api dev`,
+  `pnpm --filter @sequence/web dev --hostname 127.0.0.1 --port 3000`,
+  `pnpm --filter @sequence/mobile exec expo start --dev-client --host lan`,
+  Playwright over system Chrome, and `xcrun simctl openurl` /
+  `xcrun simctl launch` for simulator background/foreground.
+
+Sanitized lifecycle excerpts:
+
+```text
+2026-07-03T19:22:47.887Z realtime.connection_state live
+  reason=subscription-started game=4774572d...
+mobile raw/lifecycle stream received ids 1..5 after guest join and game.start
+web game.start mutation completed in 122ms with game.onGameEvent traffic
+
+2026-07-03T19:24:10.631Z API process killed
+2026-07-03T19:24:14.737Z realtime.connection_state reconnecting
+  reason=transport-connecting detection=4.106s
+2026-07-03T19:24:24.130Z API restart command issued
+2026-07-03T19:24:31.052Z API listening again
+2026-07-03T19:24:32.678Z realtime.connection_state live
+  reason=subscription-started restart_to_live=8.548s listen_to_live=1.626s
+
+2026-07-03T19:25:29.409Z simulator foreground launch
+2026-07-03T19:25:30.307Z realtime.connection_state reconnecting
+  reason=app-active foreground_to_detection=0.898s
+2026-07-03T19:25:30.362Z realtime.connection_state live
+  reason=subscription-started foreground_to_live=0.953s
+
+2026-07-03T19:29:28.726Z replay-window attempt backgrounded via Safari
+2026-07-03T19:29:30.003Z generated 502 successful setTeam events
+2026-07-03T19:29:32.454Z realtime.connection_state reconnecting
+  reason=app-active
+subscription input lastEventId=505; latest card kind=event seq=505
+```
+
+**Verification:**
+
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The API restart and 10s background/foreground measurements are within the
+  p05-t07 contracts.
+- The replay-window fallback remains unproven in this simulator pass because
+  the available non-UI background controls did not suspend dev-client JS long
+  enough to leave a stale cursor behind the server's `REPLAY_WINDOW = 500`.
+- While idle, the lifecycle watchdog currently resubscribes about every 15s
+  even when the raw debug subscription remains open. Each observed watchdog
+  resubscribe recovered in under `0.1s`; this is useful reviewer context but
+  did not block the measured recovery checks.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1933,7 +2028,7 @@ Chronological log of implementation progress.
 - [x] p05-t04: useGameStream with snapshot-first event application - 73f1469 / 060493f
 - [x] p05-t05: AppState lifecycle + inactivity watchdog - 6a4c8ce / 1826565
 - [x] p05-t06: Connection banners + debug event feed - e33ef1b
-- [ ] p05-t07: Two-client live + recovery-time verification - next
+- [x] p05-t07: Two-client live + recovery-time verification - evidence recorded with caveat
 
 **What changed (high level):**
 
@@ -2003,6 +2098,9 @@ Chronological log of implementation progress.
   verification.
 - The mobile app now has a reusable connection banner and a development-only
   raw stream screen for live subscription debugging.
+- The p05-t07 live simulator pass now records local web/mobile two-client
+  stream evidence, measured API restart recovery, measured foreground
+  recovery, and the precise replay-window simulator limitation.
 
 ---
 
@@ -2045,6 +2143,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/components/ConnectionBanner.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 5     | Local API + web + Metro LAN + iOS dev-client p05-t07 scenario; web-created game with mobile `/dev/stream`; API kill/restart timing; 10s background/foreground timing; replay-window event-count attempt; screenshots `/tmp/p05-t07-web-created-lobby.png`, `/tmp/p05-t07-mobile-initial-stream.png`, `/tmp/p05-t07-web-after-start.png`, `/tmp/p05-t07-mobile-after-start.png`, `/tmp/p05-t07-mobile-after-foreground.png`, `/tmp/p05-t07-mobile-replay-window.png`; `pnpm format:check`; `git diff --check` | yes    | 0      | Replay-window fallback not proven because simulator kept JS subscriptions live while Safari was foregrounded |
 
 ## Final Summary (for PR/docs)
 
