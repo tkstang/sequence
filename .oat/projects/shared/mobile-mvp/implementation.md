@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p02-t02
+oat_current_task_id: p02-t03
 oat_generated: false
 ---
 
@@ -27,9 +27,9 @@ oat_generated: false
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
-| Phase 2 | in_progress | 5     | 1/5       |
+| Phase 2 | in_progress | 5     | 2/5       |
 
-**Total:** 9/85 tasks completed
+**Total:** 10/85 tasks completed
 
 ---
 
@@ -469,6 +469,47 @@ oat_generated: false
 
 ### Task p02-t02: testID convention + identifier helper
 
+**Status:** completed
+**Commit:** 24b317b
+
+**Outcome:**
+
+- Added the `screen.element[.qualifier]` testID helper with a typed screen-name
+  union and empty-segment validation.
+- Added focused Jest coverage for convention formatting and rejected empty
+  segments.
+- Retrofitted the home `health.ping` status to use the helper while preserving
+  the `home.ping` value, and extended the home test to assert the testID.
+
+**Files changed:**
+
+- `apps/mobile/src/test/test-ids.ts` - testID helper and screen-name union.
+- `apps/mobile/src/test/test-ids.test.ts` - convention coverage.
+- `apps/mobile/src/app/index.tsx` - `home.ping` now comes from the helper.
+- `apps/mobile/src/test/index.test.tsx` - asserts the home ping testID.
+
+**Verification:**
+
+- RED run: `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`
+- Result: failed as expected because `./test-ids.ts` did not exist.
+- GREEN run: `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`
+- Result: pass, 2 suites / 3 tests.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile format`
+- Result: pass/format applied; scoped Jest rerun passed afterward.
+
+**Notes / Decisions:**
+
+- Route-local tests remain outside `src/app`; the new convention tests live
+  under `src/test`.
+
+---
+
+### Task p02-t03: apps/mobile/AGENTS.md - the agent loop
+
 **Status:** pending
 **Commit:** -
 
@@ -557,7 +598,8 @@ Chronological log of implementation progress.
 **Session Start:** 13:40 UTC
 
 - [x] p02-t01: MCP configuration + expo-mcp local tools - 0e51aa5
-- [ ] p02-t02: testID convention + identifier helper - next
+- [x] p02-t02: testID convention + identifier helper - 24b317b
+- [ ] p02-t03: apps/mobile/AGENTS.md - the agent loop - next
 
 ---
 
@@ -576,7 +618,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`) | yes    | 0      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
