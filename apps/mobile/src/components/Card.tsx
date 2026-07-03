@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { css, html } from 'react-strict-dom';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { color } from '../theme/vars.css.ts';
+import { useTheme } from '../theme/use-theme.ts';
 
 export type CardVariant = 'surface' | 'raised' | 'sunken' | 'accent';
 export type CardElevation = 'none' | 'raised';
@@ -13,49 +13,60 @@ export interface CardProps {
   testID?: string;
 }
 
+function renderContent(children: ReactNode, color: string): ReactNode {
+  if (typeof children === 'string' || typeof children === 'number') {
+    return <Text style={[styles.text, { color }]}>{children}</Text>;
+  }
+  return children;
+}
+
 export function Card({
   children,
   elevation = 'none',
   testID,
   variant = 'surface',
 }: CardProps) {
+  const { colors } = useTheme();
+  const surface =
+    variant === 'raised'
+      ? colors.surfaceRaised
+      : variant === 'sunken'
+        ? colors.surfaceSunken
+        : variant === 'accent'
+          ? colors.felt
+          : colors.surface;
+  const border = variant === 'accent' ? colors.accent : colors.border;
+
   return (
-    <html.div
-      data-testid={testID}
+    <View
       style={[
         styles.root,
-        styles[variant],
+        { backgroundColor: surface, borderColor: border },
         elevation === 'raised' ? styles.elevationRaised : null,
       ]}
+      testID={testID}
     >
-      {children}
-    </html.div>
+      {renderContent(children, colors.text)}
+    </View>
   );
 }
 
-const styles = css.create({
+const styles = StyleSheet.create({
   root: {
-    borderColor: color.border,
     borderRadius: 8,
     borderStyle: 'solid',
     borderWidth: 1,
     padding: 16,
   },
-  surface: {
-    backgroundColor: color.surface,
-  },
-  raised: {
-    backgroundColor: color.surfaceRaised,
-    borderColor: color.borderStrong,
-  },
-  sunken: {
-    backgroundColor: color.surfaceSunken,
-  },
-  accent: {
-    backgroundColor: color.felt,
-    borderColor: color.accent,
-  },
   elevationRaised: {
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
+    elevation: 3,
+    shadowColor: '#0f172a',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+  },
+  text: {
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

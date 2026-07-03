@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { css, html } from 'react-strict-dom';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { color } from '../theme/vars.css.ts';
+import { useTheme } from '../theme/use-theme.ts';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -25,66 +25,71 @@ export function Button({
   testID,
   variant = 'primary',
 }: ButtonProps) {
-  const labelStyle =
-    disabled || variant === 'secondary'
-      ? styles.labelOnSurface
-      : styles.labelOnFill;
+  const theme = useTheme();
+  const colors = theme.colors;
+  const fill =
+    variant === 'primary'
+      ? colors.accent
+      : variant === 'destructive'
+        ? colors.danger
+        : colors.surfaceRaised;
+  const border =
+    variant === 'secondary'
+      ? colors.borderStrong
+      : variant === 'destructive'
+        ? colors.danger
+        : colors.accent;
+  const labelColor =
+    disabled || variant === 'secondary' ? colors.text : colors.accentText;
 
   return (
-    <html.button
-      aria-disabled={disabled}
-      aria-label={accessibilityLabel}
-      data-testid={testID}
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
-      onClick={disabled ? undefined : onPress}
-      style={[
+      onPress={disabled ? undefined : onPress}
+      style={({ pressed }) => [
         styles.root,
-        styles[variant],
         styles[size],
+        { backgroundColor: fill, borderColor: border },
+        pressed && !disabled ? styles.pressed : null,
         disabled ? styles.disabled : null,
       ]}
-      type="button"
+      testID={testID}
     >
-      <html.span style={[styles.label, labelStyle]}>{children}</html.span>
-    </html.button>
+      <Text style={[styles.label, { color: labelColor }]}>{children}</Text>
+    </Pressable>
   );
 }
 
-const styles = css.create({
+const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
+    alignSelf: 'flex-start',
     borderRadius: 8,
     borderStyle: 'solid',
     borderWidth: 1,
     display: 'flex',
     justifyContent: 'center',
   },
-  primary: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  secondary: {
-    backgroundColor: color.surfaceRaised,
-    borderColor: color.borderStrong,
-  },
-  destructive: {
-    backgroundColor: color.danger,
-    borderColor: color.danger,
-  },
   sm: {
     minHeight: 36,
-    paddingBlock: 8,
-    paddingInline: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   md: {
     minHeight: 44,
-    paddingBlock: 10,
-    paddingInline: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   lg: {
     minHeight: 52,
-    paddingBlock: 12,
-    paddingInline: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  pressed: {
+    opacity: 0.82,
   },
   disabled: {
     opacity: 0.5,
@@ -94,11 +99,5 @@ const styles = css.create({
     fontWeight: '700',
     lineHeight: 20,
     textAlign: 'center',
-  },
-  labelOnFill: {
-    color: color.accentText,
-  },
-  labelOnSurface: {
-    color: color.text,
   },
 });

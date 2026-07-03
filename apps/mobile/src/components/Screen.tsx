@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { css, html } from 'react-strict-dom';
 
-import { color } from '../theme/vars.css.ts';
+import { useTheme } from '../theme/use-theme.ts';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -19,50 +18,72 @@ export interface ScreenHeaderProps {
   testID?: string;
 }
 
+function renderContent(children: ReactNode, color: string): ReactNode {
+  if (typeof children === 'string' || typeof children === 'number') {
+    return <Text style={[styles.bodyText, { color }]}>{children}</Text>;
+  }
+  return children;
+}
+
 function ScreenRoot({ children, header, scroll = false, testID }: ScreenProps) {
+  const { colors } = useTheme();
+  const content = renderContent(children, colors.text);
   const contentTestID = testID === undefined ? undefined : `${testID}.content`;
   const scrollTestID = testID === undefined ? undefined : `${testID}.scroll`;
 
   return (
-    <SafeAreaView style={nativeStyles.safeArea} testID={testID}>
-      <html.div style={styles.root}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.bg }]}
+      testID={testID}
+    >
+      <View style={styles.root}>
         {header}
         {scroll ? (
           <ScrollView
-            contentContainerStyle={nativeStyles.scrollContent}
-            style={nativeStyles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            style={styles.scroll}
             testID={scrollTestID}
           >
-            <html.div data-testid={contentTestID} style={styles.content}>
-              {children}
-            </html.div>
+            <View style={styles.content} testID={contentTestID}>
+              {content}
+            </View>
           </ScrollView>
         ) : (
-          <html.div
-            data-testid={contentTestID}
+          <View
             style={[styles.content, styles.staticContent]}
+            testID={contentTestID}
           >
-            {children}
-          </html.div>
+            {content}
+          </View>
         )}
-      </html.div>
+      </View>
     </SafeAreaView>
   );
 }
 
 function ScreenHeader({ actions, eyebrow, testID, title }: ScreenHeaderProps) {
+  const { colors } = useTheme();
+
   return (
-    <html.div data-testid={testID} style={styles.header}>
-      <html.div style={styles.headerText}>
+    <View
+      style={[
+        styles.header,
+        { backgroundColor: colors.surface, borderBottomColor: colors.border },
+      ]}
+      testID={testID}
+    >
+      <View style={styles.headerText}>
         {eyebrow === undefined ? null : (
-          <html.span style={styles.eyebrow}>{eyebrow}</html.span>
+          <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+            {eyebrow}
+          </Text>
         )}
-        <html.span style={styles.title}>{title}</html.span>
-      </html.div>
+        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      </View>
       {actions === undefined ? null : (
-        <html.div style={styles.headerActions}>{actions}</html.div>
+        <View style={styles.headerActions}>{actions}</View>
       )}
-    </html.div>
+    </View>
   );
 }
 
@@ -70,7 +91,7 @@ export const Screen = Object.assign(ScreenRoot, {
   Header: ScreenHeader,
 });
 
-const nativeStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   safeArea: {
     display: 'flex',
     flex: 1,
@@ -81,54 +102,52 @@ const nativeStyles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-});
-
-const styles = css.create({
   root: {
-    backgroundColor: color.bg,
     display: 'flex',
-    minHeight: '100%',
+    flexDirection: 'column',
+    flex: 1,
   },
   content: {
     display: 'flex',
-    flex: 1,
+    flexDirection: 'column',
     gap: 16,
     padding: 16,
   },
   staticContent: {
+    flex: 1,
     minHeight: '100%',
   },
   header: {
     alignItems: 'center',
-    backgroundColor: color.surface,
-    borderBottomColor: color.border,
-    borderBottomStyle: 'solid',
+    alignSelf: 'stretch',
     borderBottomWidth: 1,
     display: 'flex',
     flexDirection: 'row',
     gap: 12,
+    height: 76,
     justifyContent: 'space-between',
-    minHeight: 56,
-    paddingBlock: 10,
-    paddingInline: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   headerText: {
     display: 'flex',
-    flex: 1,
+    flexDirection: 'column',
     gap: 2,
   },
   eyebrow: {
-    color: color.textMuted,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 16,
     textTransform: 'uppercase',
   },
   title: {
-    color: color.text,
     fontSize: 22,
     fontWeight: '700',
     lineHeight: 28,
+  },
+  bodyText: {
+    fontSize: 16,
+    lineHeight: 22,
   },
   headerActions: {
     alignItems: 'center',

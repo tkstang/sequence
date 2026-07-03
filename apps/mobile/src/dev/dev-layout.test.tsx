@@ -23,7 +23,7 @@ describe('DevLayout', () => {
     testGlobal['__DEV__'] = false;
 
     const DevLayout = (
-      require('./_layout.tsx') as typeof import('./_layout.tsx')
+      require('../app/dev/_layout.tsx') as typeof import('../app/dev/_layout.tsx')
     ).default;
     render(<DevLayout />);
 

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { css, html } from 'react-strict-dom';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '../../components/Badge.tsx';
 import { Button } from '../../components/Button.tsx';
@@ -8,7 +8,6 @@ import { Screen } from '../../components/Screen.tsx';
 import { TextField } from '../../components/TextField.tsx';
 import { findKitStory, type KitStoryFixture } from '../../dev/stories.ts';
 import { useTheme, type ThemeMode } from '../../theme/use-theme.ts';
-import { color } from '../../theme/vars.css.ts';
 
 function nextMode(mode: ThemeMode): ThemeMode {
   return mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system';
@@ -32,6 +31,8 @@ function ThemeToggle() {
 }
 
 function StoryFixture({ fixture }: { fixture: KitStoryFixture }) {
+  const { colors } = useTheme();
+
   switch (fixture.component) {
     case 'Button':
       return <Button {...fixture.props} />;
@@ -44,9 +45,7 @@ function StoryFixture({ fixture }: { fixture: KitStoryFixture }) {
           testID={fixture.props.testID}
           variant={fixture.props.variant}
         >
-          <html.span style={styles.cardText}>
-            {fixture.props.children}
-          </html.span>
+          {fixture.props.children}
         </Card>
       );
     case 'Badge':
@@ -54,23 +53,23 @@ function StoryFixture({ fixture }: { fixture: KitStoryFixture }) {
     case 'Screen':
       return (
         <Card testID="dev.story.screen.preview" variant="raised">
-          <html.div style={styles.screenPreview}>
+          <View style={[styles.screenPreview, { borderColor: colors.border }]}>
             <Screen.Header
               eyebrow={fixture.props.eyebrow}
               title={fixture.props.title}
             />
-            <html.div style={styles.screenBody}>
-              <html.span style={styles.cardText}>
+            <View style={[styles.screenBody, { backgroundColor: colors.bg }]}>
+              <Text style={[styles.cardText, { color: colors.text }]}>
                 {fixture.props.children}
-              </html.span>
+              </Text>
               <Badge
                 size="sm"
                 variant={fixture.props.scroll ? 'accent' : 'neutral'}
               >
                 {fixture.props.scroll ? 'scroll' : 'static'}
               </Badge>
-            </html.div>
-          </html.div>
+            </View>
+          </View>
         </Card>
       );
   }
@@ -80,6 +79,7 @@ export default function DevStoryDetail() {
   const params = useLocalSearchParams<{ story?: string | string[] }>();
   const storyId = Array.isArray(params.story) ? params.story[0] : params.story;
   const story = findKitStory(storyId);
+  const { colors } = useTheme();
 
   if (story === undefined) {
     return (
@@ -94,8 +94,10 @@ export default function DevStoryDetail() {
         testID="dev.story.missing"
       >
         <Card>
-          <html.div style={styles.emptyState}>
-            <html.span style={styles.title}>Unknown story</html.span>
+          <View style={styles.emptyState}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Unknown story
+            </Text>
             <Button
               onPress={() => router.replace('./')}
               testID="dev.story.missing.back"
@@ -103,7 +105,7 @@ export default function DevStoryDetail() {
             >
               Back to stories
             </Button>
-          </html.div>
+          </View>
         </Card>
       </Screen>
     );
@@ -121,7 +123,7 @@ export default function DevStoryDetail() {
       scroll
       testID={`dev.story.${story.id}`}
     >
-      <html.div style={styles.stack}>
+      <View style={styles.stack}>
         <Button
           onPress={() => router.replace('./')}
           size="sm"
@@ -130,65 +132,68 @@ export default function DevStoryDetail() {
         >
           Back
         </Button>
-        <html.span style={styles.description}>{story.description}</html.span>
+        <Text style={[styles.description, { color: colors.textMuted }]}>
+          {story.description}
+        </Text>
         {story.fixtures.map((fixture) => (
           <Card key={fixture.label} testID={`dev.fixture.${story.id}`}>
-            <html.div style={styles.fixture}>
-              <html.span style={styles.fixtureLabel}>{fixture.label}</html.span>
+            <View style={styles.fixture}>
+              <Text style={[styles.fixtureLabel, { color: colors.text }]}>
+                {fixture.label}
+              </Text>
               <StoryFixture fixture={fixture} />
-            </html.div>
+            </View>
           </Card>
         ))}
-      </html.div>
+      </View>
     </Screen>
   );
 }
 
-const styles = css.create({
+const styles = StyleSheet.create({
   stack: {
     display: 'flex',
+    flexDirection: 'column',
     gap: 12,
   },
   description: {
-    color: color.textMuted,
     fontSize: 15,
     lineHeight: 22,
   },
   fixture: {
     display: 'flex',
+    flexDirection: 'column',
     gap: 10,
   },
   fixtureLabel: {
-    color: color.text,
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22,
   },
   cardText: {
-    color: color.text,
     fontSize: 15,
     lineHeight: 22,
   },
   screenPreview: {
-    borderColor: color.border,
     borderRadius: 8,
     borderStyle: 'solid',
     borderWidth: 1,
     display: 'flex',
+    flexDirection: 'column',
     overflow: 'hidden',
   },
   screenBody: {
-    backgroundColor: color.bg,
     display: 'flex',
+    flexDirection: 'column',
     gap: 10,
     padding: 16,
   },
   emptyState: {
     display: 'flex',
+    flexDirection: 'column',
     gap: 12,
   },
   title: {
-    color: color.text,
     fontSize: 18,
     fontWeight: '700',
     lineHeight: 24,
