@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t07
+oat_current_task_id: p01-t08
 oat_generated: false
 ---
 
@@ -26,10 +26,10 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 6/8       |
+| Phase 1 | in_progress | 8     | 7/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 6/85 tasks completed
+**Total:** 7/85 tasks completed
 
 ---
 
@@ -299,6 +299,59 @@ oat_generated: false
 
 ---
 
+### Task p01-t07: health.ping screen via minimal tRPC client
+
+**Status:** completed
+**Commit:** e463438
+
+**Outcome:**
+
+- Added a minimal HTTP-only tRPC client for mobile using the shared
+  `AppRouter` type contract, TanStack Query, and `credentials: 'omit'`.
+- Wired the Expo Router root through QueryClient + tRPC providers.
+- Added Expo config `extra.apiUrl` / `extra.wsUrl` defaults and a tested env
+  resolver.
+- Updated the home route to render `health.ping` status at `testID`
+  `home.ping`.
+
+**Files changed:**
+
+- `apps/mobile/src/api/client.ts` - tRPC/TanStack client helpers and provider
+  exports.
+- `apps/mobile/src/api/env.ts` - Expo Constants extra resolver with localhost
+  defaults.
+- `apps/mobile/src/api/env.test.ts` - scoped Jest coverage for default and
+  configured API endpoints.
+- `apps/mobile/src/app/_layout.tsx` - QueryClient/tRPC providers around the
+  route stack.
+- `apps/mobile/src/app/index.tsx` - safe-area home route rendering the ping
+  result.
+- `apps/mobile/src/test/index.test.tsx` - home route component test updated
+  for the ping state.
+- `apps/mobile/app.config.ts` - mobile API URL extras.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - tRPC and React Query deps.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`
+- Result: pass, 2 tests.
+- Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm --filter @sequence/mobile test && pnpm format:check`
+- Result: pass.
+- Run: `curl -sS -f 'https://sequence-api-production-8687.up.railway.app/trpc/health.ping'`
+- Result: pass, returned `{"pong":true}`.
+- Run: `EXPO_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app EXPO_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`, then `xcrun simctl launch --terminate-running-process 3F87B084-DD33-41D5-B4F5-88DA77989607 com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
+- Result: pass. Metro logged successful `health.ping` query responses; screenshot
+  `/tmp/p01-t07-health-ping.png` shows "pong: true".
+
+**Notes / Decisions:**
+
+- The actual local API dev server was not runnable in this checkout because
+  `packages/api/.env` is absent and no `DATABASE_URL`/`DATABASE_URL_TEST`
+  exists in the shell. Simulator evidence used the documented production API
+  origin; the committed app defaults remain the planned localhost endpoints.
+
+---
+
 ## Phase 2: {Phase Name}
 
 **Status:** pending
@@ -341,7 +394,8 @@ Chronological log of implementation progress.
 - [x] p01-t04: jest-expo + Testing Library setup - 8d0205f
 - [x] p01-t05: Root gate integration - 95f1aca
 - [x] p01-t06: First dev build boots on the simulator - 5911833
-- [ ] p01-t07: health.ping screen via minimal tRPC client - next
+- [x] p01-t07: health.ping screen via minimal tRPC client - e463438
+- [ ] p01-t08: Workspace doc stubs + spike cleanup - next
 
 **What changed (high level):**
 
@@ -357,6 +411,8 @@ Chronological log of implementation progress.
   Jest after the Vitest workspace.
 - The iOS development build installs, launches, and renders the home route on
   the iPhone 17 Pro simulator.
+- The mobile home route now renders a real tRPC `health.ping` result through
+  the QueryClient/tRPC provider stack.
 
 **Decisions:**
 
@@ -367,10 +423,13 @@ Chronological log of implementation progress.
   `peerDependencyRules.allowedVersions`.
 - Expo Router route-local tests are kept outside `src/app`; otherwise Metro can
   bundle test-only dependencies during dev-client startup.
+- `p01-t07` simulator proof used the documented production API origin because
+  the local API `.env` was absent; the app's committed defaults remain
+  localhost for local development.
 
 **Follow-ups / TODO:**
 
-- Add the minimal tRPC health smoke screen in p01-t07.
+- Add the mobile README stub and remove the p01-t03 spike route in p01-t08.
 
 **Blockers:**
 
@@ -402,7 +461,7 @@ Track test execution during implementation.
 
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
-| 1     | -         | -      | -      | -        |
+| 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm format:check`; simulator screenshot `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | -         | -      | -      | -        |
 
 ## Final Summary (for PR/docs)
