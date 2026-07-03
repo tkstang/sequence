@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p03-t06
+oat_current_task_id: p03-t07
 oat_generated: false
 ---
 
@@ -28,9 +28,9 @@ oat_generated: false
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
-| Phase 3 | in_progress | 8     | 5/8       |
+| Phase 3 | in_progress | 8     | 6/8       |
 
-**Total:** 18/85 tasks completed
+**Total:** 19/85 tasks completed
 
 ---
 
@@ -912,6 +912,56 @@ oat_generated: false
 
 ---
 
+### Task p03-t06: Chrome kit — Card, Badge, Screen scaffold
+
+**Status:** completed
+**Commit:** b5214b2
+
+**Outcome:**
+
+- Added RSD chrome-kit `Card`, `Badge`, and safe-area-aware `Screen`
+  primitives.
+- `Card` supports surface variants, raised elevation, children rendering, and
+  testID passthrough.
+- `Badge` supports neutral, accent, saved/frozen, and team-color variants plus
+  small/medium/large sizes and testID passthrough.
+- `Screen` provides a safe-area root, optional header slot, static content mode,
+  and a scroll mode backed by React Native `ScrollView`.
+
+**Files changed:**
+
+- `apps/mobile/src/components/Card.tsx` / `Card.test.tsx` - card primitive and
+  tests.
+- `apps/mobile/src/components/Badge.tsx` / `Badge.test.tsx` - badge primitive
+  and tests.
+- `apps/mobile/src/components/Screen.tsx` / `Screen.test.tsx` - screen scaffold
+  and tests.
+- `apps/mobile/src/test/setup.ts` - adds the RN 0.86 `KeyboardObserver` mock
+  required by `ScrollView` in Jest.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/components`
+- Result: pass, 5 suites / 15 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The subagent's first `Screen` scroll path used an RSD `div` with
+  `overflow: scroll`; the orchestrator tightened it to a native `ScrollView`
+  before accepting the task.
+- Rendering `ScrollView` under Jest on RN 0.86 requires a `KeyboardObserver`
+  TurboModule mock on iOS. The setup change keeps the component test using the
+  real native primitive rather than a local test mock.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1006,7 +1056,8 @@ Chronological log of implementation progress.
 - [x] p03-t03: RSD spike passes on SDK 57 - 7bb701d
 - [x] p03-t04: Full token vars + ThemeProvider + useTheme - a0ca075
 - [x] p03-t05: Chrome kit — Button + TextField - 9444737
-- [ ] p03-t06: Chrome kit — Card, Badge, Screen scaffold - next
+- [x] p03-t06: Chrome kit — Card, Badge, Screen scaffold - b5214b2
+- [ ] p03-t07: Dev playground scaffold + kit stories - next
 
 **What changed (high level):**
 
@@ -1030,6 +1081,8 @@ Chronological log of implementation progress.
 - The mobile chrome kit now has initial RSD Button and TextField primitives
   with tested handlers, disabled states, testID passthrough, variants, and
   sizes.
+- The chrome kit now also includes Card, Badge, and a safe-area Screen scaffold
+  with a native ScrollView-backed scroll mode.
 
 ---
 
@@ -1051,7 +1104,7 @@ Track test execution during implementation.
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
-| 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; `pnpm --filter @sequence/mobile exec jest src/components/Button.test.tsx src/components/TextField.test.tsx` | yes    | 0      | -        |
+| 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; `pnpm --filter @sequence/mobile exec jest src/components/Button.test.tsx src/components/TextField.test.tsx`; `pnpm --filter @sequence/mobile exec jest src/components` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
