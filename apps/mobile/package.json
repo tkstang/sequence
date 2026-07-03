@@ -1,0 +1,32 @@
+{
+  "name": "@sequence/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "test": "jest --passWithNoTests",
+    "typecheck": "tsgo --noEmit",
+    "lint": "oxlint src app.config.ts",
+    "format": "oxfmt src app.config.ts package.json tsconfig.json"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "^57.0.2",
+    "expo": "~57.0.1",
+    "expo-constants": "^57.0.2",
+    "expo-linking": "^57.0.1",
+    "expo-router": "^57.0.2",
+    "expo-status-bar": "^57.0.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-safe-area-context": "^5.8.0",
+    "react-native-screens": "^4.25.2",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "babel-preset-expo": "^57.0.1"
+  }
+}
