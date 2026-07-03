@@ -90,6 +90,11 @@ export function createRealtimeLifecycle({
   function scheduleWatchdog(): void {
     clearWatchdog();
     watchdogTimer = setTimeout(() => {
+      watchdogTimer = null;
+      if (getSocketState() === 'live') {
+        scheduleWatchdog();
+        return;
+      }
       transition('reconnecting', 'watchdog-timeout');
       onResubscribe('watchdog-timeout');
     }, watchdogMs);

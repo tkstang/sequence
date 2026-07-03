@@ -116,6 +116,12 @@ value. Expo MCP and Argent usage details belong in
   On deadline prop changes, reset the local clock baseline immediately; on
   expiry, clamp the display to `0:00` and wait for the stream to reflect any
   server-side forfeit instead of triggering client-side expiry behavior.
+- Do not use a quiet subscription as proof that a mobile realtime connection is
+  stale. During p07-t09, the mobile inactivity watchdog unconditionally
+  resubscribed after 15 seconds without stream items; the aborted subscription
+  hit the API presence `onDisconnect` hook and froze otherwise healthy active
+  games. Watchdogs should check the transport state and resubscribe only when
+  it is no longer live; quiet turns are normal gameplay, not disconnects.
 - Simulator visual proof can catch compact playground regressions that unit
   tests and `expo export` miss. During p07-t08, the game-surface stories built
   and bundled successfully, but screenshots showed full hand fans clipping in

@@ -93,7 +93,7 @@ describe('createRealtimeLifecycle', () => {
     expect(resubscribe).toHaveBeenCalledWith('app-active');
   });
 
-  it('forces teardown and resubscribe at the inactivity ceiling', () => {
+  it('keeps a quiet live socket connected at the inactivity ceiling', () => {
     const { appState } = createMockAppState();
     const resubscribe = jest.fn();
     const states: string[] = [];
@@ -108,11 +108,30 @@ describe('createRealtimeLifecycle', () => {
 
     lifecycle.start();
     lifecycle.markLive('subscription-started');
-    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS - 1);
+    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS);
 
     expect(resubscribe).not.toHaveBeenCalled();
+    expect(states).toEqual(['live']);
 
-    jest.advanceTimersByTime(1);
+    lifecycle.stop();
+  });
+
+  it('resubscribes at the inactivity ceiling when the socket is no longer live', () => {
+    const { appState } = createMockAppState();
+    const resubscribe = jest.fn();
+    const states: string[] = [];
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState: () => 'closed',
+      logger: { info: jest.fn() },
+      onConnectionStateChange: (state) => states.push(state),
+      onResubscribe: resubscribe,
+    });
+
+    lifecycle.start();
+    lifecycle.markLive('subscription-started');
+    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS);
 
     expect(states).toEqual(['live', 'reconnecting']);
     expect(resubscribe).toHaveBeenCalledWith('watchdog-timeout');
@@ -133,6 +152,7 @@ describe('createRealtimeLifecycle', () => {
     lifecycle.start();
     lifecycle.markLive('subscription-started');
     jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS);
+    expect(logger.info).toHaveBeenCalledTimes(1);
     lifecycle.recordStreamItem();
 
     expect(logger.info).toHaveBeenNthCalledWith(
@@ -142,26 +162,6 @@ describe('createRealtimeLifecycle', () => {
         nextState: 'live',
         reason: 'subscription-started',
         timestamp: '2026-07-03T12:00:00.000Z',
-      }),
-    );
-    expect(logger.info).toHaveBeenNthCalledWith(
-      2,
-      'realtime.connection_state',
-      expect.objectContaining({
-        nextState: 'reconnecting',
-        previousState: 'live',
-        reason: 'watchdog-timeout',
-        timestamp: '2026-07-03T12:00:15.000Z',
-      }),
-    );
-    expect(logger.info).toHaveBeenNthCalledWith(
-      3,
-      'realtime.connection_state',
-      expect.objectContaining({
-        nextState: 'live',
-        previousState: 'reconnecting',
-        reason: 'stream-item',
-        timestamp: '2026-07-03T12:00:15.000Z',
       }),
     );
   });
