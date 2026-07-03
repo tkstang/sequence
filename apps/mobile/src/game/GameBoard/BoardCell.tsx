@@ -1,7 +1,7 @@
 import type { Position, Rank, Suit, Team } from '@sequence/game-logic';
 import { isCorner, parseBoardCell } from '@sequence/game-logic';
 import { memo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { testId } from '../../test/test-ids.ts';
 import { CardFace } from '../cards/CardFace.tsx';
@@ -12,7 +12,9 @@ export interface BoardCellProps {
   cellHeight: number;
   cellWidth: number;
   chip?: Team;
+  disabled?: boolean;
   lockedBy?: number;
+  onPress?: (position: Position) => void;
   onRender?: (position: Position) => void;
   position: Position;
   spotlight?: BoardCellSpotlight;
@@ -23,7 +25,9 @@ function BoardCellImpl({
   cellHeight,
   cellWidth,
   chip,
+  disabled = false,
   lockedBy,
+  onPress,
   onRender,
   position,
   spotlight = 'none',
@@ -33,12 +37,17 @@ function BoardCellImpl({
 
   const corner = isCorner(position);
   const cellTestId = testId('board', 'cell', position);
+  const interactive = onPress !== undefined;
 
   return (
-    <View
+    <Pressable
       accessibilityLabel={
         corner ? 'wild corner' : `${position.slice(1)} board cell`
       }
+      accessibilityRole={interactive ? 'button' : undefined}
+      accessibilityState={{ disabled: interactive ? disabled : undefined }}
+      disabled={!interactive || disabled}
+      onPress={interactive ? () => onPress(position) : undefined}
       style={[
         styles.root,
         {
@@ -95,7 +104,7 @@ function BoardCellImpl({
           testID={`${cellTestId}.spotlight.dim`}
         />
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -113,7 +122,9 @@ export const BoardCell = memo(
     previous.cellHeight === next.cellHeight &&
     previous.cellWidth === next.cellWidth &&
     previous.chip === next.chip &&
+    previous.disabled === next.disabled &&
     previous.lockedBy === next.lockedBy &&
+    previous.onPress === next.onPress &&
     previous.onRender === next.onRender &&
     previous.position === next.position &&
     previous.spotlight === next.spotlight &&

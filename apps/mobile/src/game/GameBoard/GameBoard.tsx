@@ -21,6 +21,7 @@ export interface GameBoardProps {
   currentTeam?: Team | null;
   layoutMap?: BoardLayoutMap;
   maxWidth?: number;
+  onCellPress?: (position: Position) => void;
   onCellRender?: (position: Position) => void;
   selectedCard?: Card | null;
   sequences?: readonly SnapshotSequence[];
@@ -39,6 +40,7 @@ export function GameBoard({
   currentTeam,
   layoutMap,
   maxWidth,
+  onCellPress,
   onCellRender,
   selectedCard,
   sequences = [],
@@ -112,6 +114,8 @@ export function GameBoard({
             const chip =
               cell?.chip ?? (isCorner(position) ? undefined : sequence?.team);
             const lockedBy = cell?.lockedBy ?? sequence?.lockedBy;
+            const spotlightTarget = isSpotlightTarget(spotlight, position);
+            const spotlightDimmed = isSpotlightDimmed(spotlight, position);
 
             return (
               <BoardCell
@@ -119,13 +123,19 @@ export function GameBoard({
                 cellHeight={cellHeight}
                 cellWidth={cellWidth}
                 chip={chip}
+                disabled={
+                  selectedCard !== null &&
+                  selectedCard !== undefined &&
+                  !spotlightTarget
+                }
                 lockedBy={lockedBy}
+                onPress={onCellPress}
                 onRender={onCellRender}
                 position={position}
                 spotlight={
-                  isSpotlightTarget(spotlight, position)
+                  spotlightTarget
                     ? 'target'
-                    : isSpotlightDimmed(spotlight, position)
+                    : spotlightDimmed
                       ? 'dimmed'
                       : 'none'
                 }

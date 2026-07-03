@@ -11,6 +11,7 @@ import { CardFace } from '../cards/CardFace.tsx';
 export interface CardHandProps {
   board: Readonly<Record<Position, SnapshotBoardCell | undefined>>;
   defaultSelectedIndex?: number | null;
+  disabled?: boolean;
   hand: readonly Card[];
   mode: GameMode;
   onSelectionChange?: (card: Card | null, index: number | null) => void;
@@ -21,6 +22,7 @@ export interface CardHandProps {
 export function CardHand({
   board,
   defaultSelectedIndex = null,
+  disabled = false,
   hand,
   mode,
   onSelectionChange,
@@ -72,9 +74,10 @@ export function CardHand({
             <Pressable
               accessibilityLabel={`${code}${dead ? ' dead card' : ''}`}
               accessibilityRole="button"
-              accessibilityState={{ selected }}
+              accessibilityState={{ disabled, selected }}
+              disabled={disabled}
               key={`${code}-${index}`}
-              onPress={() => selectCard(card, index)}
+              onPress={disabled ? undefined : () => selectCard(card, index)}
               style={[
                 styles.cardButton,
                 {
@@ -83,6 +86,7 @@ export function CardHand({
                   transform: transformFor(index, hand.length, selected),
                 },
                 selected ? styles.cardSelected : null,
+                disabled ? styles.cardDisabled : null,
               ]}
               testID={cardTestId}
             >
@@ -186,6 +190,9 @@ const styles = StyleSheet.create({
   cardSelected: {
     borderWidth: 2,
     zIndex: 2,
+  },
+  cardDisabled: {
+    opacity: 0.52,
   },
   deadBadge: {
     backgroundColor: '#dc2626',

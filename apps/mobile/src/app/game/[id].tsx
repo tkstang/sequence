@@ -1,14 +1,21 @@
 import type { GameViewState } from '@sequence/client-state';
+import type { Card, Move, Position, Team } from '@sequence/game-logic';
+import { isOneEyedJack } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTRPC } from '../../api/client.ts';
 import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
 import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
 import { Screen } from '../../components/Screen.tsx';
+import { CardHand } from '../../game/CardHand/CardHand.tsx';
+import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
+import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
 import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
+import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
+import { useMoveSubmit } from '../../game/use-move-submit.ts';
 import { useGameStream } from '../../realtime/use-game-stream.ts';
 import { testId } from '../../test/test-ids.ts';
 import { useTheme } from '../../theme/use-theme.ts';
@@ -38,6 +45,18 @@ function mutationMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Could not update lobby.';
 }
 
+function cardCode(card: Card): string {
+  return `${card.rank}${card.suit}`;
+}
+
+function teamForSeat(view: GameViewState): Team | null {
+  const team = view.teams[view.mySeat];
+  if (team !== undefined) return team;
+  return (
+    view.players.find((player) => player.seat === view.mySeat)?.team ?? null
+  );
+}
+
 function Placeholder({ title, view }: { title: string; view: GameViewState }) {
   const { colors } = useTheme();
 
@@ -56,7 +75,182 @@ function Placeholder({ title, view }: { title: string; view: GameViewState }) {
   );
 }
 
+function ActiveGameView({
+  gameId,
+  view,
+}: {
+  gameId: string;
+  view: GameViewState;
+}) {
+  const { colors } = useTheme();
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const moveSubmit = useMoveSubmit({ gameId, view });
+  const currentPlayer = view.players.find(
+    (player) => player.seat === view.currentSeat,
+  );
+  const currentTeam = teamForSeat(view);
+  const myTurn = view.currentSeat === view.mySeat;
+  const selectionDisabled =
+    !myTurn || moveSubmit.selectedCardDisabled || !moveSubmit.canSubmit;
+  const spotlight = useMemo(
+    () =>
+      createBoardSpotlight({
+        board: view.board,
+        currentTeam,
+        selectedCard: selectionDisabled ? null : selectedCard,
+      }),
+    [currentTeam, selectedCard, selectionDisabled, view.board],
+  );
+
+  useEffect(() => {
+    if (
+      (selectionDisabled ||
+        selectedIndex === null ||
+        selectedIndex >= view.hand.length) &&
+      (selectedCard !== null || selectedIndex !== null)
+    ) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  }, [selectedCard, selectedIndex, selectionDisabled, view.hand.length]);
+
+  const handleCellPress = async (position: Position) => {
+    if (
+      !myTurn ||
+      !moveSubmit.canSubmit ||
+      !selectedCard ||
+      !spotlight.targets.has(position)
+    ) {
+      return;
+    }
+
+    const move: Move = isOneEyedJack(selectedCard)
+      ? { card: selectedCard, position, type: 'removeChip' }
+      : { card: selectedCard, position, type: 'place' };
+    const submitted = await moveSubmit.submitMove(move);
+    if (submitted) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  };
+  const turnTitle = myTurn
+    ? 'Your turn'
+    : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
+  const controlsCopy = moveSubmit.submitting
+    ? 'Submitting move...'
+    : (moveSubmit.feedback?.message ??
+      (myTurn
+        ? selectedCard
+          ? `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+          : 'Select a card to show legal targets.'
+        : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
+
+  return (
+    <View style={styles.activeStack} testID={testId('game', 'active')}>
+      <View
+        accessibilityLiveRegion="polite"
+        style={[
+          styles.turnBanner,
+          {
+            backgroundColor: myTurn ? colors.savedBg : colors.surfaceRaised,
+            borderColor: myTurn ? colors.savedFg : colors.border,
+          },
+        ]}
+        testID={testId('game', 'turn', 'banner')}
+      >
+        <Text
+          style={[
+            styles.turnTitle,
+            { color: myTurn ? colors.savedFg : colors.text },
+          ]}
+        >
+          {turnTitle}
+        </Text>
+        <Text
+          style={[
+            styles.turnBody,
+            { color: myTurn ? colors.savedFg : colors.textMuted },
+          ]}
+        >
+          Round {view.round} - Version {view.version}
+        </Text>
+      </View>
+
+      <PlayerRail
+        currentSeat={view.currentSeat}
+        players={view.players}
+        round={view.round}
+        sequences={view.sequences}
+        status={view.status}
+        timerSeconds={view.timerSeconds}
+        turnDeadlineAt={view.turnDeadlineAt}
+        turnRemainingMs={view.turnRemainingMs}
+      />
+
+      <View
+        style={styles.playSurface}
+        testID={testId('game', 'play', 'surface')}
+      >
+        <GameBoard
+          board={view.board}
+          currentTeam={selectionDisabled ? null : currentTeam}
+          onCellPress={handleCellPress}
+          selectedCard={selectionDisabled ? null : selectedCard}
+          sequences={view.sequences}
+        />
+        <CardHand
+          board={view.board}
+          disabled={selectionDisabled}
+          hand={view.hand}
+          mode={view.mode}
+          onSelectionChange={(card, index) => {
+            moveSubmit.clearFeedback();
+            setSelectedCard(card);
+            setSelectedIndex(index);
+          }}
+          selectedIndex={selectionDisabled ? null : selectedIndex}
+        />
+      </View>
+
+      <View
+        accessibilityLiveRegion="polite"
+        style={[
+          styles.controls,
+          {
+            backgroundColor:
+              moveSubmit.feedback?.tone === 'error'
+                ? colors.frozenBg
+                : colors.surfaceRaised,
+            borderColor:
+              moveSubmit.feedback?.tone === 'error'
+                ? colors.danger
+                : colors.border,
+          },
+        ]}
+        testID={testId('game', 'controls')}
+      >
+        <Text
+          accessibilityRole={moveSubmit.feedback ? 'alert' : undefined}
+          style={[
+            styles.controlsText,
+            {
+              color:
+                moveSubmit.feedback?.tone === 'error'
+                  ? colors.danger
+                  : colors.text,
+            },
+          ]}
+        >
+          {controlsCopy}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function GameStateView({
+  gameId,
   isMutating,
   mutationError,
   onClearError,
@@ -66,6 +260,7 @@ function GameStateView({
   onStart,
   view,
 }: {
+  gameId: string;
   isMutating: boolean;
   mutationError: string | null;
   onClearError: () => void;
@@ -123,7 +318,7 @@ function GameStateView({
   }
 
   if (view.status === 'active') {
-    return <Placeholder title="Game in progress" view={view} />;
+    return <ActiveGameView gameId={gameId} view={view} />;
   }
   if (view.status === 'finished') {
     return <Placeholder title="Game finished" view={view} />;
@@ -181,6 +376,7 @@ export default function GameRouteScreen() {
           </Text>
         ) : stream.view ? (
           <GameStateView
+            gameId={gameId}
             isMutating={isMutating}
             mutationError={mutationError}
             onClearError={() => setMutationError(null)}
@@ -211,6 +407,48 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+  },
+  activeStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  turnBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  turnTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 22,
+  },
+  turnBody: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  playSurface: {
+    alignItems: 'center',
+    display: 'flex',
+    minHeight: 600,
+    paddingBottom: 146,
+    position: 'relative',
+  },
+  controls: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  controlsText: {
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   error: {
     fontSize: 14,
