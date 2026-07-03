@@ -122,6 +122,11 @@ value. Expo MCP and Argent usage details belong in
   route tasks; run the scoped package typecheck afterward. A p06-t01 test helper
   passed at runtime but failed `tsgo` because cookie parsing produced
   `string | undefined` in a `.find()` callback.
+- For simulator deep-link proof, clearly separate route/UI evidence from
+  backend-contract evidence. A temporary local mock can prove
+  `sequence://join/<code>` reaches the intended Expo Router screen and renders
+  route-derived UI, but it should not be described as a real API-backed invite
+  lookup unless the API/database environment is actually running.
 
 ## Open Follow-Ups
 
