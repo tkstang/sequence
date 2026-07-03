@@ -108,6 +108,16 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   do not treat them as proof of a failed simulator loop without a failing screen
   or tool call.
 
+## Agent-Orchestration Notes
+
+- OAT dispatch ceiling is a cap, not the default implementer effort. For
+  implementer work, first classify the task (`low`, `medium`, `high`, `xhigh`),
+  then select the lowest sufficient pinned role capped by the configured
+  ceiling. A bounded chrome-kit task with preferred `medium` and ceiling
+  `xhigh` should dispatch `oat-phase-implementer-medium`, not
+  `oat-phase-implementer-xhigh`. Reviewer dispatch can still target the ceiling
+  when the workflow calls for deterministic review quality.
+
 ## Evidence Captured So Far
 
 - `/tmp/p02-t05-reboot-check.png` - `simctl` fallback screenshot showing the
