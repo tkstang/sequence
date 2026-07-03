@@ -129,4 +129,12 @@ describe('websocket timing contract', () => {
     expect(options.retryDelayMs?.(0)).toBe(250);
     expect(options.retryDelayMs?.(6)).toBe(5_000);
   });
+
+  it('normalizes trailing slashes in the configured WebSocket origin', () => {
+    const options = createWebSocketClientOptions({
+      wsUrl: 'ws://localhost:3001/',
+    });
+
+    expect(options.url).toBe('ws://localhost:3001/trpc');
+  });
 });

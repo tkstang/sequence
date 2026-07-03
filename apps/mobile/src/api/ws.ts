@@ -136,11 +136,15 @@ export function createAuthedWebSocketClass(
 
 export const AuthedWebSocket = createAuthedWebSocketClass();
 
+function getWebSocketTRPCUrl(wsUrl: string) {
+  return `${wsUrl.replace(/\/+$/, '')}/trpc`;
+}
+
 export function createWebSocketClientOptions(
   env: Pick<ApiEnv, 'wsUrl'>,
 ): WebSocketClientOptions {
   return {
-    url: `${env.wsUrl}/trpc`,
+    url: getWebSocketTRPCUrl(env.wsUrl),
     WebSocket: AuthedWebSocket,
     keepAlive: WS_KEEP_ALIVE,
     lazy: WS_LAZY,
