@@ -93,8 +93,8 @@ describe('useGameStream', () => {
     expect(result.current.view?.players[1]?.connected).toBe(false);
   });
 
-  it('tracks the latest applied event seq for resubscription', async () => {
-    const { rerender } = await renderHook(() => useGameStream('game-1'));
+  it('tracks the latest applied event seq for explicit resubscription', async () => {
+    const { result } = await renderHook(() => useGameStream('game-1'));
 
     await emit({ kind: 'snapshot', snapshot });
     await emit({
@@ -109,13 +109,13 @@ describe('useGameStream', () => {
     });
 
     await waitFor(() => {
-      expect(mockSubscriptionInputs.at(-1)).toEqual({
-        gameId: 'game-1',
-        lastEventId: 12,
-      });
+      expect(result.current.lastEventId).toBe(12);
     });
+    expect(mockSubscriptionInputs.at(-1)).toEqual({ gameId: 'game-1' });
 
-    await rerender({});
+    await act(async () => {
+      result.current.resubscribe();
+    });
 
     expect(mockSubscriptionInputs.at(-1)).toEqual({
       gameId: 'game-1',
