@@ -57,6 +57,10 @@ agent instructions.
   `string | null`, `setItem` returns any), and Expo SecureStore SDK 57 provides
   matching sync methods in addition to the async API. Verify the package
   contract from installed types before swapping to async storage methods.
+- The mobile cookie transport is intentionally explicit: Better Auth's Expo
+  `getCookie()` feeds the tRPC `Cookie` header and native fetch uses
+  `credentials: "omit"` to avoid relying on platform cookie jars. Guest-token
+  lookup stays stubbed in `api/cookies.ts` until the planned guest store task.
 
 ## Open Follow-Ups
 
