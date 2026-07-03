@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t03
+oat_current_task_id: p07-t04
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 2/9       |
+| Phase 7 | in_progress | 9     | 3/9       |
 
-**Total:** 45/85 tasks completed
+**Total:** 46/85 tasks completed
 
 ---
 
@@ -2526,6 +2526,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added the mobile `GameBoard` grid with memoized card cells, team chip
   overlays, locked-sequence treatment, and a board-local layout map for later
   drag hit-testing.
+- Added selection-gated GameBoard spotlight targeting backed by
+  `validPlacements`, with dim/target overlays for selected-card legal targets.
 
 **Verification:**
 
@@ -2547,6 +2549,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
 - Result: pass, 2 suites / 9 tests; Watchman emitted the existing recrawl
   warning only.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`
+- Result: pass, 3 suites / 14 tests; Watchman emitted the existing recrawl
+  warning only.
 
 **Notes / Decisions:**
 
@@ -2561,6 +2566,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   would crop portrait card SVGs and row-local cell `onLayout` values would not
   support reliable board-level hit-testing. Board cell sizing and layout-map
   frames now share the card aspect ratio.
+- The orchestrator added the p07-t03 follow-up fix commit because spotlight
+  should activate only when `validPlacements` returns at least one target,
+  preserving web parity for dead or otherwise unplayable selected cards.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2680,6 +2688,63 @@ subscription input lastEventId=505; latest card kind=event seq=505
   p07-t03 and p07-t06/p07-t07.
 - Visual board screenshot proof remains part of the planned p07-t08
   game-surface playground sweep.
+
+### Task p07-t03: Spotlight targeting
+
+**Status:** completed
+**Commit:** 06dfe66
+**Fix Commit:** e358852
+
+**Outcome:**
+
+- Added a `createBoardSpotlight()` helper that converts snapshot board records
+  into the rules-engine board shape and derives legal target cells with
+  `validPlacements`.
+- Extended `GameBoard` with external selection inputs (`selectedCard` and
+  `currentTeam`) while keeping selection ownership in the later game-screen
+  controller.
+- Added native-backed `BoardCell` dim and target overlays for selected-card
+  spotlight states.
+- Preserved web parity by activating spotlight only when the selected card has
+  at least one legal target.
+- Covered normal-card targets, empty selection, no-target selected cards, and
+  one-eyed jack removable-opponent targeting.
+
+**Files changed:**
+
+- `apps/mobile/src/game/GameBoard/spotlight.ts` /
+  `spotlight.test.ts` - valid-placement-backed target derivation and
+  regression coverage.
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` - selected-card/current-team
+  props and per-cell spotlight state wiring.
+- `apps/mobile/src/game/GameBoard/BoardCell.tsx` - native dim/target overlay
+  rendering.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the non-empty target-set spotlight learning.
+
+**Verification:**
+
+- RED run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts --runInBand`
+- Result: failed before implementation on missing `./spotlight.ts`.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`
+- Result: pass, 3 suites / 14 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Move submission remains out of scope and is still planned for p07-t06/p07-t07.
+- A selected card with no legal target leaves the board undimmed rather than
+  dimming all cells.
+- Explicit absolute positioning is used for the RN overlays; this avoided
+  typings friction around `StyleSheet.absoluteFillObject` in this workspace.
 
 ---
 
@@ -2804,7 +2869,8 @@ Chronological log of implementation progress.
 - [x] p06-t08: Multi-client lobby verification - c75ee97 / 7f875d1
 - [x] p07-t01: SVG card pipeline - fa42027 / 08645c8
 - [x] p07-t02: GameBoard grid + chips + sequences - 136bfb6 / d6a2c5a
-- [ ] p07-t03: Spotlight targeting - next
+- [x] p07-t03: Spotlight targeting - 06dfe66 / e358852
+- [ ] p07-t04: CardHand - next
 
 **What changed (high level):**
 
@@ -2910,6 +2976,9 @@ Chronological log of implementation progress.
   `BOARD_MAP`, including wild corners, team chips, locked sequence treatment,
   memoized per-cell updates, and board-local layout frames for later drag
   hit-testing.
+- The board now supports selection-gated spotlight targeting through
+  `validPlacements`, including one-eyed jack removal targets and no-target
+  selected-card parity.
 
 ---
 
@@ -2964,6 +3033,7 @@ Track test execution during implementation.
 | 6     | Local API/web/Metro/iOS dev-client p06-t08 scenario; `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts src/game/routes/lobby.test.ts`; `pnpm --filter @sequence/mobile exec jest src/api/client.test.ts src/api/cookies.test.ts src/api/ws.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | FR2-FR5 evidence screenshots `/tmp/p06-t08-web-created-lobby.png`, `/tmp/p06-t08-mobile-deeplink-preview.png`, `/tmp/p06-t08-mobile-lobby-after-guest-join.png`, `/tmp/p06-t08-web-after-randomize.png`, `/tmp/p06-t08-mobile-after-randomize.png`, `/tmp/p06-t08-mobile-relaunch-continue-list.png`, `/tmp/p06-t08-orchestrator-current.png` |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607` | yes    | 0      | 55 card-pipeline tests; export and native rebuild passed; card-grid screenshot deferred to p07-t08 |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 GameBoard/layout-map suites, 9 tests; includes per-cell memo probe and board-local frame registration |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 GameBoard/spotlight suites, 14 tests; includes no-target selected-card parity and one-eyed jack targets |
 
 ## Final Summary (for PR/docs)
 
