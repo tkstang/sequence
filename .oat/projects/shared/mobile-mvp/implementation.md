@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t05
+oat_current_task_id: p06-t06
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 4/8       |
+| Phase 6 | in_progress | 8     | 5/8       |
 
-**Total:** 39/85 tasks completed
+**Total:** 40/85 tasks completed
 
 ---
 
@@ -2191,6 +2191,74 @@ _In progress._
 
 ---
 
+### Task p06-t05: Guest join + guest store/registry + continue-list
+
+**Status:** completed
+**Commit:** 6c7c5bc
+**Fix Commit:** ac2a3ee
+
+**Outcome:**
+
+- Added the mobile guest identity store with SecureStore-backed raw tokens
+  keyed as `sequence.guest.<gameId>` and an AsyncStorage registry under
+  `sequence-guest-games`.
+- Un-stubbed mobile guest-token cookie lookup so game-scoped tRPC calls and
+  subscriptions can send `sequence_guest` alongside any Better Auth cookie.
+- Added anonymous guest join support on the invite preview route using
+  `returnGuestToken: true`; successful guest joins store token + registry
+  metadata before routing to `/game/<id>`.
+- Added a login-screen continue list from the guest registry with stable
+  `auth.guest.continue.<gameId>` testIDs.
+- Wired guest registry status updates and cleanup into `useGameStream` for
+  status changes, finished games, and `NOT_FOUND` / `FORBIDDEN` stream errors.
+- Made the entire mobile join subtree public so signed-out guests can both
+  enter invite codes and open invite preview routes.
+
+**Files changed:**
+
+- `apps/mobile/src/auth/guest-store.ts` /
+  `guest-store.test.ts` - SecureStore token helpers, AsyncStorage registry,
+  ordering, removal, and status-update coverage.
+- `apps/mobile/src/api/cookies.ts` / `cookies.test.ts` - real guest-token
+  lookup and cookie-header coverage.
+- `apps/mobile/src/app/join/[code].tsx` /
+  `apps/mobile/src/features/join/JoinScreen.test.tsx` - guest name path,
+  token request/storage, and guest-join tests.
+- `apps/mobile/src/app/(auth)/login.tsx` /
+  `apps/mobile/src/auth/login-screen.test.tsx` - cold-start continue-list UI
+  and navigation coverage.
+- `apps/mobile/src/realtime/use-game-stream.ts` /
+  `use-game-stream.test.tsx` - guest registry status updates and cleanup.
+- `apps/mobile/src/app/_layout.tsx` /
+  `apps/mobile/src/test/root-layout.test.tsx` - public join subtree route
+  registration.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/auth/guest-store.test.ts src/auth/login-screen.test.tsx src/features/join src/api/cookies.test.ts src/test/root-layout.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 6 suites / 34 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Guest stream cleanup is wired where current code has the necessary context:
+  `useGameStream` updates registry status and removes entries on finished,
+  `NOT_FOUND`, and `FORBIDDEN`. The concrete `/game/[id]` route that mounts the
+  hook is still planned for p06-t07/p07.
+- The orchestrator added the follow-up fix commit because exposing only
+  `/join/[code]` was not enough for FR2; anonymous users also need
+  `/join/index` to enter an invite code.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2306,7 +2374,8 @@ Chronological log of implementation progress.
 - [x] p06-t02: Dashboard screen - b0ef411
 - [x] p06-t03: Create screen - 64686b0
 - [x] p06-t04: Join-by-code preview + registered join - bd5ebda
-- [ ] p06-t05: Guest join + guest store/registry + continue-list - next
+- [x] p06-t05: Guest join + guest store/registry + continue-list - 6c7c5bc / ac2a3ee
+- [ ] p06-t06: Scheme deep links - next
 
 **What changed (high level):**
 
@@ -2392,6 +2461,9 @@ Chronological log of implementation progress.
 - The mobile app now has signed-in join-by-code entry and preview routes with
   normalized invite codes, roster/settings preview, friendly unavailable
   states, and registered-user join navigation.
+- The mobile app now persists guest game identity, sends stored guest tokens
+  through the explicit cookie header, supports anonymous guest joins, surfaces a
+  cold-start guest continue list, and keeps the join subtree public.
 
 ---
 
@@ -2439,6 +2511,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | 3 dashboard/home suites, 13 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/create src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 create/root-layout suites, 8 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 join/root-layout suites, 11 tests |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/auth/guest-store.test.ts src/auth/login-screen.test.tsx src/features/join src/api/cookies.test.ts src/test/root-layout.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 6 guest/join/root-layout/stream suites, 34 tests |
 
 ## Final Summary (for PR/docs)
 
