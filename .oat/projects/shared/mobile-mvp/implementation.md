@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t02
+oat_current_task_id: p05-t03
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 1/7       |
+| Phase 5 | in_progress | 7     | 2/7       |
 
-**Total:** 29/85 tasks completed
+**Total:** 30/85 tasks completed
 
 ---
 
@@ -1576,6 +1576,61 @@ _In progress._
 
 ---
 
+### Task p05-t02: Web consumes client-state
+
+**Status:** completed
+**Commit:** 87271e2
+
+**Outcome:**
+
+- Added `@sequence/client-state` as a web workspace dependency.
+- Updated the web game route, game components, controllers, tests, and dev
+  playground to import shared view-state types, fixtures, and
+  `ruleViolationMessage()` from `@sequence/client-state`.
+- Removed the now-duplicated web-local `game-state.ts`,
+  `game-state.test.ts`, and `game-fixtures.ts` files.
+- Preserved the web fixture smoke test as a web integration check over the
+  shared package fixtures plus web dead-card controller behavior.
+
+**Files changed:**
+
+- `apps/web/package.json` / `pnpm-lock.yaml` - web now depends on
+  `@sequence/client-state`.
+- `apps/web/src/app/game/[id]/page.tsx` - imports shared stream reducer,
+  screen routing, view-state types, and rule-violation message helper.
+- `apps/web/src/app/game/[id]/components/**` - imports shared view-state types
+  and fixtures from the package.
+- `apps/web/src/app/dev/_playground/stories.tsx` - imports shared game
+  fixtures for the development playground.
+- Deleted `apps/web/src/app/game/[id]/components/game-state.ts`,
+  `game-state.test.ts`, and `game-fixtures.ts`.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/client-state test`
+- Result: pass, 2 files / 10 tests.
+- Run: `pnpm --filter @sequence/web test`
+- Result: pass, 22 files / 95 tests.
+- Run: `pnpm --filter @sequence/web typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/web build`
+- Result: pass in delegated p05-t02 run.
+- Run: `pnpm typecheck`
+- Result: pass in delegated p05-t02 run.
+- Run: `pnpm format:check`
+- Result: pass in delegated p05-t02 run.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The initial delegated web build caught a stale `/dev` playground fixture
+  import; the final commit updates it to `@sequence/client-state`.
+- The old package-local reducer tests now live under `packages/client-state`;
+  web keeps only the fixture/controller integration smoke.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1681,7 +1736,8 @@ Chronological log of implementation progress.
 - [x] p04-t06: Session persistence scenario (simulator) - 8d260e3
 - [x] p04-t07: Phase gate sweep + configuration docs - dc3fde7
 - [x] p05-t01: Extract @sequence/client-state - 6e74bcc
-- [ ] p05-t02: Web consumes client-state - next
+- [x] p05-t02: Web consumes client-state - 87271e2
+- [ ] p05-t03: AuthedWebSocket + wsLink split transport - next
 
 **What changed (high level):**
 
@@ -1737,6 +1793,9 @@ Chronological log of implementation progress.
 - The framework-free `@sequence/client-state` package now contains the shared
   game-view reducer, fixtures, and exhaustive rule-violation message catalog for
   upcoming web and mobile consumers.
+- The web game route now consumes `@sequence/client-state` for shared stream
+  state, fixtures, and rule-violation copy; the duplicated web-local reducer and
+  fixture files have been removed.
 
 ---
 
@@ -1774,6 +1833,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; local API + Metro LAN simulator scenario with screenshots `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`, `/tmp/p04-t06-after-logout.png`, `/tmp/p04-t06-after-logout-relaunch.png` | yes    | 0      | -        |
 | 4     | `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/client-state exec vitest run`; `pnpm --filter @sequence/client-state typecheck`; `pnpm exec oxlint packages/client-state`; `pnpm exec oxfmt --check packages/client-state`; framework-boundary import scan over `packages/client-state` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/web test`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web build`; `pnpm typecheck`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
