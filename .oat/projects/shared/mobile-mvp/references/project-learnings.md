@@ -106,6 +106,10 @@ value. Expo MCP and Argent usage details belong in
   snapshot fallback deterministically, add an explicit debug cursor control
   such as `/dev/stream?lastEventId=1` instead of relying on wall-clock
   background time.
+- Passing a focused database-backed integration suite is not enough for API
+  route tasks; run the scoped package typecheck afterward. A p06-t01 test helper
+  passed at runtime but failed `tsgo` because cookie parsing produced
+  `string | undefined` in a `.find()` callback.
 
 ## Open Follow-Ups
 

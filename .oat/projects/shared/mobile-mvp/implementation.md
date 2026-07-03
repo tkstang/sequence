@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t01
+oat_current_task_id: p06-t02
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 0/8       |
+| Phase 6 | in_progress | 8     | 1/8       |
 
-**Total:** 35/85 tasks completed
+**Total:** 36/85 tasks completed
 
 ---
 
@@ -1990,6 +1990,53 @@ _Not started._
 
 ---
 
+### Task p06-t01: API — game.join returnGuestToken flag
+
+**Status:** completed
+**Commit:** c2f08a3
+**Fix Commit:** 2b68ed7
+
+**Outcome:**
+
+- Extended `game.join` input with an optional `returnGuestToken` flag.
+- Anonymous guest joins still issue the httpOnly `sequence_guest` cookie and
+  store only the token hash server-side.
+- When a guest join opts into `returnGuestToken: true`, the response includes
+  the raw guest token matching the cookie value so mobile can persist it.
+- Guest joins without the flag and registered joins with the flag do not include
+  `guestToken` in the response.
+
+**Files changed:**
+
+- `packages/api/src/game/routes/join-game.ts` - additive input flag and
+  conditional response field.
+- `packages/api/src/game/routes/join-game.test.ts` - integration coverage for
+  opt-in guest token return, default no-token response, registered no-token
+  response, and type-safe Set-Cookie parsing.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts`
+- Result: pass, 1 file / 11 tests with `DATABASE_URL_TEST` set to a disposable
+  local Postgres database.
+- Run: `pnpm --filter @sequence/api typecheck`
+- Result: pass after the test helper type fix.
+- Run: `pnpm lint`
+- Result: pass with existing warnings only.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The disposable local Postgres container was stopped and removed after
+  verification.
+- The raw guest token is never logged and remains opt-in because it is only
+  needed by the mobile guest-token persistence path.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2101,7 +2148,8 @@ Chronological log of implementation progress.
 - [x] p05-t05: AppState lifecycle + inactivity watchdog - 6a4c8ce / 1826565
 - [x] p05-t06: Connection banners + debug event feed - e33ef1b
 - [x] p05-t07: Two-client live + recovery-time verification - c4a9033 / e5a5c97 / 0111bb5 / 50664e7
-- [ ] p06-t01: API — game.join returnGuestToken flag - next
+- [x] p06-t01: API — game.join returnGuestToken flag - c2f08a3 / 2b68ed7
+- [ ] p06-t02: Dashboard screen - next
 
 **What changed (high level):**
 
@@ -2175,6 +2223,9 @@ Chronological log of implementation progress.
   stream evidence, measured API restart recovery, measured foreground
   recovery, and stale-cursor snapshot fallback recovery beyond the replay
   window.
+- The API `game.join` route now supports an opt-in raw guest-token return for
+  mobile guest persistence while preserving httpOnly cookie issuance and the
+  default no-token response.
 
 ---
 
@@ -2218,6 +2269,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/components/ConnectionBanner.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | Local API + web + Metro LAN + iOS dev-client p05-t07 scenario; web-created game with mobile `/dev/stream`; API kill/restart timing; 10s background/foreground timing; replay-window event-count attempt; stale-cursor `/dev/stream?lastEventId=1` proof; screenshots `/tmp/p05-t07-web-created-lobby.png`, `/tmp/p05-t07-mobile-initial-stream.png`, `/tmp/p05-t07-web-after-start.png`, `/tmp/p05-t07-mobile-after-start.png`, `/tmp/p05-t07-mobile-after-foreground.png`, `/tmp/p05-t07-mobile-replay-window.png`, `/tmp/p05-t07-replay-window-proof.png`; `pnpm format:check`; `git diff --check` | yes    | 0      | Replay-window fallback proven by snapshot item id `504` after requested `lastEventId=1` |
+| 6     | `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts` with disposable local `DATABASE_URL_TEST`; `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 11 join/preview integration tests executed |
 
 ## Final Summary (for PR/docs)
 
