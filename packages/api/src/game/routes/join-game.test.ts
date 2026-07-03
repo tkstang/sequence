@@ -11,11 +11,13 @@ const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const describeIntegration = hasTestDb ? describe : describe.skip;
 
 function guestTokenFromSetCookie(setCookie: string): string | undefined {
-  return setCookie
-    .split(/,(?=[^ ;]+=)/)
-    .map((cookie) => cookie.split(';')[0]?.trim())
-    .find((cookie) => cookie.startsWith(`${GUEST_COOKIE_NAME}=`))
-    ?.slice(GUEST_COOKIE_NAME.length + 1);
+  for (const cookie of setCookie.split(/,(?=[^ ;]+=)/)) {
+    const pair = cookie.split(';')[0]?.trim();
+    if (pair?.startsWith(`${GUEST_COOKIE_NAME}=`)) {
+      return pair.slice(GUEST_COOKIE_NAME.length + 1);
+    }
+  }
+  return undefined;
 }
 
 describeIntegration('game.preview / game.join (integration)', () => {
