@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t07
+oat_current_task_id: p06-t08
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 6/8       |
+| Phase 6 | in_progress | 8     | 7/8       |
 
-**Total:** 41/85 tasks completed
+**Total:** 42/85 tasks completed
 
 ---
 
@@ -2314,6 +2314,62 @@ _In progress._
 
 ---
 
+### Task p06-t07: Lobby screen + controls + share
+
+**Status:** completed
+**Commit:** bddfa59
+**Fix Commit:** 8099ab9
+
+**Outcome:**
+
+- Added the mobile `/game/[id]` route with live `useGameStream()` binding,
+  lobby-status rendering, mutation error-policy copy, and placeholders for
+  active, finished, frozen, and saved states.
+- Added the native `LobbyTeams` surface with invite-code summary, team roster
+  bands, current-player team switching, host kick/randomize/start controls,
+  start gating, turn-order copy, and native `Share` invite handling.
+- Supported 2-, 3-, 4-, and 6-player lobby layouts, including 6-player
+  three-team rendering.
+- Preserved visibility for invalid intermediate team layouts by rendering
+  over-capacity teams instead of hiding extra seated players while start
+  remains gated until the roster is legal.
+- Registered `/game/[id]` as a public route for guest continuity; server-side
+  participant checks and stream errors remain the authority for access.
+
+**Files changed:**
+
+- `apps/mobile/src/app/game/[id].tsx` - live game route, lobby branch, mutation
+  wiring, connection banner, error copy, and deferred non-lobby placeholders.
+- `apps/mobile/src/game/LobbyTeams.tsx` /
+  `LobbyTeams.test.tsx` - native lobby component, share action, roster/control
+  coverage, 6-player layout coverage, and over-capacity roster regression.
+- `apps/mobile/src/app/_layout.tsx` - public game route registration.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/LobbyTeams.test.tsx --runInBand`
+- Result: pass, 1 suite / 5 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The active, finished, frozen, and saved game surfaces are intentionally
+  placeholders in this task; Phase 7 and Phase 9 own the playable/game-over
+  surfaces.
+- The game route stays public in Expo Router so guest-token participants can
+  cold-start back into a game. Unauthorized access still fails through the
+  tRPC game-player procedure and `useGameStream` cleanup path.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2431,7 +2487,8 @@ Chronological log of implementation progress.
 - [x] p06-t04: Join-by-code preview + registered join - bd5ebda
 - [x] p06-t05: Guest join + guest store/registry + continue-list - 6c7c5bc / ac2a3ee
 - [x] p06-t06: Scheme deep links - e70d449
-- [ ] p06-t07: Lobby screen + controls + share - next
+- [x] p06-t07: Lobby screen + controls + share - bddfa59 / 8099ab9
+- [ ] p06-t08: Multi-client lobby verification - next
 
 **What changed (high level):**
 
@@ -2523,6 +2580,9 @@ Chronological log of implementation progress.
 - The mobile join deep-link route now treats the route code as untrusted preview
   input only, uses the server-returned invite code for join mutations, and has
   simulator evidence for `sequence://join/<code>` routing.
+- The mobile game route now renders a live lobby branch with team roster
+  controls, native invite sharing, creator-only randomize/kick/start actions,
+  and public route access that relies on API/stream participant checks.
 
 ---
 
@@ -2572,6 +2632,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 join/root-layout suites, 11 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/auth/guest-store.test.ts src/auth/login-screen.test.tsx src/features/join src/api/cookies.test.ts src/test/root-layout.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 6 guest/join/root-layout/stream suites, 34 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `xcrun simctl openurl booted "sequence://join/TESTCODE"` with screenshots `/tmp/p06-t06-sequence-join-testcode-preview.png` and `/tmp/p06-t06-sequence-join-garbage-unknown.png` | yes    | 0      | Scheme route/UI proof used temporary mock API; API-backed preview covered elsewhere |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/game/LobbyTeams.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 lobby suite, 5 tests; includes over-capacity roster regression |
 
 ## Final Summary (for PR/docs)
 
