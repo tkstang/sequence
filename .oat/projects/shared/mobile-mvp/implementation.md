@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t05
+oat_current_task_id: p01-t06
 oat_generated: false
 ---
 
@@ -26,10 +26,10 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 4/8       |
+| Phase 1 | in_progress | 8     | 5/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 4/85 tasks completed
+**Total:** 5/85 tasks completed
 
 ---
 
@@ -209,6 +209,41 @@ oat_generated: false
 
 ---
 
+### Task p01-t05: Root gate integration
+
+**Status:** completed
+**Commit:** 95f1aca
+
+**Outcome:**
+
+- Root `pnpm test` now runs the existing Vitest workspace first and then the
+  mobile Jest suite as a separate visible `@sequence/mobile` step.
+- Vitest workspace discovery excludes `apps/mobile` because that workspace is
+  owned by `jest-expo`.
+- Existing root typecheck, lint, and format gates already cover the mobile
+  workspace through the root package scripts.
+
+**Files changed:**
+
+- `scripts/run-tests.mjs` - orchestrates Vitest plus mobile Jest and preserves
+  non-zero exit propagation for either runner.
+- `vitest.workspace.ts` - narrows Vitest projects to `packages/*` and
+  `apps/web` so mobile test files are not collected by Vitest.
+
+**Verification:**
+
+- Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test`
+- Result: pass. Output showed mobile typecheck in the recursive typecheck and
+  a dedicated `[tests] @sequence/mobile Jest` step with 1 passing test.
+
+**Notes / Decisions:**
+
+- No root `package.json` script changes were required: typecheck already uses
+  `pnpm -r`, lint/format already scan `apps`, and `pnpm test` delegates to
+  `scripts/run-tests.mjs`.
+
+---
+
 ## Phase 2: {Phase Name}
 
 **Status:** pending
@@ -249,7 +284,8 @@ Chronological log of implementation progress.
 - [x] p01-t02: Metro, TypeScript, and lint/format wiring - 2890e84
 - [x] p01-t03: Shared-import spike — game-logic + AppRouter under Metro - dac6545
 - [x] p01-t04: jest-expo + Testing Library setup - 8d0205f
-- [ ] p01-t05: Root gate integration - next
+- [x] p01-t05: Root gate integration - 95f1aca
+- [ ] p01-t06: First dev build boots on the simulator - next
 
 **What changed (high level):**
 
@@ -261,6 +297,8 @@ Chronological log of implementation progress.
   exports and the `@sequence/api` `AppRouter` type contract.
 - Mobile Jest now runs through `jest-expo` with React Native Testing Library and
   a first home-screen component test.
+- Root gates now include mobile typecheck/lint/format coverage and run mobile
+  Jest after the Vitest workspace.
 
 **Decisions:**
 
@@ -272,7 +310,7 @@ Chronological log of implementation progress.
 
 **Follow-ups / TODO:**
 
-- Integrate mobile tests into the root gates in p01-t05.
+- Boot the first local iOS dev build with `expo-dev-client` in p01-t06.
 
 **Blockers:**
 
