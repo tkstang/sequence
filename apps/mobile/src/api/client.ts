@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpBatchLink, loggerLink } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
 
+import { buildCookieHeader } from './cookies.ts';
 import { getApiEnv, type ApiEnv } from './env.ts';
 
 export function createSequenceQueryClient() {
@@ -25,6 +26,10 @@ export function createTRPCLinks(env: ApiEnv = getApiEnv()) {
     }),
     httpBatchLink<AppRouter>({
       url: `${env.apiUrl}/trpc`,
+      async headers() {
+        const cookie = await buildCookieHeader();
+        return cookie ? { Cookie: cookie } : {};
+      },
       fetch(url, options) {
         const requestInit = options as RequestInit | undefined;
         return fetch(url, { ...requestInit, credentials: 'omit' });
