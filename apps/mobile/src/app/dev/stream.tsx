@@ -7,8 +7,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTRPC } from '../../api/client.ts';
 import { Button } from '../../components/Button.tsx';
 import { Card } from '../../components/Card.tsx';
+import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
 import { Screen } from '../../components/Screen.tsx';
 import { TextField } from '../../components/TextField.tsx';
+import { useGameStream } from '../../realtime/use-game-stream.ts';
 import { useTheme } from '../../theme/use-theme.ts';
 
 type RawStreamItem = GameStreamItem | { data: GameStreamItem };
@@ -27,6 +29,7 @@ function stringifyRawItem(item: RawStreamItem): string {
 function DevStreamFeed({ gameId }: { gameId: string }) {
   const trpc = useTRPC();
   const { colors } = useTheme();
+  const gameStream = useGameStream(gameId);
   const [items, setItems] = useState<string[]>([]);
   const [startedAt, setStartedAt] = useState<string | null>(null);
 
@@ -56,6 +59,7 @@ function DevStreamFeed({ gameId }: { gameId: string }) {
 
   return (
     <View style={styles.stack}>
+      <ConnectionBanner connectionState={gameStream.connectionState} />
       <Card testID="dev.stream.status" variant="raised">
         <View style={styles.status}>
           <Text style={[styles.label, { color: colors.text }]}>
@@ -66,6 +70,15 @@ function DevStreamFeed({ gameId }: { gameId: string }) {
           </Text>
           <Text style={[styles.mono, { color: colors.textMuted }]}>
             status: {subscription.status}
+          </Text>
+          <Text style={[styles.mono, { color: colors.textMuted }]}>
+            lifecycle: {gameStream.connectionState}
+          </Text>
+          <Text style={[styles.mono, { color: colors.textMuted }]}>
+            lastEventId: {gameStream.lastEventId ?? 'none'}
+          </Text>
+          <Text style={[styles.mono, { color: colors.textMuted }]}>
+            snapshot: {gameStream.view?.gameId ?? 'none'}
           </Text>
           {startedAt === null ? null : (
             <Text style={[styles.mono, { color: colors.textMuted }]}>
