@@ -10,6 +10,14 @@ import { GUEST_COOKIE_NAME } from '../../trpc.ts';
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const describeIntegration = hasTestDb ? describe : describe.skip;
 
+function guestTokenFromSetCookie(setCookie: string): string | undefined {
+  return setCookie
+    .split(/,(?=[^ ;]+=)/)
+    .map((cookie) => cookie.split(';')[0]?.trim())
+    .find((cookie) => cookie.startsWith(`${GUEST_COOKIE_NAME}=`))
+    ?.slice(GUEST_COOKIE_NAME.length + 1);
+}
+
 describeIntegration('game.preview / game.join (integration)', () => {
   let h: Harness;
 
@@ -77,6 +85,23 @@ describeIntegration('game.preview / game.join (integration)', () => {
     expect(players).toHaveLength(2);
   });
 
+  it('a registered join does not return a guest token when requested', async () => {
+    const { inviteCode } = await createGame();
+    const joiner = await h.signUp({
+      email: `joiner-${randomUUID()}@example.com`,
+      password: 'supersecret123',
+      name: 'Joiner',
+    });
+    const res = await h.mutate(
+      'game.join',
+      { inviteCode, returnGuestToken: true },
+      joiner.cookie,
+    );
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data).not.toHaveProperty('guestToken');
+  });
+
   it('a re-join by the same user is idempotent (same seat, no dup row)', async () => {
     const { inviteCode, gameId } = await createGame();
     const joiner = await h.signUp({
@@ -111,6 +136,8 @@ describeIntegration('game.preview / game.join (integration)', () => {
     const setCookie = res.headers.get('set-cookie') ?? '';
     expect(setCookie).toContain(`${GUEST_COOKIE_NAME}=`);
     expect(setCookie.toLowerCase()).toContain('httponly');
+    const json = (await res.json()) as { result?: { data?: unknown } };
+    expect(json.result?.data).not.toHaveProperty('guestToken');
 
     const players = await h.db
       .select()
@@ -119,6 +146,30 @@ describeIntegration('game.preview / game.join (integration)', () => {
     const guest = players.find((p) => p.guestName === 'Couch Guest');
     expect(guest?.guestTokenHash).toBeTruthy();
     expect(guest?.userId).toBeNull();
+  });
+
+  it('a guest join returns the guest token only when requested', async () => {
+    const { inviteCode } = await createGame();
+    const res = await fetch(`${h.baseUrl}/trpc/game.join`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        inviteCode,
+        guestName: 'Mobile Guest',
+        returnGuestToken: true,
+      }),
+    });
+    expect(res.ok).toBe(true);
+    const setCookie = res.headers.get('set-cookie') ?? '';
+    const cookieToken = guestTokenFromSetCookie(setCookie);
+    expect(cookieToken).toBeTruthy();
+
+    const json = (await res.json()) as {
+      result?: { data?: { guestToken?: unknown } };
+    };
+    expect(json.result?.data?.guestToken).toBe(
+      decodeURIComponent(cookieToken!),
+    );
   });
 
   it('anonymous join without a guestName is BAD_REQUEST', async () => {
