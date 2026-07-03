@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t01
+oat_current_task_id: p07-t02
 oat_generated: false
 ---
 
@@ -32,8 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
+| Phase 7 | in_progress | 9     | 1/9       |
 
-**Total:** 43/85 tasks completed
+**Total:** 44/85 tasks completed
 
 ---
 
@@ -2507,6 +2508,112 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+## Phase 7: Game Surface — Core Play (Tap Mode)
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Phase Summary
+
+**Outcome (what changed):**
+
+- Started the playable game-surface phase by adding the mobile SVG card asset
+  pipeline and reusable `CardFace` component.
+- The board and hand tasks can now render the same 52 card faces used by the
+  web app through `react-native-svg` and the Expo Metro SVG transformer.
+- Added a development-only card-grid route for visual sanity checks while
+  keeping the dev route guarded by the existing `__DEV__` layout.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`
+- Result: pass, 1 suite / 55 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`
+- Result: pass in the implementing subagent run.
+- Run: `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`
+- Result: pass in the implementing subagent run.
+
+**Notes / Decisions:**
+
+- The subagent did not capture a usable card-grid screenshot because Metro was
+  not reachable on port 8081 during the visual pass; the card route remains
+  available at `/dev/cards` for the later game-surface story and screenshot
+  tasks.
+- The orchestrator added the follow-up fix commit because board-scale callers
+  often allocate fresh `{rank, suit}` objects while representing the same card;
+  `CardFace` now skips equal-value SVG rerenders.
+
+### Task p07-t01: SVG card pipeline
+
+**Status:** completed
+**Commit:** fa42027
+**Fix Commit:** 08645c8
+
+**Outcome:**
+
+- Added `react-native-svg` support for imported SVG card faces in the mobile
+  Expo workspace.
+- Copied the 52 face SVGs, 2 card backs, and attribution file into the mobile
+  asset tree.
+- Added `CardFace`, `CARD_FACE_CODES`, and card-to-asset helpers for all 52
+  rank/suit combinations.
+- Memoized `CardFace` by semantic card value, size, style, and testID so equal
+  cards do not repaint their SVG face when callers pass fresh card objects.
+- Added a development-only `/dev/cards` route that renders the full face grid.
+
+**Files changed:**
+
+- `apps/mobile/src/game/cards/CardFace.tsx` /
+  `CardFace.test.tsx` - card asset map, reusable card face component, and 55
+  focused tests.
+- `apps/mobile/src/assets/cards/` - copied SVG card assets and attribution.
+- `apps/mobile/src/types/svg.d.ts` - SVG module declaration.
+- `apps/mobile/metro.config.js` - Expo SVG transformer wiring.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - SVG runtime and transformer
+  dependencies.
+- `apps/mobile/src/app/dev/cards.tsx` - development-only card grid route.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the board-scale card memoization learning.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`
+- Result: pass, 1 suite / 55 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`
+- Result: pass in the implementing subagent run.
+- Run: `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`
+- Result: pass in the implementing subagent run.
+
+**Notes / Decisions:**
+
+- The SVG assets are copied into the mobile tree for Metro/native bundling
+  rather than read directly from `apps/web/public/cards`.
+- The card-grid route is intentionally under the existing development-only
+  route tree and is not linked from the shipped app.
+- Visual card-grid screenshot proof is deferred to the planned p07-t08
+  game-surface playground story sweep because the p07-t01 Metro visual pass did
+  not reach the route, while export and native rebuild proof passed.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2626,7 +2733,8 @@ Chronological log of implementation progress.
 - [x] p06-t06: Scheme deep links - e70d449
 - [x] p06-t07: Lobby screen + controls + share - bddfa59 / 8099ab9
 - [x] p06-t08: Multi-client lobby verification - c75ee97 / 7f875d1
-- [ ] p07-t01: Board scaffold — SVG board, chip overlays, safe sizing - next
+- [x] p07-t01: SVG card pipeline - fa42027 / 08645c8
+- [ ] p07-t02: GameBoard grid + chips + sequences - next
 
 **What changed (high level):**
 
@@ -2725,6 +2833,9 @@ Chronological log of implementation progress.
   through guest deep-link join, live lobby propagation, kick/randomize, start
   gate evidence, and guest relaunch continue-list recovery. The run also fixed
   the missing guest-token cookie path for mobile WebSocket streams.
+- The Phase 7 card asset pipeline now supports all 52 SVG faces on mobile with
+  memoized `CardFace` rendering, Metro SVG transformer wiring, and a
+  development-only card-grid route.
 
 ---
 
@@ -2742,6 +2853,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t08       | plan.md / design.md | RSD `html.*` wrappers for remaining TextField and Badge chrome-kit primitives | `TextField` and `Badge` are native-backed while preserving public APIs | Both-scheme simulator verification showed the native-backed approach is the stable baseline for the full chrome-kit surface | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Badge.tsx` | Continue using native-backed chrome primitives unless a later RSD issue is deliberately re-evaluated |
 | p04-t04       | plan.md         | Auth route tests under `apps/mobile/src/app/(auth)` and root layout test under `apps/mobile/src/app` | Auth and root-route tests live under `apps/mobile/src/auth` and `apps/mobile/src/test` | Expo Router can bundle route-local tests into Metro; this preserves the already proven route-tree rule | `apps/mobile/src/auth/login-screen.test.tsx`; `apps/mobile/src/auth/signup-screen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
 | p04-t06       | plan.md         | Scenario task with no file changes unless fixes land | Installed `expo-network` / `expo-web-browser` and added the `expo-web-browser` config plugin | Simulator proof exposed missing `@better-auth/expo` runtime peers after auth-client initialization | `apps/mobile/package.json`; `apps/mobile/app.config.ts`; `pnpm-lock.yaml` | Keep declared native peers installed and rebuild the dev client after native module changes |
+| p07-t01       | plan.md         | Dev-build screenshot of a card grid sanity check | Focused Jest, Expo export, and native rebuild passed; no usable card-grid screenshot was captured | Metro was not reachable during the visual pass, and p07-t08 owns full game-surface playground screenshot verification | `apps/mobile/src/app/dev/cards.tsx`; `apps/mobile/src/game/cards/CardFace.tsx` | Capture game-surface card/board screenshots during p07-t08 |
 
 ## Test Results
 
@@ -2776,6 +2888,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `xcrun simctl openurl booted "sequence://join/TESTCODE"` with screenshots `/tmp/p06-t06-sequence-join-testcode-preview.png` and `/tmp/p06-t06-sequence-join-garbage-unknown.png` | yes    | 0      | Scheme route/UI proof used temporary mock API; API-backed preview covered elsewhere |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/game/LobbyTeams.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 lobby suite, 5 tests; includes over-capacity roster regression |
 | 6     | Local API/web/Metro/iOS dev-client p06-t08 scenario; `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts src/game/routes/lobby.test.ts`; `pnpm --filter @sequence/mobile exec jest src/api/client.test.ts src/api/cookies.test.ts src/api/ws.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | FR2-FR5 evidence screenshots `/tmp/p06-t08-web-created-lobby.png`, `/tmp/p06-t08-mobile-deeplink-preview.png`, `/tmp/p06-t08-mobile-lobby-after-guest-join.png`, `/tmp/p06-t08-web-after-randomize.png`, `/tmp/p06-t08-mobile-after-randomize.png`, `/tmp/p06-t08-mobile-relaunch-continue-list.png`, `/tmp/p06-t08-orchestrator-current.png` |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607` | yes    | 0      | 55 card-pipeline tests; export and native rebuild passed; card-grid screenshot deferred to p07-t08 |
 
 ## Final Summary (for PR/docs)
 
