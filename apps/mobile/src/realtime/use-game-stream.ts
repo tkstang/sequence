@@ -22,6 +22,10 @@ export type GameStreamConnectionState =
 
 type TrackedStreamItem = GameStreamItem | { data: GameStreamItem };
 
+export type UseGameStreamOptions = {
+  initialLastEventId?: number | null;
+};
+
 function unwrapStreamItem(item: TrackedStreamItem): GameStreamItem {
   return 'data' in item ? item.data : item;
 }
@@ -33,7 +37,10 @@ function reducer(
   return applyStreamItem(state, item);
 }
 
-export function useGameStream(gameId: string): {
+export function useGameStream(
+  gameId: string,
+  options: UseGameStreamOptions = {},
+): {
   connectionState: GameStreamConnectionState;
   lastEventId: number | null;
   resubscribe: () => void;
@@ -41,12 +48,15 @@ export function useGameStream(gameId: string): {
 } {
   const trpc = useTRPC();
   const [view, dispatch] = useReducer(reducer, null);
-  const lastEventIdRef = useRef<number | null>(null);
+  const initialLastEventId = options.initialLastEventId ?? null;
+  const lastEventIdRef = useRef<number | null>(initialLastEventId);
   const socketStateRef = useRef<RealtimeSocketState>('connecting');
   const resubscribeRef = useRef<(reason?: RealtimeResubscribeReason) => void>(
     () => {},
   );
-  const [recoveryEventId, setRecoveryEventId] = useState<number | null>(null);
+  const [recoveryEventId, setRecoveryEventId] = useState<number | null>(
+    initialLastEventId,
+  );
   const [connectionState, setConnectionState] =
     useState<GameStreamConnectionState>('connecting');
   const connectionStateRef = useRef<GameStreamConnectionState>(connectionState);

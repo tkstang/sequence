@@ -131,6 +131,15 @@ describe('useGameStream', () => {
     });
   });
 
+  it('can start a debug subscription from a supplied recovery cursor', async () => {
+    await renderHook(() => useGameStream('game-1', { initialLastEventId: 4 }));
+
+    expect(mockSubscriptionInputs.at(-1)).toEqual({
+      gameId: 'game-1',
+      lastEventId: 4,
+    });
+  });
+
   it('transitions connection state from connecting to live', async () => {
     const { result } = await renderHook(() => useGameStream('game-1'));
 

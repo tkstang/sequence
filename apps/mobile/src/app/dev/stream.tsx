@@ -22,14 +22,30 @@ function firstSearchParam(value: string | string[] | undefined): string {
   return value ?? '';
 }
 
+function parseLastEventId(value: string | string[] | undefined): number | null {
+  const raw = firstSearchParam(value).trim();
+  if (raw.length === 0) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
 function stringifyRawItem(item: RawStreamItem): string {
   return JSON.stringify(item, null, 2) ?? String(item);
 }
 
-function DevStreamFeed({ gameId }: { gameId: string }) {
+function DevStreamFeed({
+  gameId,
+  initialLastEventId,
+}: {
+  gameId: string;
+  initialLastEventId: number | null;
+}) {
   const trpc = useTRPC();
   const { colors } = useTheme();
-  const gameStream = useGameStream(gameId);
+  const gameStream = useGameStream(gameId, { initialLastEventId });
   const [items, setItems] = useState<string[]>([]);
   const [startedAt, setStartedAt] = useState<string | null>(null);
 
@@ -49,7 +65,9 @@ function DevStreamFeed({ gameId }: { gameId: string }) {
 
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
-      { gameId },
+      initialLastEventId === null
+        ? { gameId }
+        : { gameId, lastEventId: initialLastEventId },
       {
         onData: (item) => appendItem(item as RawStreamItem),
         onStarted: () => setStartedAt(new Date().toISOString()),
@@ -70,6 +88,9 @@ function DevStreamFeed({ gameId }: { gameId: string }) {
           </Text>
           <Text style={[styles.mono, { color: colors.textMuted }]}>
             status: {subscription.status}
+          </Text>
+          <Text style={[styles.mono, { color: colors.textMuted }]}>
+            requestedLastEventId: {initialLastEventId ?? 'none'}
           </Text>
           <Text style={[styles.mono, { color: colors.textMuted }]}>
             lifecycle: {gameStream.connectionState}
@@ -103,8 +124,12 @@ function DevStreamFeed({ gameId }: { gameId: string }) {
 }
 
 export default function DevStreamScreen() {
-  const params = useLocalSearchParams<{ gameId?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    gameId?: string | string[];
+    lastEventId?: string | string[];
+  }>();
   const initialGameId = firstSearchParam(params.gameId).trim();
+  const initialLastEventId = parseLastEventId(params.lastEventId);
   const [draftGameId, setDraftGameId] = useState(initialGameId);
   const [joinedGameId, setJoinedGameId] = useState(initialGameId);
   const { colors } = useTheme();
@@ -148,7 +173,10 @@ export default function DevStreamScreen() {
           Enter a game id to subscribe.
         </Card>
       ) : (
-        <DevStreamFeed gameId={joinedGameId} />
+        <DevStreamFeed
+          gameId={joinedGameId}
+          initialLastEventId={initialLastEventId}
+        />
       )}
     </Screen>
   );
