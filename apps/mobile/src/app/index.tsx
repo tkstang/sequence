@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTRPC } from '../api/client.ts';
+import { mapTRPCErrorToPolicy } from '../api/error-policy.ts';
 import { signOut, useSession } from '../auth/client.ts';
 import { Button } from '../components/Button.tsx';
 import { Card } from '../components/Card.tsx';
@@ -19,8 +21,15 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const trpc = useTRPC();
   const ping = useQuery(trpc.health.ping.queryOptions());
+  const me = useQuery(trpc.health.me.queryOptions());
   const session = useSession();
-  const user = session.data?.user;
+  const user = me.data?.user ?? session.data?.user;
+
+  useEffect(() => {
+    if (me.isError && mapTRPCErrorToPolicy(me.error) === 'redirect-login') {
+      router.replace('./login');
+    }
+  }, [me.error, me.isError]);
 
   const pingStatus = ping.isPending
     ? 'pinging...'
@@ -54,7 +63,9 @@ export default function HomeScreen() {
         <View style={styles.cardContent}>
           <Text style={[styles.title, { color: colors.text }]}>Signed in</Text>
           <Text style={[styles.body, { color: colors.textMuted }]}>
-            {user?.email ?? user?.name ?? 'Authenticated session'}
+            {me.isPending
+              ? 'Checking session...'
+              : (user?.email ?? user?.name ?? 'Authenticated session')}
           </Text>
         </View>
       </Card>
