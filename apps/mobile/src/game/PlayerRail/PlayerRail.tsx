@@ -104,34 +104,34 @@ export function PlayerRail({
                   Seat {player.seat + 1}
                 </Text>
               </View>
-              <Text
-                style={[
-                  styles.turnBadge,
-                  {
-                    backgroundColor: colors.frozenBg,
-                    color: colors.frozenFg,
-                    opacity: active ? 1 : 0,
-                  },
-                ]}
-                testID={`${playerTestId}.turn`}
-              >
-                Turn
-              </Text>
-              <Text
-                style={[
-                  styles.connectionBadge,
-                  {
-                    backgroundColor: connected
-                      ? colors.neutralBadgeBg
-                      : colors.danger,
-                    color: colors.textOnDark,
-                    opacity: connected ? 0 : 1,
-                  },
-                ]}
-                testID={`${playerTestId}.offline`}
-              >
-                {connected ? '' : 'Offline'}
-              </Text>
+              {active ? (
+                <Text
+                  style={[
+                    styles.turnBadge,
+                    {
+                      backgroundColor: colors.frozenBg,
+                      color: colors.frozenFg,
+                    },
+                  ]}
+                  testID={`${playerTestId}.turn`}
+                >
+                  Turn
+                </Text>
+              ) : null}
+              {!connected ? (
+                <Text
+                  style={[
+                    styles.connectionBadge,
+                    {
+                      backgroundColor: colors.danger,
+                      color: colors.textOnDark,
+                    },
+                  ]}
+                  testID={`${playerTestId}.offline`}
+                >
+                  Offline
+                </Text>
+              ) : null}
               {connected ? (
                 <Text
                   style={[

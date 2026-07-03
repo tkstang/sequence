@@ -105,6 +105,10 @@ value. Expo MCP and Argent usage details belong in
   dead cards through the event stream, while drag mode needs visible badges and
   a turn-in control; nested turn-in controls should stop press propagation so
   turning in a card does not also toggle selected-card state.
+- Mobile timers should treat the server deadline as the only source of truth.
+  On deadline prop changes, reset the local clock baseline immediately; on
+  expiry, clamp the display to `0:00` and wait for the stream to reflect any
+  server-side forfeit instead of triggering client-side expiry behavior.
 
 ## Verification Mechanics
 
