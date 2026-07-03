@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p03-t01
+oat_current_task_id: p03-t04
 oat_generated: false
 ---
 
@@ -28,9 +28,9 @@ oat_generated: false
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
-| Phase 3 | in_progress | 8     | 0/8       |
+| Phase 3 | in_progress | 8     | 3/8       |
 
-**Total:** 13/85 tasks completed
+**Total:** 16/85 tasks completed
 
 ---
 
@@ -660,6 +660,151 @@ oat_generated: false
 
 ---
 
+## Phase 3: Tokens, Theming, Chrome Kit
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Task p03-t01: packages/design-tokens
+
+**Status:** completed
+**Commit:** d2395ed
+**Fix Commit:** 6d3da25
+
+**Outcome:**
+
+- Added the framework-free `@sequence/design-tokens` workspace package.
+- Extracted the web light/dark palette and dimensional token values into raw
+  TypeScript exports without importing StyleX, React, DOM, Expo, or native
+  runtime code.
+- Added Vitest coverage for light/dark palette key parity and expected
+  dimension-group exports.
+
+**Files changed:**
+
+- `packages/design-tokens/package.json` - package manifest, exports, and test
+  script.
+- `packages/design-tokens/src/index.ts` - public exports.
+- `packages/design-tokens/src/palette.ts` - light/dark color tokens and
+  `ColorToken` union.
+- `packages/design-tokens/src/dimensions.ts` - spacing, radius, shadow,
+  typography, and z-index values.
+- `packages/design-tokens/src/palette.test.ts` - parity and dimension tests.
+- `pnpm-lock.yaml` - workspace package entry.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`
+- Result: pass, 1 file / 2 tests.
+
+**Notes / Decisions:**
+
+- `6d3da25` removes a token-test lint warning after the initial package commit.
+
+---
+
+### Task p03-t02: Web consumes design-tokens (value-identical)
+
+**Status:** completed
+**Commit:** 1ef4f5d
+
+**Outcome:**
+
+- Refactored web token/theme generation to source values from
+  `@sequence/design-tokens`.
+- Added a design-token script that writes the StyleX token/theme files from the
+  framework-free package, preserving the existing web token values exactly.
+- Added the web workspace dependency on `@sequence/design-tokens`.
+
+**Files changed:**
+
+- `packages/design-tokens/scripts/write-web-stylex.ts` - writes generated web
+  StyleX token/theme files from raw tokens.
+- `packages/design-tokens/package.json` - adds `generate:web-stylex` script and
+  `tsx` dev dependency.
+- `apps/web/src/styles/tokens.stylex.ts` - generated StyleX vars.
+- `apps/web/src/styles/themes.stylex.ts` - generated light/dark themes.
+- `apps/web/package.json` - depends on `@sequence/design-tokens`.
+- `pnpm-lock.yaml` - dependency graph updates.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/web build`
+- Result: pass; Next compiled successfully and produced the expected routes.
+- Run: `pnpm --filter @sequence/web test`
+- Result: pass, 23 files / 103 tests.
+- Run: `pnpm typecheck`
+- Result: pass across `packages/game-logic`, `packages/api`, `apps/mobile`,
+  and `apps/web`.
+- Run: Playwright screenshots of `/dev` via system Chrome at
+  `http://127.0.0.1:3002/dev`.
+- Result: pass; screenshots captured:
+  `/tmp/p03-t02-web-dev-light.png` and `/tmp/p03-t02-web-dev-dark.png`.
+
+**Notes / Decisions:**
+
+- The StyleX compiler path uses the plan's codegen contingency rather than
+  direct cross-package static imports; raw values remain sourced from
+  `@sequence/design-tokens`.
+
+---
+
+### Task p03-t03: RSD spike + sign-off gate
+
+**Status:** completed
+**Commit:** 7bb701d
+**Gate:** PASS
+
+**Outcome:**
+
+- Added the minimal React Strict DOM spike route at `/rsd-spike`.
+- Added RSD `css.defineVars` wrapping light/dark values from
+  `@sequence/design-tokens`.
+- Added the RSD Babel preset for native and pinned `react-strict-dom` at
+  `0.0.55`.
+- Verified the RSD surface renders on the iOS simulator and dark values apply
+  when the simulator appearance flips.
+
+**Files changed:**
+
+- `apps/mobile/babel.config.js` - adds `react-strict-dom/babel-preset`.
+- `apps/mobile/package.json` - adds `@sequence/design-tokens` and
+  `react-strict-dom`.
+- `apps/mobile/src/app/rsd-spike.tsx` - temporary RSD spike route.
+- `apps/mobile/src/theme/vars.css.ts` - minimal RSD variable wrapper.
+- `pnpm-lock.yaml` - dependency graph updates.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: Metro LAN dev server with production health override, existing installed
+  dev client, `xcrun simctl launch --initialUrl`, `sequence://rsd-spike`, and
+  `xcrun simctl ui ... appearance light|dark`.
+- Result: pass; RSD route renders, and light/dark screenshots show token values
+  changing. Evidence:
+  `/tmp/p03-t03-rsd-light-clean.png` and
+  `/tmp/p03-t03-rsd-dark-clean.png`.
+
+**Notes / Decisions:**
+
+- The initial inherited `pnpm --filter @sequence/mobile ios` process ran for
+  over 20 minutes without completing and was terminated. Because p03-t03 only
+  changes JS/Babel/runtime package inputs and the dev client was already
+  installed, verification used the installed dev build plus Metro LAN mode.
+- Metro LAN mode with the host IP was required for this simulator pass;
+  `127.0.0.1` / `localhost` dev-client URLs failed to connect from the iOS
+  runtime in this run.
+- The first RSD render emitted a runtime warning for `flex: 1` without a flex
+  parent; the route now uses `minHeight: '100%'`, and the clean screenshot pass
+  had no RSD runtime errors.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -748,7 +893,11 @@ Chronological log of implementation progress.
 - [x] p02-t03: apps/mobile/AGENTS.md - the agent loop - 3b3b5c2
 - [x] p02-t04: Operator runbook scaffold - 4a927c1
 - [x] p02-t05: FR17 agent-loop demo + evidence - 92dd239
-- [ ] p03-t01: packages/design-tokens - next
+- [x] p03-t01: packages/design-tokens - d2395ed
+- [x] p03-t01 fix: remove token test lint warning - 6d3da25
+- [x] p03-t02: Web consumes design-tokens - 1ef4f5d
+- [x] p03-t03: RSD spike passes on SDK 57 - 7bb701d
+- [ ] p03-t04: Full token vars + ThemeProvider + useTheme - next
 
 **What changed (high level):**
 
@@ -763,6 +912,9 @@ Chronological log of implementation progress.
 - The FR17 loop now has live evidence for Expo MCP screenshot, view lookup, log
   collection, and Argent native-tree/tap fallback, plus a project reference log
   for later Expo MCP skill distillation.
+- Design tokens now live in a framework-free workspace package, web StyleX
+  token/theme files are generated from that package, and the RSD spike passed
+  on the iOS simulator with light/dark token values.
 
 ---
 
@@ -773,6 +925,8 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | Task / Review | Source Artifact | Planned / Documented | Actual / Accepted | Reason | Source of Truth | Follow-up |
 | ------------- | --------------- | -------------------- | ----------------- | ------ | --------------- | --------- |
 | p02-t05       | plan.md         | Expo MCP screenshot, tap `home.ping` by testID, read logs, then Argent a11y-tree read | Expo MCP covered screenshot, `home.ping` find, and logs; Argent covered native-tree read and tap at the `pong: true` point | Expo MCP `automation_tap` was unreliable on this host; user approved Argent fallback where Expo MCP does not cover the flow | `apps/mobile/AGENTS.md`; `references/using-expo-mcp-learnings.md` | Re-evaluate Expo MCP tap reliability when distilling the final skill |
+| p03-t02       | plan.md         | Web StyleX themes consume `@sequence/design-tokens` imports directly if static evaluation allows it | Web StyleX files are generated from `@sequence/design-tokens` by script | Uses the plan's codegen contingency while preserving the package as source of truth | `packages/design-tokens/scripts/write-web-stylex.ts` | Keep generated StyleX files in sync with token changes |
+| p03-t03       | plan.md         | `pnpm --filter @sequence/mobile ios` for the RSD spike proof | Existing installed dev client plus Metro LAN mode verified the JS/Babel spike | The inherited `expo run:ios` process stalled; p03-t03 did not require a native rebuild, and simulator visual gate passed | `/tmp/p03-t03-rsd-light-clean.png`; `/tmp/p03-t03-rsd-dark-clean.png` | Re-run a full dev-client build when the next native dependency lands |
 
 ## Test Results
 
@@ -782,6 +936,7 @@ Track test execution during implementation.
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
+| 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 

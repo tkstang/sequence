@@ -1,6 +1,6 @@
 ---
-oat_current_task: p03-t01
-oat_last_commit: 92dd239
+oat_current_task: p03-t04
+oat_last_commit: 7bb701d
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,19 +27,19 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-03T14:34:52Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-03T15:31:05Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p03-t01
+**Status:** Implementation in progress — current task p03-t04
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-03
 
 ## Current Phase
 
-Implementation - Phase 3 tokens, theming, and chrome-kit work is starting; next task p03-t01. The plan has 12 phases / 85 tasks tracing
+Implementation - Phase 3 tokens, theming, and chrome-kit work is in progress; next task p03-t04. The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
@@ -51,7 +51,7 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p03-t01)
+- **Implementation:** `implementation.md` (initialized — current task p03-t04)
 
 ## Progress
 
@@ -62,7 +62,7 @@ checkpoints is enabled from workflow config.
 - ✓ Deferred follow-ups captured as backlog items (EAS Updates, universal
   links, Maestro e2e, Android support, Xcode 27 MCP re-evaluation, Sentry)
 - ✓ Phase 2 agent tooling complete (5/5)
-- ⧗ Implementation in progress at p03-t01 (Phase 3 0/8 complete)
+- ⧗ Implementation in progress at p03-t04 (Phase 3 3/8 complete)
 
 ## Blockers
 
