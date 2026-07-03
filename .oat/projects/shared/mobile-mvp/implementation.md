@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p02-t05
+oat_current_task_id: p03-t01
 oat_generated: false
 ---
 
@@ -27,9 +27,10 @@ oat_generated: false
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
-| Phase 2 | in_progress | 5     | 4/5       |
+| Phase 2 | completed   | 5     | 5/5       |
+| Phase 3 | in_progress | 8     | 0/8       |
 
-**Total:** 12/85 tasks completed
+**Total:** 13/85 tasks completed
 
 ---
 
@@ -411,7 +412,7 @@ oat_generated: false
 
 ## Phase 2: Agent Tooling
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Task p02-t01: MCP configuration + expo-mcp local tools
@@ -589,8 +590,73 @@ oat_generated: false
 
 ### Task p02-t05: FR17 agent-loop demo + evidence
 
-**Status:** pending
-**Commit:** -
+**Status:** completed
+**Commit:** 92dd239
+
+**Outcome:**
+
+- Executed the documented FR17 agent loop against the installed iOS dev build
+  and running Metro server with `EXPO_UNSTABLE_MCP_SERVER=1`.
+- Verified Expo MCP local automation through stdio for tool discovery,
+  screenshot capture, `home.ping` view inspection, and app log collection.
+- Verified Argent MCP as the native fallback for iOS accessibility-tree reads
+  and tap execution when Expo MCP `automation_tap` was not reliable.
+- Captured project-specific Expo MCP / Argent learnings for later skill
+  distillation.
+
+**Files changed:**
+
+- `apps/mobile/AGENTS.md` - updates the documented agent loop with local MCP
+  enablement, one-shot log collection, direct stdio framing, deep-link prompt
+  avoidance, and Argent native-devtools launch requirements.
+- `.oat/projects/shared/mobile-mvp/references/using-expo-mcp-learnings.md` -
+  running learnings log for the later Expo MCP skill.
+
+**Verification:**
+
+- Run: `EXPO_UNSTABLE_MCP_SERVER=1 EXPO_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app EXPO_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`
+- Result: pass; Metro served the app and logged successful `health.ping`
+  query responses.
+- Run: `xcrun simctl launch --terminate-running-process 3F87B084-DD33-41D5-B4F5-88DA77989607 com.tkstang.sequenceonline --initialUrl ...`
+- Result: pass; the dev client launched without operator input.
+- Run: Expo MCP stdio `tools/list` / `automation_take_screenshot`.
+- Result: pass; tool list exposed `automation_find_view`,
+  `automation_take_screenshot`, `automation_tap`, `collect_app_logs`,
+  `expo_router_sitemap`, and `open_devtools`; screenshot evidence:
+  `/tmp/p02-t05-expo-mcp-screenshot.jpg`.
+- Run: Expo MCP stdio `automation_find_view` for `home.ping`.
+- Result: pass; returned `exists: true`, `is_hittable: true`, and label
+  `pong: true`.
+- Run: Expo MCP stdio `collect_app_logs` with `sources:
+  ["js_console","native_ios"]`.
+- Result: pass; returned markdown-formatted CDP and iOS simulator log sections.
+- Run: Expo MCP stdio `automation_tap` for `home.ping`.
+- Result: tool gap; direct invocation returned `Cannot read properties of
+  undefined (reading 'bundleIdentifier')`; the `pnpm exec` retry timed out and
+  then returned `Unexpected end of JSON input` during cleanup.
+- Run: `npx -y @swmansion/argent tools`; Argent MCP `list-devices`,
+  `describe`, `boot-device`, `launch-app`, `open-url`,
+  `native-describe-screen`, and `gesture-tap`.
+- Result: pass; Argent reported v0.14.0 / 69 tools, found the iPhone 17 Pro,
+  read the visible accessibility tree, injected native devtools after an
+  Argent boot/launch, returned `native-describe-screen` `status: ok` with
+  `pong: true`, and tapped the normalized `pong: true` point.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The Expo MCP screenshot/find/log criteria are satisfied by local MCP tool
+  calls. The tap criterion is satisfied through the approved Argent fallback
+  because Expo MCP `automation_tap` is currently unreliable on this host.
+- Argent native tools need an Argent-managed boot/launch path for native
+  devtools injection; launching outside Argent can leave
+  `native-describe-screen` in `restart_required`.
+- The `open-url` path can surface the iOS "Open in Sequence Online?"
+  confirmation prompt, so the AGENTS fallback now prefers
+  `simctl launch --initialUrl` for prompt-free startup.
+- The new `using-expo-mcp-learnings.md` reference will be distilled into an
+  Expo MCP skill at the end of the project.
 
 ---
 
@@ -681,7 +747,8 @@ Chronological log of implementation progress.
 - [x] p02-t02: testID convention + identifier helper - 24b317b
 - [x] p02-t03: apps/mobile/AGENTS.md - the agent loop - 3b3b5c2
 - [x] p02-t04: Operator runbook scaffold - 4a927c1
-- [ ] p02-t05: FR17 agent-loop demo + evidence - next
+- [x] p02-t05: FR17 agent-loop demo + evidence - 92dd239
+- [ ] p03-t01: packages/design-tokens - next
 
 **What changed (high level):**
 
@@ -693,6 +760,9 @@ Chronological log of implementation progress.
 - Mobile operator setup now has a durable runbook under `docs/`, linked from
   the Operations docs index, with local machine and Expo/MCP sections authored
   and Phase 12 operator sections scaffolded.
+- The FR17 loop now has live evidence for Expo MCP screenshot, view lookup, log
+  collection, and Argent native-tree/tap fallback, plus a project reference log
+  for later Expo MCP skill distillation.
 
 ---
 
@@ -702,7 +772,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 
 | Task / Review | Source Artifact | Planned / Documented | Actual / Accepted | Reason | Source of Truth | Follow-up |
 | ------------- | --------------- | -------------------- | ----------------- | ------ | --------------- | --------- |
-| -             | -               | -                    | -                 | -      | -               | -         |
+| p02-t05       | plan.md         | Expo MCP screenshot, tap `home.ping` by testID, read logs, then Argent a11y-tree read | Expo MCP covered screenshot, `home.ping` find, and logs; Argent covered native-tree read and tap at the `pong: true` point | Expo MCP `automation_tap` was unreliable on this host; user approved Argent fallback where Expo MCP does not cover the flow | `apps/mobile/AGENTS.md`; `references/using-expo-mcp-learnings.md` | Re-evaluate Expo MCP tap reliability when distilling the final skill |
 
 ## Test Results
 
@@ -711,7 +781,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md` | yes    | 0      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
