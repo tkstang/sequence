@@ -100,9 +100,13 @@ export default function LoginScreen() {
           </Text>
           <TextField
             accessibilityLabel="Email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="Email"
             testID={testId('auth', 'login', 'email')}
+            textContentType="emailAddress"
             value={email}
           />
           <TextField

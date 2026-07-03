@@ -71,4 +71,23 @@ describe('TextField', () => {
       getByTestId('chrome.text-field.password').props.secureTextEntry,
     ).toBe(true);
   });
+
+  it('passes text-entry hints through to the native input', async () => {
+    const { getByTestId } = await render(
+      <TextField
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        testID="chrome.text-field.email"
+        textContentType="emailAddress"
+      />,
+    );
+
+    expect(getByTestId('chrome.text-field.email').props).toMatchObject({
+      autoCapitalize: 'none',
+      autoCorrect: false,
+      keyboardType: 'email-address',
+      textContentType: 'emailAddress',
+    });
+  });
 });

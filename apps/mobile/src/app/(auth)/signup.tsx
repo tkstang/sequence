@@ -97,9 +97,13 @@ export default function SignupScreen() {
           />
           <TextField
             accessibilityLabel="Email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="Email"
             testID={testId('auth', 'signup', 'email')}
+            textContentType="emailAddress"
             value={email}
           />
           <TextField

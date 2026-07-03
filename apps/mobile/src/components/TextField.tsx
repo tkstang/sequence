@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput } from 'react-native';
+import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
 
 import { useTheme } from '../theme/use-theme.ts';
 
@@ -13,18 +14,26 @@ export interface TextFieldProps {
   disabled?: boolean;
   testID?: string;
   accessibilityLabel?: string;
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoCorrect?: boolean;
+  keyboardType?: KeyboardTypeOptions;
+  textContentType?: TextInputProps['textContentType'];
   onChangeText?: (value: string) => void;
 }
 
 export function TextField({
   accessibilityLabel,
+  autoCapitalize,
+  autoCorrect,
   defaultValue,
   disabled = false,
+  keyboardType,
   onChangeText,
   placeholder,
   secureTextEntry = false,
   size = 'md',
   testID,
+  textContentType,
   value,
 }: TextFieldProps) {
   const { colors } = useTheme();
@@ -33,8 +42,11 @@ export function TextField({
     <TextInput
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
+      autoCapitalize={autoCapitalize}
+      autoCorrect={autoCorrect}
       defaultValue={defaultValue}
       editable={!disabled}
+      keyboardType={keyboardType}
       onChangeText={disabled ? undefined : onChangeText}
       placeholder={placeholder}
       placeholderTextColor={colors.textFaint}
@@ -52,6 +64,7 @@ export function TextField({
         disabled ? styles.disabled : null,
       ]}
       testID={testID}
+      textContentType={textContentType}
       value={value}
     />
   );
