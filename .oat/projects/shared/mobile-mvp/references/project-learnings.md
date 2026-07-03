@@ -73,6 +73,11 @@ value. Expo MCP and Argent usage details belong in
   that still says `live` after backgrounding. App suspension can leave that flag
   stale, so AppState `background`/`inactive` → `active` should force
   resubscribe even when local state appears healthy.
+- When adding guest access to an existing registered-user flow, review every
+  route in the flow rather than only the terminal route. For the mobile join
+  flow, making `/join/[code]` public was insufficient because anonymous users
+  also need `/join/index` to enter an invite code; route-guard tests should
+  encode the whole public subtree.
 
 ## Verification Mechanics
 
