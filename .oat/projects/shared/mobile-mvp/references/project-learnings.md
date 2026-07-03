@@ -28,6 +28,15 @@ agent instructions.
 - Keep route-adjacent tests out of `apps/mobile/src/app`; Expo Router can bundle
   route-local test files into Metro. Place mobile component and route tests in
   non-route test locations unless a later pattern explicitly proves otherwise.
+- Better Auth mobile clients need the mounted auth route, not only the API
+  origin. In this repo `apiUrl` is the API origin for tRPC, while Better Auth
+  REST is mounted at `/api/auth/*`; mobile auth config should normalize to
+  `{apiUrl}/api/auth` before `sign-in/email`, `sign-up/email`, or
+  `get-session` paths are appended.
+- Expo typed routes may reject absolute auth URLs while generated route types
+  lag or omit grouped auth routes. Prefer the typed-router-compatible route form
+  that passes current typecheck, and use export/simulator proof to verify route
+  behavior rather than assuming the visible URL path is enough.
 - Treat React Strict DOM primitives as implementation details that still need
   device visual proof. In this app, native-backed chrome primitives (`View`,
   `Text`, `Pressable`, `ScrollView`) were more predictable for mobile layout
