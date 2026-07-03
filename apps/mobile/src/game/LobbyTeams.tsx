@@ -44,6 +44,16 @@ function playersForTeam(players: SnapshotPlayer[], team: LobbyTeam) {
   return players.filter((player) => player.team === team);
 }
 
+function slotsForTeam(
+  players: SnapshotPlayer[],
+  team: LobbyTeam,
+  capacity: number,
+): Array<SnapshotPlayer | undefined> {
+  const seated = playersForTeam(players, team);
+  const slotCount = Math.max(capacity, seated.length);
+  return Array.from({ length: slotCount }, (_, index) => seated[index]);
+}
+
 function timerLabel(seconds: number | null): string {
   if (seconds === null) return 'no timer';
   if (seconds < 60) return `${seconds}s timer`;
@@ -273,11 +283,7 @@ export function LobbyTeams({
 
       <View style={styles.teams}>
         {teams.map((team) => {
-          const seated = playersForTeam(players, team);
-          const slots = Array.from(
-            { length: capacity },
-            (_, index) => seated[index],
-          );
+          const slots = slotsForTeam(players, team, capacity);
           const badgeVariant = TEAM_META[team].badge;
 
           return (
@@ -420,6 +426,7 @@ const styles = StyleSheet.create({
   slotRow: {
     display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   emptySlot: {
@@ -430,6 +437,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     flex: 1,
     justifyContent: 'center',
+    minWidth: 96,
     minHeight: 52,
     paddingHorizontal: 8,
     paddingVertical: 10,
@@ -446,6 +454,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     display: 'flex',
     flex: 1,
+    minWidth: 96,
     minHeight: 52,
     paddingHorizontal: 10,
     paddingVertical: 10,

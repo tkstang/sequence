@@ -89,7 +89,7 @@ describe('LobbyTeams', () => {
     const onKick = jest.fn();
     const onRandomize = jest.fn();
     const onStart = jest.fn();
-    const { getByTestId, rerender } = await render(
+    const { getByTestId, getByText, rerender } = await render(
       <LobbyTeams
         inviteCode="HOST01"
         mode="tap"
@@ -109,6 +109,7 @@ describe('LobbyTeams', () => {
     );
 
     expect(getByTestId('lobby.kick.1')).toBeTruthy();
+    expect(getByText('Maya')).toBeTruthy();
     expect(getByTestId('lobby.randomize')).toBeTruthy();
     expect(getByTestId('lobby.start').props.accessibilityState).toMatchObject({
       disabled: true,
