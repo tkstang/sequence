@@ -49,6 +49,10 @@ agent instructions.
   `oxfmt` the generated web token files before checking the diff. The generator
   writes valid values, while the formatter restores the repo's canonical quote
   style.
+- Adding native/mobile-aware packages to the API can legitimately expand
+  `pnpm-lock.yaml` with optional Expo peer snapshots when the monorepo already
+  contains the mobile workspace. Review that the dependency boundary is correct
+  before treating a large lockfile delta as suspicious.
 
 ## Open Follow-Ups
 
