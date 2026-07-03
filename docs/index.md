@@ -28,6 +28,7 @@ see the root [`../README.md`](../README.md); the pages below go deeper.
 ### Operations
 
 - [`deployment.md`](deployment.md) — Railway/Vercel/Neon deployment, required env vars, and smoke checks.
+- [`mobile-operator-runbook.md`](mobile-operator-runbook.md) — mobile machine setup, Expo account/OAuth, and Phase 12 operator checklists.
 
 ## Package documentation
 
