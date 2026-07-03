@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t02
+oat_current_task_id: p04-t03
 oat_generated: false
 ---
 
@@ -29,9 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 1/7       |
+| Phase 4 | in_progress | 7     | 2/7       |
 
-**Total:** 22/85 tasks completed
+**Total:** 23/85 tasks completed
 
 ---
 
@@ -1200,6 +1200,53 @@ oat_generated: false
 
 ---
 
+### Task p04-t02: Mobile auth client + SecureStore session
+
+**Status:** completed
+**Commit:** 24088c1
+
+**Outcome:**
+
+- Added the mobile Better Auth client using `createAuthClient` and the Better
+  Auth Expo client plugin.
+- Wired Better Auth session storage to Expo SecureStore with a stable
+  `sequence.auth` prefix and Expo-supported key names.
+- Exported `authClient`, `useSession`, `signIn`, `signUp`, `signOut`, and
+  `getCookie` for later auth screens and tRPC cookie-header transport.
+- Added focused tests for plugin configuration, env-derived base URL, and
+  SecureStore key compatibility.
+
+**Files changed:**
+
+- `apps/mobile/src/auth/client.ts` - Better Auth Expo client and SecureStore
+  storage adapter.
+- `apps/mobile/src/auth/client.test.ts` - client configuration and key-format
+  tests.
+- `apps/mobile/package.json` - adds `better-auth`, `@better-auth/expo`, and
+  `expo-secure-store`.
+- `pnpm-lock.yaml` - resolves the new mobile auth dependencies.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts`
+- Result: pass, 1 suite / 3 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Better Auth's Expo client storage contract is synchronous, and Expo
+  SecureStore SDK 57 provides matching sync `getItem` / `setItem` methods.
+- The API and mobile workspaces are now both pinned to Better Auth
+  `1.6.18`.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1298,7 +1345,8 @@ Chronological log of implementation progress.
 - [x] p03-t07: Dev playground scaffold + kit stories - de17181 / f28fae6
 - [x] p03-t08: Both-scheme visual verification - b2083f8
 - [x] p04-t01: API — Better Auth expo() plugin + trustedOrigins - eb58299
-- [ ] p04-t02: Mobile auth client + SecureStore session - next
+- [x] p04-t02: Mobile auth client + SecureStore session - 24088c1
+- [ ] p04-t03: Cookie-header transport in tRPC client - next
 
 **What changed (high level):**
 
@@ -1336,6 +1384,8 @@ Chronological log of implementation progress.
   typechecks.
 - The API auth configuration now registers the Better Auth Expo plugin and
   trusts native/development origins according to environment.
+- The mobile app now has a Better Auth Expo client with SecureStore-backed
+  session storage and env-derived API base URL.
 
 ---
 
@@ -1364,6 +1414,7 @@ Track test execution during implementation.
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components src/dev/dev-layout.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; dev-client screenshots `/tmp/p03-t07-dev-playground-accepted.png`, `/tmp/p03-t07-dev-story-button-final.png` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm format:check`; scratch-token proof (`pnpm --filter @sequence/mobile typecheck` failed while dark palette missed `scratchProbe`, then passed after completed scratch propagation through mobile vars and web StyleX generation); dev-client screenshots `/tmp/p03-t08-{light,dark}-{index,button,text-field,card,badge,screen}.png` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/api exec vitest run src/user/auth-expo.test.ts`; `pnpm --filter @sequence/api test` (subagent; DB-backed suites skipped because `DATABASE_URL_TEST` absent); `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
