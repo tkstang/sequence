@@ -87,6 +87,11 @@ value. Expo MCP and Argent usage details belong in
   HTTP mutations can infer `gameId` from tRPC operation input, but subscriptions
   need an explicit active game context so the React Native WebSocket constructor
   can attach `sequence_guest` before opening the stream.
+- Board-scale card rendering should memoize by semantic card value, not only by
+  object identity. Game surfaces often allocate fresh `{rank, suit}` objects
+  while representing the same card; `CardFace` should compare `rank`, `suit`,
+  `size`, `style`, and `testID` so SVG faces do not repaint across equal-value
+  rerenders.
 
 ## Verification Mechanics
 

@@ -213,7 +213,15 @@ function CardFaceImpl({ card, size = 'board', style, testID }: CardFaceProps) {
   );
 }
 
-export const CardFace = memo(CardFaceImpl);
+export const CardFace = memo(
+  CardFaceImpl,
+  (previous, next) =>
+    previous.card.rank === next.card.rank &&
+    previous.card.suit === next.card.suit &&
+    previous.size === next.size &&
+    previous.style === next.style &&
+    previous.testID === next.testID,
+);
 CardFace.displayName = 'CardFace';
 
 const styles = StyleSheet.create({

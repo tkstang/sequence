@@ -131,4 +131,28 @@ describe('CardFace', () => {
 
     expect(getCardAssetComponent(card)).toBe(before);
   });
+
+  it('skips SVG rerenders for equal card values', async () => {
+    const Asset = getCardAssetComponent({ rank: 'A', suit: 'C' });
+    (Asset as jest.Mock).mockClear();
+    const { rerender } = await render(
+      <CardFace
+        card={{ rank: 'A', suit: 'C' }}
+        size="board"
+        testID="card.face.memo"
+      />,
+    );
+
+    expect(Asset).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <CardFace
+        card={{ rank: 'A', suit: 'C' }}
+        size="board"
+        testID="card.face.memo"
+      />,
+    );
+
+    expect(Asset).toHaveBeenCalledTimes(1);
+  });
 });
