@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t07
+oat_current_task_id: p07-t08
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 6/9       |
+| Phase 7 | in_progress | 9     | 7/9       |
 
-**Total:** 49/85 tasks completed
+**Total:** 50/85 tasks completed
 
 ---
 
@@ -2537,6 +2537,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added a version-guarded mobile move-submission hook with pending state,
   haptic feedback, conflict/violation messages from the shared client-state
   catalog, and development round-trip timing logs.
+- Assembled the active mobile game route with `PlayerRail`, `GameBoard`,
+  `CardHand`, turn banner, controls copy, and tap-mode card-to-cell submission.
 
 **Verification:**
 
@@ -2572,6 +2574,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   warning only.
 - Run: `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check`
 - Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec jest src/app/game src/game/CardHand src/game/GameBoard --runInBand`
+- Result: pass, 5 suites / 27 tests; Watchman emitted the existing recrawl
+  warning only.
 
 **Notes / Decisions:**
 
@@ -2598,6 +2603,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the p07-t06 follow-up fix commit because the initial
   `expo-haptics@~15.0.8` install was not compatible with Expo SDK 57 according
   to Expo's compatibility check; `expo-haptics@~57.0.0` is now installed.
+- The orchestrator added the p07-t07 follow-up fix commit to remove overlapping
+  `act()` warnings from the route tests and ensure a disabled `CardHand` also
+  disables nested dead-card turn-in controls.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2941,6 +2949,65 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - `turnInDeadCard` remains a separate mutation path for the p07-t07 screen
   assembly to wire as needed.
 
+### Task p07-t07: Game screen assembly + turn flow
+
+**Status:** completed
+**Commit:** afbd9a0
+**Fix Commit:** 9518c86
+
+**Outcome:**
+
+- Replaced the active-game placeholder route branch with a native-backed play
+  surface composed from `PlayerRail`, `GameBoard`, `CardHand`, turn banner, and
+  controls/status copy.
+- Wired `useGameStream()` view state to selected-card state and `useMoveSubmit()`
+  for tap-mode move submission.
+- My-turn state enables card selection, highlights legal board cells, and
+  submits a version-guarded move with the selected card and target position.
+- Opponent-turn and pending-submit states keep the board visible while
+  disabling hand selection and move submission.
+- Added `GameBoard`/`BoardCell` press callbacks and a `CardHand` disabled prop
+  needed by the route controller.
+- Preserved the lobby branch and kept non-active states on placeholder branches
+  until later phases.
+
+**Files changed:**
+
+- `apps/mobile/src/app/game/[id].tsx` - active-game route assembly, selection
+  state, turn copy, and `useMoveSubmit()` wiring.
+- `apps/mobile/src/app/game-screen.test.tsx` - route-level active/lobby/status
+  branch coverage outside the route directory.
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` /
+  `GameBoard/BoardCell.tsx` - cell press callback and selected-card target
+  disabling.
+- `apps/mobile/src/game/CardHand/CardHand.tsx` /
+  `CardHand.test.tsx` - disabled hand behavior, including nested turn-in
+  control coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the React Native route-test cleanup gotcha.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/app/game src/game/CardHand src/game/GameBoard --runInBand`
+- Result: pass, 5 suites / 27 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The route test lives at `apps/mobile/src/app/game-screen.test.tsx`, not inside
+  `src/app/game/`, to avoid Expo Router bundling route-local test files.
+- Separate tests are used for separate route states; mid-test `cleanup()` caused
+  overlapping React `act()` warnings.
+- Full device visual proof remains planned for p07-t08/p07-t09.
+
 ---
 
 ## Orchestration Runs
@@ -3068,7 +3135,8 @@ Chronological log of implementation progress.
 - [x] p07-t04: CardHand - 7172173 / 6d11693
 - [x] p07-t05: PlayerRail + TimerBadge - 8c612b1 / f2c3dbb
 - [x] p07-t06: Move submission + submitting state + violation feedback - 4a8403c / 6ba10cf
-- [ ] p07-t07: Game screen assembly + turn flow - next
+- [x] p07-t07: Game screen assembly + turn flow - afbd9a0 / 9518c86
+- [ ] p07-t08: Playground stories for game components - next
 
 **What changed (high level):**
 
@@ -3104,6 +3172,8 @@ Chronological log of implementation progress.
 - Mobile move submission now has a version-guarded hook with pending state,
   no optimistic board mutation, haptics, conflict/violation feedback, and
   client-observed round-trip timing logs.
+- The mobile active game route now renders the playable tap-mode surface and
+  submits selected-card moves through the server-authoritative mutation hook.
 - Token propagation was proven with a reverted scratch token that exercised
   dark-palette parity, mobile token vars, web StyleX generation, and mobile/web
   typechecks.
