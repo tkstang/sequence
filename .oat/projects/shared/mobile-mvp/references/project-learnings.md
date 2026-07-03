@@ -28,6 +28,10 @@ value. Expo MCP and Argent usage details belong in
 - If a subagent stalls or is closed but leaves useful edits in the worktree,
   inspect those edits as candidate work rather than discarding them. Adopt,
   revise, and verify the useful portion locally, then continue.
+- Pinned subagent roles cannot be combined with a full-history fork in the
+  current multi-agent tool. For OAT dispatches that need a pinned role such as
+  `oat-phase-implementer-medium`, send an explicit context package instead of
+  using `fork_context: true`.
 
 ## Codebase Patterns
 
