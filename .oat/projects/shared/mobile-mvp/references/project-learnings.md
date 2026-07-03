@@ -53,6 +53,10 @@ agent instructions.
   `pnpm-lock.yaml` with optional Expo peer snapshots when the monorepo already
   contains the mobile workspace. Review that the dependency boundary is correct
   before treating a large lockfile delta as suspicious.
+- Better Auth's Expo client storage contract is synchronous (`getItem` returns
+  `string | null`, `setItem` returns any), and Expo SecureStore SDK 57 provides
+  matching sync methods in addition to the async API. Verify the package
+  contract from installed types before swapping to async storage methods.
 
 ## Open Follow-Ups
 
