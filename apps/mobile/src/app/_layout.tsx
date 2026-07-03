@@ -7,17 +7,28 @@ import {
   createSequenceTRPCClient,
   TRPCProvider,
 } from '../api/client.ts';
+import { useSession } from '../auth/client.ts';
 import { ThemeProvider } from '../theme/theme-provider.tsx';
 
 export default function RootLayout() {
   const [queryClient] = useState(() => createSequenceQueryClient());
   const [trpcClient] = useState(() => createSequenceTRPCClient());
+  const session = useSession();
+  const isSignedIn = Boolean(session.data?.user);
 
   return (
     <QueryClientProvider client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         <ThemeProvider>
-          <Stack screenOptions={{ headerShown: false }} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Protected guard={isSignedIn}>
+              <Stack.Screen name="index" />
+            </Stack.Protected>
+            <Stack.Protected guard={!isSignedIn}>
+              <Stack.Screen name="(auth)/login" />
+              <Stack.Screen name="(auth)/signup" />
+            </Stack.Protected>
+          </Stack>
         </ThemeProvider>
       </TRPCProvider>
     </QueryClientProvider>

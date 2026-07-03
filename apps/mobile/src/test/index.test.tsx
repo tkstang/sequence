@@ -1,5 +1,8 @@
 import { render } from '@testing-library/react-native';
 
+var mockRouterReplace = jest.fn();
+var mockSignOut = jest.fn();
+
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(() => ({
     data: { pong: true },
@@ -21,6 +24,22 @@ jest.mock('../api/client.ts', () => ({
   })),
 }));
 
+jest.mock('expo-router', () => ({
+  router: {
+    replace: (...args: unknown[]) => mockRouterReplace(...args),
+  },
+}));
+
+jest.mock('../auth/client.ts', () => ({
+  signOut: (...args: unknown[]) => mockSignOut(...args),
+  useSession: jest.fn(() => ({
+    data: { user: { email: 'ada@example.test' } },
+    error: null,
+    isPending: false,
+    isRefetching: false,
+  })),
+}));
+
 import HomeScreen from '../app/index.tsx';
 
 describe('HomeScreen', () => {
@@ -28,7 +47,9 @@ describe('HomeScreen', () => {
     const { getByTestId, getByText } = await render(<HomeScreen />);
 
     expect(getByText('Sequence Online')).toBeTruthy();
+    expect(getByText('ada@example.test')).toBeTruthy();
     expect(getByText('pong: true')).toBeTruthy();
     expect(getByTestId('home.ping')).toBeTruthy();
+    expect(getByTestId('home.logout')).toBeTruthy();
   });
 });
