@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t06
+oat_current_task_id: p07-t07
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 5/9       |
+| Phase 7 | in_progress | 9     | 6/9       |
 
-**Total:** 48/85 tasks completed
+**Total:** 49/85 tasks completed
 
 ---
 
@@ -2534,6 +2534,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added `PlayerRail` and `TimerBadge` for active-game player state, current
   turn highlight, connection state, sequence counts, round display, and
   server-deadline timer countdown.
+- Added a version-guarded mobile move-submission hook with pending state,
+  haptic feedback, conflict/violation messages from the shared client-state
+  catalog, and development round-trip timing logs.
 
 **Verification:**
 
@@ -2564,6 +2567,11 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`
 - Result: pass, 2 suites / 4 tests; Watchman emitted the existing recrawl
   warning only.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/use-move-submit.test.ts src/game/feedback/toasts.test.ts --runInBand`
+- Result: pass, 2 suites / 19 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check`
+- Result: pass.
 
 **Notes / Decisions:**
 
@@ -2587,6 +2595,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the p07-t05 follow-up fix commit so inactive turn and
   connected/offline markers do not render as hidden-but-queryable text; only
   visible rail status badges are mounted.
+- The orchestrator added the p07-t06 follow-up fix commit because the initial
+  `expo-haptics@~15.0.8` install was not compatible with Expo SDK 57 according
+  to Expo's compatibility check; `expo-haptics@~57.0.0` is now installed.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2869,6 +2880,67 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Visual PlayerRail proof remains part of the planned p07-t08 game-surface
   playground sweep.
 
+### Task p07-t06: Move submission + submitting state + violation feedback
+
+**Status:** completed
+**Commit:** 4a8403c
+**Fix Commit:** 6ba10cf
+
+**Outcome:**
+
+- Added `useMoveSubmit()` for version-guarded `game.makeMove` submission from
+  mobile gameplay surfaces.
+- The hook enters a pending/submitting state before mutation submission,
+  disables selected-card interactions through the returned state, and avoids
+  local board mutation while waiting for server-authoritative stream echo.
+- Pending state clears on a matching streamed event carrying the returned
+  post-mutation version, or on mutation error.
+- Duplicate submissions are ignored while a move is pending.
+- Conflict and rule-violation feedback map through the mobile error policy and
+  shared `@sequence/client-state` violation-message catalog.
+- Tap and error/conflict haptics are wired through `expo-haptics`, and
+  development builds log client-observed move round-trip samples with p50.
+
+**Files changed:**
+
+- `apps/mobile/src/game/use-move-submit.ts` /
+  `use-move-submit.test.ts` - version-guarded move mutation hook, pending
+  state, haptics, duplicate-submit guard, stream-echo clearing, and timing
+  coverage.
+- `apps/mobile/src/game/feedback/toasts.ts` /
+  `feedback/toasts.test.ts` - move-submit feedback mapping for conflicts,
+  rule violations, and fallback errors.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - added Expo-compatible
+  `expo-haptics`.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the Expo package compatibility-check learning.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/use-move-submit.test.ts src/game/feedback/toasts.test.ts --runInBand`
+- Result: pass, 2 suites / 19 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Server events currently expose `seq` and `version`, not server timestamps.
+  The round-trip log therefore measures submit time to first matching streamed
+  event observed on the client.
+- The hook clears pending on stream echo rather than mutation response so board
+  and hand updates remain server-authoritative.
+- `turnInDeadCard` remains a separate mutation path for the p07-t07 screen
+  assembly to wire as needed.
+
 ---
 
 ## Orchestration Runs
@@ -2995,7 +3067,8 @@ Chronological log of implementation progress.
 - [x] p07-t03: Spotlight targeting - 06dfe66 / e358852
 - [x] p07-t04: CardHand - 7172173 / 6d11693
 - [x] p07-t05: PlayerRail + TimerBadge - 8c612b1 / f2c3dbb
-- [ ] p07-t06: Move submission + submitting state + violation feedback - next
+- [x] p07-t06: Move submission + submitting state + violation feedback - 4a8403c / 6ba10cf
+- [ ] p07-t07: Game screen assembly + turn flow - next
 
 **What changed (high level):**
 
@@ -3028,6 +3101,9 @@ Chronological log of implementation progress.
 - Both-scheme visual verification now covers the dev index and every chrome-kit
   story route; TextField and Badge were stabilized with native-backed
   implementations.
+- Mobile move submission now has a version-guarded hook with pending state,
+  no optimistic board mutation, haptics, conflict/violation feedback, and
+  client-observed round-trip timing logs.
 - Token propagation was proven with a reverted scratch token that exercised
   dark-palette parity, mobile token vars, web StyleX generation, and mobile/web
   typechecks.
