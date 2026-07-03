@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t09
+oat_current_task_id: p08-t01
 oat_generated: false
 ---
 
@@ -32,9 +32,10 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 8/9       |
+| Phase 7 | completed   | 9     | 9/9       |
+| Phase 8 | in_progress | 6     | 0/6       |
 
-**Total:** 51/85 tasks completed
+**Total:** 52/85 tasks completed
 
 ---
 
@@ -1149,7 +1150,7 @@ oat_generated: false
 
 ## Phase 4: Auth Vertical Slice
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Task p04-t01: API — Better Auth expo() plugin + trustedOrigins
@@ -1519,7 +1520,7 @@ oat_generated: false
 
 ## Phase 5: Realtime Plumbing + Client-State Extraction
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Phase Summary
@@ -1982,7 +1983,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 6: Dashboard, Create, Join, Lobby
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Phase Summary
@@ -2510,7 +2511,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 7: Game Surface — Core Play (Tap Mode)
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Phase Summary
@@ -2542,6 +2543,12 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added development playground stories for the game board, card hand, and
   player rail across empty, active, spotlight, locked-sequence, opponent-turn,
   dead-card, and 6-player states.
+- Verified a full tap-mode game loop against the local API with mobile/web
+  clients, timed turns, two-eyed and one-eyed jack plays, auto-draw, stale
+  version recovery, sequence locks, and final win state.
+- Fixed two p07-t09 verification findings: mobile auth email fields now preserve
+  lowercase input, and quiet live realtime subscriptions no longer resubscribe
+  and trigger false presence disconnects during normal turns.
 
 **Verification:**
 
@@ -2599,6 +2606,37 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`,
   `/tmp/p07-t08-game-hand-light.png`, and
   `/tmp/p07-t08-game-rail-light.png`.
+- Run: local API/web/mobile p07-t09 deterministic game verification.
+- Result: pass. Deterministic game
+  `3fc7917c-862d-45a0-90e6-380a7335eb87` completed with `GameWon` for team 1,
+  stale version rejection returned `409 CONFLICT`, two-eyed jack `JD` and
+  one-eyed jack `JS` paths both emitted expected events, auto-draw updated the
+  hand, locked sequence cells were present in the final board, and move
+  round-trip p50 was `6.1ms`. Additional subagent run
+  `e6fa8ecf-4839-41a6-b2bf-30b18e64f7ad` recorded p50 `3.35ms`.
+- Run: web/mobile visual proof for p07-t09.
+- Result: pass. Evidence:
+  `/tmp/p07-t09-web-active.png`, `/tmp/p07-t09-web-final.png`,
+  `/tmp/p07-t09-mobile-initial.png`, `/tmp/p07-t09-mobile-final.png`, and
+  `/tmp/p07-t09-mobile-active.png`. The mobile active proof stayed active past
+  the previous 15s watchdog failure point and exposed `game.timer` with
+  `2:00`, player rail, board cells, and hand card testIDs in the accessibility
+  tree.
+- Run: `pnpm --filter @sequence/mobile exec jest src/components/TextField.test.tsx src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx --runInBand`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 2 suites / 15 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t09`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
 
 **Notes / Decisions:**
 
@@ -2632,6 +2670,13 @@ subscription input lastEventId=505; latest card kind=event seq=505
   of the Expo Router app tree, compact hand story previews to fit iPhone-width
   story cards, and move PlayerRail status labels into normal layout flow after
   simulator screenshots exposed visual clipping/overlap.
+- The p07-t09 full-game pass exposed that `TextField` did not forward native
+  email keyboard/capitalization props; login and signup email fields now set
+  `autoCapitalize="none"`, disable autocorrect, and request the email keyboard.
+- The p07-t09 mobile visual pass exposed that the 15s realtime watchdog treated
+  a quiet but live subscription as stale. The watchdog now checks transport
+  state before reconnecting so normal quiet turns do not fire the API presence
+  disconnect path and freeze games.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -3102,6 +3147,85 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The Expo dev-client tools gear overlaps the top-right theme toggle in
   screenshots, but it does not obscure the story content being verified.
 
+### Task p07-t09: Full tap-mode game verification
+
+**Status:** completed
+**Commits:** 1a1f149 / 65880bd
+
+**Outcome:**
+
+- Verified a full timed tap-mode game loop with local API, web, and mobile
+  clients.
+- Covered two-eyed jack placement, one-eyed jack removal, auto-draw, stale
+  version recovery, timer display sync, locked sequence state, and final
+  `GameWon` state.
+- Recorded move round-trip p50 samples for the p11-t02 baseline: `6.1ms`
+  in the orchestrator deterministic run and `3.35ms` in the subagent run.
+- Fixed email input casing for mobile auth forms after device login exposed
+  native autocapitalization.
+- Fixed the mobile realtime inactivity watchdog so quiet live subscriptions
+  remain connected and do not trigger false active-game freezes.
+
+**Files changed:**
+
+- `apps/mobile/src/components/TextField.tsx` /
+  `TextField.test.tsx` - native text-input prop passthrough and coverage.
+- `apps/mobile/src/app/(auth)/login.tsx` /
+  `signup.tsx` - email keyboard/capitalization/autocorrect configuration.
+- `apps/mobile/src/realtime/lifecycle.ts` /
+  `lifecycle.test.ts` - quiet-live watchdog behavior and closed-socket
+  reconnect coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the quiet-subscription watchdog learning.
+
+**Verification:**
+
+- Run: local API/web/mobile deterministic game
+  `3fc7917c-862d-45a0-90e6-380a7335eb87`, invite `P07XENBK5P`.
+- Result: pass. Final state `finished`, winner team `1`, version `5`, sequence
+  locks on `23H,24H,25H,26H,27H`, and event sequence included `ChipPlaced`,
+  `CardDrawn`, `TurnAdvanced`, `ChipRemoved`, `SequenceCompleted`, and
+  `GameWon`.
+- Run: stale-version move from a deliberately stale client version.
+- Result: pass; API returned `409 CONFLICT`.
+- Run: subagent deterministic game
+  `e6fa8ecf-4839-41a6-b2bf-30b18e64f7ad`, invite `E6FA8ECF48`.
+- Result: pass. Mobile one-eyed jack removed `17S` with `JS`, web placed `2D`,
+  mobile two-eyed jack `JD` completed the winning sequence, and final status was
+  `finished` with winner team `1`.
+- Run: visual and accessibility proof.
+- Result: pass. Evidence:
+  `/tmp/p07-t09-web-active.png`, `/tmp/p07-t09-web-final.png`,
+  `/tmp/p07-t09-mobile-initial.png`, `/tmp/p07-t09-mobile-final.png`, and
+  `/tmp/p07-t09-mobile-active.png`. The final mobile proof stayed on the active
+  game screen beyond the previous 15s watchdog failure point and exposed
+  `game.timer`, `game.rail`, board cells, and hand cards in the accessibility
+  tree.
+- Run: `pnpm --filter @sequence/mobile exec jest src/components/TextField.test.tsx src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx --runInBand`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 2 suites / 15 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t09`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Scenario evidence is recorded in this implementation artifact because the
+  task itself had no planned source files. The two code commits are verification
+  fixes surfaced by the scenario.
+- The API remains the authority for stale-version recovery, draw events,
+  sequence completion, and win state; mobile waits for server-authoritative
+  stream updates rather than mutating the board optimistically.
+
 ---
 
 ## Orchestration Runs
@@ -3231,7 +3355,8 @@ Chronological log of implementation progress.
 - [x] p07-t06: Move submission + submitting state + violation feedback - 4a8403c / 6ba10cf
 - [x] p07-t07: Game screen assembly + turn flow - afbd9a0 / 9518c86
 - [x] p07-t08: Playground stories for game components - 5f91046 / fab0c19 / c81b6c9
-- [ ] p07-t09: Full tap-mode game verification - next
+- [x] p07-t09: Full tap-mode game verification - 1a1f149 / 65880bd
+- [ ] p08-t01: Drag gesture layer - next
 
 **What changed (high level):**
 
@@ -3353,6 +3478,12 @@ Chronological log of implementation progress.
   server-deadline-synced timer badge.
 - The game-surface playground now has board, hand, and rail stories with
   both-theme simulator screenshot evidence for compact iPhone-width rendering.
+- Full tap-mode gameplay is now verified against local API/web/mobile clients,
+  including timed turns, two-eyed and one-eyed jack moves, auto-draw, stale
+  version conflict recovery, sequence locks, and final win state.
+- The p07-t09 verification pass fixed lowercase email entry on native auth
+  forms and prevented quiet live mobile streams from triggering false
+  disconnect/freeze behavior.
 
 ---
 
@@ -3372,6 +3503,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p04-t06       | plan.md         | Scenario task with no file changes unless fixes land | Installed `expo-network` / `expo-web-browser` and added the `expo-web-browser` config plugin | Simulator proof exposed missing `@better-auth/expo` runtime peers after auth-client initialization | `apps/mobile/package.json`; `apps/mobile/app.config.ts`; `pnpm-lock.yaml` | Keep declared native peers installed and rebuild the dev client after native module changes |
 | p07-t01       | plan.md         | Dev-build screenshot of a card grid sanity check | Focused Jest, Expo export, and native rebuild passed; no usable card-grid screenshot was captured | Metro was not reachable during the visual pass, and p07-t08 owns full game-surface playground screenshot verification | `apps/mobile/src/app/dev/cards.tsx`; `apps/mobile/src/game/cards/CardFace.tsx` | Completed by p07-t08 game-surface playground screenshot sweep |
 | p07-t07       | plan.md         | Route test under `apps/mobile/src/app/game` | Route test lives at `apps/mobile/src/game/GameRouteScreen.test.tsx` | Expo Router can bundle `.test.*` files under `src/app` during export and pull test-only dependencies into Metro | `apps/mobile/src/game/GameRouteScreen.test.tsx` | Keep mobile route tests outside `apps/mobile/src/app` |
+| p07-t09       | plan.md         | Scenario task with no source files unless fixes land | Two source fixes landed during scenario verification: mobile email TextField prop passthrough and quiet-live realtime watchdog behavior | Device/local-game proof exposed native autocapitalization and false presence disconnect behavior that unit-only verification would not catch | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/realtime/lifecycle.ts`; `references/project-learnings.md` | Use scenario tasks to fix locally diagnosable issues before advancing |
 
 ## Test Results
 
@@ -3414,6 +3546,7 @@ Track test execution during implementation.
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/use-move-submit.test.ts src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check` | yes    | 0      | 2 move-submit/feedback suites, 19 tests; Expo package compatibility check passed |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 5 active-route/hand/board suites, 27 tests; route test lives outside `src/app` |
 | 7     | `git ls-files 'apps/mobile/src/app/**/*.test.*' 'apps/mobile/src/app/*.test.*'`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/dev/stories.test.ts src/game/PlayerRail/PlayerRail.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t08-final3`; simulator screenshots `/tmp/p07-t08-game-board.png`, `/tmp/p07-t08-game-hand-fixed.png`, `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`, `/tmp/p07-t08-game-hand-light.png`, `/tmp/p07-t08-game-rail-light.png` | yes    | 0      | 7 game-surface suites, 31 tests; Expo export and both-theme story visual sweep passed |
+| 7     | Local API/web/mobile deterministic p07-t09 games `3fc7917c-862d-45a0-90e6-380a7335eb87` and `e6fa8ecf-4839-41a6-b2bf-30b18e64f7ad`; web screenshots `/tmp/p07-t09-web-active.png`, `/tmp/p07-t09-web-final.png`; mobile screenshots `/tmp/p07-t09-mobile-initial.png`, `/tmp/p07-t09-mobile-final.png`, `/tmp/p07-t09-mobile-active.png`; `pnpm --filter @sequence/mobile exec jest src/components/TextField.test.tsx src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t09`; `git diff --check` | yes    | 0      | FR6/FR9 full tap-mode loop passed; stale 409, jack moves, auto-draw, timer UI, locked sequence, and final win verified; p50 samples `6.1ms` and `3.35ms` |
 
 ## Final Summary (for PR/docs)
 
