@@ -1,0 +1,170 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
+import type { Href } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { useTRPC } from '../../api/client.ts';
+import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
+import { Button } from '../../components/Button.tsx';
+import { Card } from '../../components/Card.tsx';
+import { Screen } from '../../components/Screen.tsx';
+import {
+  getPreviewUnavailableMessage,
+  normalizeInviteCode,
+  PreviewCard,
+  type JoinPreview,
+} from '../../features/join/PreviewCard.tsx';
+import { testId } from '../../test/test-ids.ts';
+import { useTheme } from '../../theme/use-theme.ts';
+
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function getErrorCode(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) return null;
+  const data = 'data' in error ? error.data : undefined;
+  if (typeof data !== 'object' || data === null) return null;
+  const code = 'code' in data ? data.code : undefined;
+  return typeof code === 'string' ? code : null;
+}
+
+function messageForJoinError(error: unknown): string {
+  const code = getErrorCode(error);
+  if (code === 'CONFLICT') {
+    return 'This game is no longer available to join. Refresh and try again.';
+  }
+  if (code === 'FORBIDDEN') {
+    return 'This game cannot be joined from another device.';
+  }
+  if (code === 'NOT_FOUND') {
+    return 'Unknown invite code.';
+  }
+  if (mapTRPCErrorToPolicy(error) === 'backoff-toast') {
+    return 'Too many invite attempts. Wait a moment and try again.';
+  }
+  return error instanceof Error ? error.message : 'Could not join this game.';
+}
+
+export default function JoinPreviewScreen() {
+  const { colors } = useTheme();
+  const params = useLocalSearchParams<{ code?: string | string[] }>();
+  const inviteCode = normalizeInviteCode(firstParam(params.code));
+  const trpc = useTRPC();
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  const preview = useQuery({
+    ...trpc.game.preview.queryOptions({ inviteCode }),
+    enabled: inviteCode.length > 0,
+  });
+  const join = useMutation(
+    trpc.game.join.mutationOptions({
+      onError(error) {
+        setJoinError(messageForJoinError(error));
+      },
+      onSuccess(result: { gameId: string }) {
+        router.replace(`/game/${encodeURIComponent(result.gameId)}` as Href);
+      },
+    }),
+  );
+
+  async function joinAsUser() {
+    setJoinError(null);
+    try {
+      await join.mutateAsync({ inviteCode });
+    } catch {
+      // Mutation onError maps API failures into friendly route state.
+    }
+  }
+
+  const data = preview.data as JoinPreview | undefined;
+  const unavailableMessage = data ? getPreviewUnavailableMessage(data) : null;
+  const errorCode = preview.isError ? getErrorCode(preview.error) : null;
+
+  return (
+    <Screen
+      header={
+        <Screen.Header
+          eyebrow="Invite"
+          title="Game preview"
+          testID={testId('join', 'preview', 'header')}
+        />
+      }
+      testID={testId('join', 'preview', 'screen')}
+    >
+      {preview.isPending ? (
+        <Text style={[styles.body, { color: colors.textMuted }]}>
+          Loading game...
+        </Text>
+      ) : errorCode === 'NOT_FOUND' || !data ? (
+        <Card variant="raised" testID={testId('join', 'preview', 'notFound')}>
+          <View style={styles.stateCard}>
+            <Text style={[styles.stateTitle, { color: colors.text }]}>
+              Unknown invite code
+            </Text>
+            <Text style={[styles.body, { color: colors.textMuted }]}>
+              Check the code and try again, or ask the host for a new one.
+            </Text>
+          </View>
+        </Card>
+      ) : (
+        <View style={styles.stack}>
+          <PreviewCard preview={data} />
+          {unavailableMessage ? (
+            <Card variant="sunken" testID={testId('join', 'preview', 'closed')}>
+              <Text style={[styles.body, { color: colors.textMuted }]}>
+                {unavailableMessage}
+              </Text>
+            </Card>
+          ) : (
+            <Button
+              disabled={join.isPending}
+              onPress={() => {
+                void joinAsUser();
+              }}
+              size="lg"
+              testID={testId('join', 'preview', 'join')}
+            >
+              {join.isPending ? 'Joining...' : 'Join game'}
+            </Button>
+          )}
+          {joinError ? (
+            <Text
+              accessibilityRole="alert"
+              style={[styles.error, { color: colors.danger }]}
+            >
+              {joinError}
+            </Text>
+          ) : null}
+        </View>
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  },
+  stateCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  stateTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  error: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

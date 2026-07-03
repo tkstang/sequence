@@ -76,6 +76,11 @@ describe('RootLayout protected routing', () => {
     await render(<RootLayout />);
 
     expect(mockProtectedGuards).toEqual([true, false]);
-    expect(mockRenderedScreenNames).toEqual(['index', 'create']);
+    expect(mockRenderedScreenNames).toEqual([
+      'index',
+      'create',
+      'join/index',
+      'join/[code]',
+    ]);
   });
 });
