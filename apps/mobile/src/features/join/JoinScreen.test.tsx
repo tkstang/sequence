@@ -229,6 +229,22 @@ describe('JoinPreviewScreen', () => {
     });
   });
 
+  it('uses the preview invite code for join mutations', async () => {
+    mockRouteParams = { code: 'route-code' };
+    mockQueryResult.data = preview({ inviteCode: 'SERVERCODE' });
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<JoinPreviewScreen />);
+
+    await user.press(getByTestId('join.preview.join'));
+
+    const mutation = jest.mocked(useMutation).mock.results.at(-1)!.value;
+    await waitFor(() => {
+      expect(mutation.mutateAsync).toHaveBeenCalledWith({
+        inviteCode: 'SERVERCODE',
+      });
+    });
+  });
+
   it('stores token and registry metadata when joining as a guest', async () => {
     mockSession = { data: null };
     mockRouteParams = { code: 'ABCD2345EF' };

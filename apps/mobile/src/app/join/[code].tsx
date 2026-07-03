@@ -72,10 +72,12 @@ export default function JoinPreviewScreen() {
     }),
   );
 
-  async function joinAsUser() {
+  async function joinAsUser(previewData: JoinPreview) {
     setJoinError(null);
     try {
-      const result = (await join.mutateAsync({ inviteCode })) as {
+      const result = (await join.mutateAsync({
+        inviteCode: previewData.inviteCode,
+      })) as {
         gameId: string;
       };
       router.replace(`/game/${encodeURIComponent(result.gameId)}` as Href);
@@ -96,7 +98,7 @@ export default function JoinPreviewScreen() {
     try {
       const result = (await join.mutateAsync({
         guestName: nextGuestName,
-        inviteCode,
+        inviteCode: previewData.inviteCode,
         returnGuestToken: true,
       })) as { gameId: string; guestToken?: string };
 
@@ -164,7 +166,7 @@ export default function JoinPreviewScreen() {
                 <Button
                   disabled={join.isPending}
                   onPress={() => {
-                    void joinAsUser();
+                    void joinAsUser(data);
                   }}
                   size="lg"
                   testID={testId('join', 'preview', 'join')}
