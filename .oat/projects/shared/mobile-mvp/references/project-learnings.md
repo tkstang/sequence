@@ -14,12 +14,24 @@ agent instructions.
   `oat-phase-implementer-medium`, not `oat-phase-implementer-xhigh`. Reviewer
   dispatch can still target the ceiling when the workflow calls for
   deterministic review quality.
+- Resolvable subagent issues should be handled by the orchestrator without
+  stopping implementation. If a subagent finishes with concerns that are
+  locally diagnosable, inspect the worktree, apply the focused fix, re-run the
+  relevant gates, and keep the task moving until the configured HiLL checkpoint
+  or a true blocker.
 
 ## Codebase Patterns
 
 - Keep route-adjacent tests out of `apps/mobile/src/app`; Expo Router can bundle
   route-local test files into Metro. Place mobile component and route tests in
   non-route test locations unless a later pattern explicitly proves otherwise.
+- Treat React Strict DOM primitives as implementation details that still need
+  device visual proof. In this app, native-backed chrome primitives (`View`,
+  `Text`, `Pressable`, `ScrollView`) were more predictable for mobile layout
+  than `html.*` wrappers when building reusable app chrome.
+- When using React Native `StyleSheet` for layout, set direction explicitly on
+  vertical stacks. The default flex direction differs from CSS expectations and
+  can turn compact lists or headers into wide, stretched rows.
 
 ## Open Follow-Ups
 
