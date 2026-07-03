@@ -25,9 +25,10 @@ import HomeScreen from '../app/index.tsx';
 
 describe('HomeScreen', () => {
   it('renders the app name and ping result', async () => {
-    const { getByText } = await render(<HomeScreen />);
+    const { getByTestId, getByText } = await render(<HomeScreen />);
 
     expect(getByText('Sequence Online')).toBeTruthy();
     expect(getByText('pong: true')).toBeTruthy();
+    expect(getByTestId('home.ping')).toBeTruthy();
   });
 });

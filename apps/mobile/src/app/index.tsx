@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTRPC } from '../api/client.ts';
+import { testId } from '../test/test-ids.ts';
 
 export default function HomeScreen() {
   const trpc = useTRPC();
@@ -20,7 +21,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Sequence Online</Text>
-        <Text style={styles.status} testID="home.ping">
+        <Text style={styles.status} testID={testId('home', 'ping')}>
           {pingStatus}
         </Text>
       </View>
