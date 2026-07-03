@@ -2,7 +2,7 @@
   "mcpServers": {
     "argent": {
       "command": "npx",
-      "args": ["@swmansion/argent"]
+      "args": ["-y", "@swmansion/argent", "mcp"]
     },
     "expo": {
       "type": "http",
