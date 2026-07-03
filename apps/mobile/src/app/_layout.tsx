@@ -7,6 +7,7 @@ import {
   createSequenceTRPCClient,
   TRPCProvider,
 } from '../api/client.ts';
+import { ThemeProvider } from '../theme/theme-provider.tsx';
 
 export default function RootLayout() {
   const [queryClient] = useState(() => createSequenceQueryClient());
@@ -15,7 +16,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <ThemeProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </ThemeProvider>
       </TRPCProvider>
     </QueryClientProvider>
   );
