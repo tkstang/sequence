@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "^57.0.2",
+    "@sequence/api": "workspace:*",
+    "@sequence/game-logic": "workspace:*",
     "expo": "~57.0.1",
     "expo-constants": "^57.0.2",
     "expo-linking": "^57.0.1",
