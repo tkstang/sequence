@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p02-t01
+oat_current_task_id: p02-t02
 oat_generated: false
 ---
 
@@ -27,9 +27,9 @@ oat_generated: false
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
-| Phase 2 | pending     | 5     | 0/5       |
+| Phase 2 | in_progress | 5     | 1/5       |
 
-**Total:** 8/85 tasks completed
+**Total:** 9/85 tasks completed
 
 ---
 
@@ -409,12 +409,65 @@ oat_generated: false
 
 ---
 
-## Phase 2: {Phase Name}
+## Phase 2: Agent Tooling
 
-**Status:** pending
-**Started:** -
+**Status:** in_progress
+**Started:** 2026-07-03
 
-### Task p02-t01: {Task Name}
+### Task p02-t01: MCP configuration + expo-mcp local tools
+
+**Status:** completed
+**Commit:** 0e51aa5
+
+**Outcome:**
+
+- Added project MCP config entries for the official remote Expo MCP server and
+  Argent while preserving the existing Neon MCP entry.
+- Added `expo-mcp` as a mobile dev dependency and confirmed the installed
+  local server exposes screenshot, tap-by-testID, view inspection, log
+  collection, RN DevTools, and router sitemap tools.
+- Verified the running simulator app through the local Expo MCP stdio server
+  and captured a screenshot returned by `automation_take_screenshot`.
+
+**Files changed:**
+
+- `.mcp.json` - adds `expo` HTTP and `argent` stdio MCP servers.
+- `apps/mobile/package.json` - adds `expo-mcp` to mobile dev dependencies.
+- `pnpm-lock.yaml` - records the Expo MCP dependency graph.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile add -D expo-mcp@^0.2.4`
+- Result: pass; dependency installed and lockfile updated.
+- Run: `pnpm install`
+- Result: pass; lockfile current. pnpm reported the existing ignored
+  `unrs-resolver` build-script warning.
+- Run: `pnpm --filter @sequence/mobile exec expo-mcp --help`
+- Result: pass; CLI exposes `--dev-server-url`, `--root`, `--app-id`,
+  `--platform`, and `--collect-logs`.
+- Run: Expo dev server on port 8081, direct `simctl launch --initialUrl`, then
+  MCP stdio `initialize` / `tools/list` / `tools/call` for
+  `automation_take_screenshot`.
+- Result: pass; tool list contained `automation_find_view`,
+  `automation_take_screenshot`, `automation_tap`, `collect_app_logs`,
+  `expo_router_sitemap`, and `open_devtools`. Screenshot evidence:
+  `/tmp/p02-t01-expo-mcp-screenshot.jpg`.
+
+**Notes / Decisions:**
+
+- The root `.mcp.json` already existed for Neon; this task preserved it and
+  added only the planned mobile agent-loop servers.
+- The first screenshot attempt timed out, then a second attempt reported
+  `No booted simulator devices found` after the simulator had shut down. After
+  rebooting the iPhone 17 Pro simulator and relaunching the dev build, the MCP
+  screenshot tool succeeded.
+- `packages/api/.env` is absent in this checkout, so the screenshot shows the
+  expected local `health.ping` connection error. This does not affect the
+  p02-t01 MCP tool proof.
+
+---
+
+### Task p02-t02: testID convention + identifier helper
 
 **Status:** pending
 **Commit:** -
@@ -501,9 +554,10 @@ Chronological log of implementation progress.
 
 ### 2026-07-03
 
-**Session Start:** {time}
+**Session Start:** 13:40 UTC
 
-{Continue log...}
+- [x] p02-t01: MCP configuration + expo-mcp local tools - 0e51aa5
+- [ ] p02-t02: testID convention + identifier helper - next
 
 ---
 
@@ -522,7 +576,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | -         | -      | -      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`) | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
