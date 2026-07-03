@@ -13,6 +13,13 @@ value. Expo MCP and Argent usage details belong in
 
 ## OAT Orchestration
 
+- Keep a companion general learnings log next to any tool-specific learning
+  log. For this project, `project-learnings.md` is the durable catch-all for
+  OAT dispatch issues, subagent coordination lessons, repo agent-instruction
+  candidates, and codebase gotchas, while `using-expo-mcp-learnings.md` stays
+  focused on Expo MCP and Argent usage. This split should make end-of-project
+  skill and `AGENTS.md` distillation mechanical instead of relying on chat
+  history.
 - Dispatch ceiling is a cap, not the default implementer effort. For implementer
   work, first classify the task (`low`, `medium`, `high`, `xhigh`), then select
   the lowest sufficient pinned role capped by the configured ceiling. A bounded
@@ -114,6 +121,7 @@ value. Expo MCP and Argent usage details belong in
 ## Open Follow-Ups
 
 - Distill general OAT dispatch and subagent lessons into future agent
-  instructions after this project completes.
+  instructions after this project completes, using `project-learnings.md` as
+  the source log.
 - Distill Expo-specific simulator/MCP lessons from
   `using-expo-mcp-learnings.md` into the requested Expo MCP skill.
