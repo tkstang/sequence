@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t08
+oat_current_task_id: p07-t09
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 7/9       |
+| Phase 7 | in_progress | 9     | 8/9       |
 
-**Total:** 50/85 tasks completed
+**Total:** 51/85 tasks completed
 
 ---
 
@@ -2539,6 +2539,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   catalog, and development round-trip timing logs.
 - Assembled the active mobile game route with `PlayerRail`, `GameBoard`,
   `CardHand`, turn banner, controls copy, and tap-mode card-to-cell submission.
+- Added development playground stories for the game board, card hand, and
+  player rail across empty, active, spotlight, locked-sequence, opponent-turn,
+  dead-card, and 6-player states.
 
 **Verification:**
 
@@ -2574,9 +2577,28 @@ subscription input lastEventId=505; latest card kind=event seq=505
   warning only.
 - Run: `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check`
 - Result: pass.
-- Run: `pnpm --filter @sequence/mobile exec jest src/app/game src/game/CardHand src/game/GameBoard --runInBand`
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/game/CardHand src/game/GameBoard --runInBand`
 - Result: pass, 5 suites / 27 tests; Watchman emitted the existing recrawl
   warning only.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/dev/stories.test.ts src/game/PlayerRail/PlayerRail.test.tsx src/game/CardHand src/game/GameBoard --runInBand`
+- Result: pass, 7 suites / 31 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t08-final3`
+- Result: pass.
+- Run: simulator story screenshot sweep in dark and light appearances.
+- Result: pass. Evidence:
+  `/tmp/p07-t08-game-board.png`, `/tmp/p07-t08-game-hand-fixed.png`,
+  `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`,
+  `/tmp/p07-t08-game-hand-light.png`, and
+  `/tmp/p07-t08-game-rail-light.png`.
 
 **Notes / Decisions:**
 
@@ -2606,6 +2628,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the p07-t07 follow-up fix commit to remove overlapping
   `act()` warnings from the route tests and ensure a disabled `CardHand` also
   disables nested dead-card turn-in controls.
+- The orchestrator added p07-t08 follow-up fix commits to keep route tests out
+  of the Expo Router app tree, compact hand story previews to fit iPhone-width
+  story cards, and move PlayerRail status labels into normal layout flow after
+  simulator screenshots exposed visual clipping/overlap.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2975,7 +3001,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 - `apps/mobile/src/app/game/[id].tsx` - active-game route assembly, selection
   state, turn copy, and `useMoveSubmit()` wiring.
-- `apps/mobile/src/app/game-screen.test.tsx` - route-level active/lobby/status
+- `apps/mobile/src/game/GameRouteScreen.test.tsx` - route-level active/lobby/status
   branch coverage outside the route directory.
 - `apps/mobile/src/game/GameBoard/GameBoard.tsx` /
   `GameBoard/BoardCell.tsx` - cell press callback and selected-card target
@@ -2988,7 +3014,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 **Verification:**
 
-- Run: `pnpm --filter @sequence/mobile exec jest src/app/game src/game/CardHand src/game/GameBoard --runInBand`
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/game/CardHand src/game/GameBoard --runInBand`
 - Result: pass, 5 suites / 27 tests; Watchman emitted the existing recrawl
   warning only.
 - Run: `pnpm --filter @sequence/mobile typecheck`
@@ -3002,11 +3028,79 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 **Notes / Decisions:**
 
-- The route test lives at `apps/mobile/src/app/game-screen.test.tsx`, not inside
-  `src/app/game/`, to avoid Expo Router bundling route-local test files.
+- The route test lives at `apps/mobile/src/game/GameRouteScreen.test.tsx`, not
+  inside `src/app/`, to avoid Expo Router bundling route-local test files.
 - Separate tests are used for separate route states; mid-test `cleanup()` caused
   overlapping React `act()` warnings.
 - Full device visual proof remains planned for p07-t08/p07-t09.
+
+### Task p07-t08: Playground stories for game components
+
+**Status:** completed
+**Commit:** 5f91046
+**Fix Commits:** fab0c19 / c81b6c9
+
+**Outcome:**
+
+- Added development playground stories for the mobile `GameBoard`, `CardHand`,
+  and `PlayerRail` components.
+- Board stories cover empty board, midgame scatter, spotlight targets, locked
+  sequences, and a 6-player table.
+- Hand stories cover tap-mode selection, drag-mode dead-card turn-in,
+  opponent-turn disabled state, and a 6-player short deal.
+- Rail stories cover active timer, opponent offline, locked sequence count, and
+  6-player teams.
+- Moved the game route test out of `src/app` after Expo Router attempted to
+  bundle it during `expo export`.
+- Compact hand story previews now use a representative 4-card sample so the
+  fan fits inside iPhone-width story cards.
+- PlayerRail status labels now participate in normal row layout instead of
+  absolute overlays, preventing seat/status overlap in compact previews.
+
+**Files changed:**
+
+- `apps/mobile/src/dev/stories.ts` / `stories.test.ts` - game-surface story
+  fixtures, compact hand previews, and story registration coverage.
+- `apps/mobile/src/game/GameRouteScreen.test.tsx` - route-level active/lobby
+  test moved out of the Expo Router app tree.
+- `apps/mobile/src/game/PlayerRail/PlayerRail.tsx` /
+  `PlayerRail.test.tsx` - compact non-overlapping player-card status layout.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the visual-proof and compact-card layout learning.
+
+**Verification:**
+
+- Run: `git ls-files 'apps/mobile/src/app/**/*.test.*' 'apps/mobile/src/app/*.test.*'`
+- Result: pass; no route-local test files remain under `src/app`.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/dev/stories.test.ts src/game/PlayerRail/PlayerRail.test.tsx src/game/CardHand src/game/GameBoard --runInBand`
+- Result: pass, 7 suites / 31 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t08-final3`
+- Result: pass.
+- Run: simulator story screenshot sweep in dark and light appearances.
+- Result: pass. Evidence:
+  `/tmp/p07-t08-game-board.png`, `/tmp/p07-t08-game-hand-fixed.png`,
+  `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`,
+  `/tmp/p07-t08-game-hand-light.png`, and
+  `/tmp/p07-t08-game-rail-light.png`.
+
+**Notes / Decisions:**
+
+- `/dev/[story]` did not need route changes because the existing `Card` story
+  fixture type already accepts React node children.
+- Dark screenshots first exposed two visual issues that tests/export missed:
+  clipped full-hand fans and overlapping PlayerRail status labels. Both were
+  fixed before the task was accepted.
+- The Expo dev-client tools gear overlaps the top-right theme toggle in
+  screenshots, but it does not obscure the story content being verified.
 
 ---
 
@@ -3136,7 +3230,8 @@ Chronological log of implementation progress.
 - [x] p07-t05: PlayerRail + TimerBadge - 8c612b1 / f2c3dbb
 - [x] p07-t06: Move submission + submitting state + violation feedback - 4a8403c / 6ba10cf
 - [x] p07-t07: Game screen assembly + turn flow - afbd9a0 / 9518c86
-- [ ] p07-t08: Playground stories for game components - next
+- [x] p07-t08: Playground stories for game components - 5f91046 / fab0c19 / c81b6c9
+- [ ] p07-t09: Full tap-mode game verification - next
 
 **What changed (high level):**
 
@@ -3256,6 +3351,8 @@ Chronological log of implementation progress.
 - The active-game player rail now displays seats, team colors,
   connected/offline state, current turn, round/sequence counts, and a
   server-deadline-synced timer badge.
+- The game-surface playground now has board, hand, and rail stories with
+  both-theme simulator screenshot evidence for compact iPhone-width rendering.
 
 ---
 
@@ -3273,7 +3370,8 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t08       | plan.md / design.md | RSD `html.*` wrappers for remaining TextField and Badge chrome-kit primitives | `TextField` and `Badge` are native-backed while preserving public APIs | Both-scheme simulator verification showed the native-backed approach is the stable baseline for the full chrome-kit surface | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Badge.tsx` | Continue using native-backed chrome primitives unless a later RSD issue is deliberately re-evaluated |
 | p04-t04       | plan.md         | Auth route tests under `apps/mobile/src/app/(auth)` and root layout test under `apps/mobile/src/app` | Auth and root-route tests live under `apps/mobile/src/auth` and `apps/mobile/src/test` | Expo Router can bundle route-local tests into Metro; this preserves the already proven route-tree rule | `apps/mobile/src/auth/login-screen.test.tsx`; `apps/mobile/src/auth/signup-screen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
 | p04-t06       | plan.md         | Scenario task with no file changes unless fixes land | Installed `expo-network` / `expo-web-browser` and added the `expo-web-browser` config plugin | Simulator proof exposed missing `@better-auth/expo` runtime peers after auth-client initialization | `apps/mobile/package.json`; `apps/mobile/app.config.ts`; `pnpm-lock.yaml` | Keep declared native peers installed and rebuild the dev client after native module changes |
-| p07-t01       | plan.md         | Dev-build screenshot of a card grid sanity check | Focused Jest, Expo export, and native rebuild passed; no usable card-grid screenshot was captured | Metro was not reachable during the visual pass, and p07-t08 owns full game-surface playground screenshot verification | `apps/mobile/src/app/dev/cards.tsx`; `apps/mobile/src/game/cards/CardFace.tsx` | Capture game-surface card/board screenshots during p07-t08 |
+| p07-t01       | plan.md         | Dev-build screenshot of a card grid sanity check | Focused Jest, Expo export, and native rebuild passed; no usable card-grid screenshot was captured | Metro was not reachable during the visual pass, and p07-t08 owns full game-surface playground screenshot verification | `apps/mobile/src/app/dev/cards.tsx`; `apps/mobile/src/game/cards/CardFace.tsx` | Completed by p07-t08 game-surface playground screenshot sweep |
+| p07-t07       | plan.md         | Route test under `apps/mobile/src/app/game` | Route test lives at `apps/mobile/src/game/GameRouteScreen.test.tsx` | Expo Router can bundle `.test.*` files under `src/app` during export and pull test-only dependencies into Metro | `apps/mobile/src/game/GameRouteScreen.test.tsx` | Keep mobile route tests outside `apps/mobile/src/app` |
 
 ## Test Results
 
@@ -3313,6 +3411,9 @@ Track test execution during implementation.
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 GameBoard/spotlight suites, 14 tests; includes no-target selected-card parity and one-eyed jack targets |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 CardHand suite, 7 tests; includes drag-only dead-card affordance and nested press isolation |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 PlayerRail/TimerBadge suites, 4 tests; includes deadline re-sync and no local forfeit path |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/use-move-submit.test.ts src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo install expo-haptics@~57.0.0 --check` | yes    | 0      | 2 move-submit/feedback suites, 19 tests; Expo package compatibility check passed |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 5 active-route/hand/board suites, 27 tests; route test lives outside `src/app` |
+| 7     | `git ls-files 'apps/mobile/src/app/**/*.test.*' 'apps/mobile/src/app/*.test.*'`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/dev/stories.test.ts src/game/PlayerRail/PlayerRail.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t08-final3`; simulator screenshots `/tmp/p07-t08-game-board.png`, `/tmp/p07-t08-game-hand-fixed.png`, `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`, `/tmp/p07-t08-game-hand-light.png`, `/tmp/p07-t08-game-rail-light.png` | yes    | 0      | 7 game-surface suites, 31 tests; Expo export and both-theme story visual sweep passed |
 
 ## Final Summary (for PR/docs)
 
