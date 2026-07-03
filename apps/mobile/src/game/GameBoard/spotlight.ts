@@ -27,10 +27,11 @@ export function createBoardSpotlight({
     snapshotBoardToRulesBoard(board),
     currentTeam,
   );
+  const targets = placements.get(selectedCard) ?? [];
 
   return {
-    active: true,
-    targets: new Set(placements.get(selectedCard) ?? []),
+    active: targets.length > 0,
+    targets: new Set(targets),
   };
 }
 

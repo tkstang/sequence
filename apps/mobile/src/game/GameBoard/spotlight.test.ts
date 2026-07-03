@@ -93,6 +93,23 @@ describe('GameBoard spotlight targeting', () => {
     expect(queryByTestId('board.cell.1KC.spotlight.target')).toBeNull();
   });
 
+  it('does not dim the board when the selected card has no legal targets', async () => {
+    const [firstAce, secondAce] = boardCellsFor('A', 'C');
+    const { queryByTestId } = await render(
+      createElement(GameBoard, {
+        board: {
+          [firstAce!]: { chip: 1 },
+          [secondAce!]: { chip: 2 },
+        },
+        currentTeam: 1,
+        selectedCard: ACE_CLUBS,
+      }),
+    );
+
+    expect(queryByTestId('board.cell.1KC.spotlight.dim')).toBeNull();
+    expect(queryByTestId(`board.cell.${firstAce!}.spotlight.dim`)).toBeNull();
+  });
+
   it('targets only removable opponent chips for a selected one-eyed jack', async () => {
     const board: BoardFixture = {
       '1AC': { chip: 2 },
