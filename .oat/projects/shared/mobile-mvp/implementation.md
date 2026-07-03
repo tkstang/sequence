@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t02
+oat_current_task_id: p01-t03
 oat_generated: false
 ---
 
@@ -26,10 +26,10 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 1/8       |
+| Phase 1 | in_progress | 8     | 2/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 1/85 tasks completed
+**Total:** 2/85 tasks completed
 
 ---
 
@@ -101,12 +101,38 @@ oat_generated: false
 
 ### Task p01-t02: {Task Name}
 
+**Status:** completed
+**Commit:** 2890e84
+
+**Outcome:**
+
+- Mobile now has Expo Metro defaults, a Babel config using only
+  `babel-preset-expo`, and TypeScript wired through the repo base config with
+  React Native JSX settings.
+
+**Files changed:**
+
+- `apps/mobile/metro.config.js` - Expo Metro default config.
+- `apps/mobile/babel.config.js` - Expo Babel preset.
+- `apps/mobile/tsconfig.json` - repo base TypeScript config plus mobile JSX.
+- `apps/mobile/package.json` - workspace format script covers new config files.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Root `oxlint`/`oxfmt` scripts already cover `apps/mobile` through the root
+  `apps` glob, so no root config changes were needed for this task.
+
+---
+
+### Task p01-t03: Shared-import spike — game-logic + AppRouter under Metro
+
 **Status:** pending
 **Commit:** -
-
-**Notes:**
-
-- {Notes will be added during implementation}
 
 ---
 
@@ -147,12 +173,15 @@ Chronological log of implementation progress.
 **Session Start:** 03:13 UTC
 
 - [x] p01-t01: Scaffold @sequence/mobile Expo workspace - fe544ee
-- [ ] p01-t02: Metro, TypeScript, and lint/format wiring - next
+- [x] p01-t02: Metro, TypeScript, and lint/format wiring - 2890e84
+- [ ] p01-t03: Shared-import spike — game-logic + AppRouter under Metro - next
 
 **What changed (high level):**
 
 - Mobile Expo workspace scaffolded with app identity, router entry, CNG ignores,
   placeholder home route, and lockfile dependencies.
+- Mobile Metro, Babel, TypeScript, lint, and format wiring now pass their scoped
+  gates.
 
 **Decisions:**
 
@@ -162,6 +191,7 @@ Chronological log of implementation progress.
 **Follow-ups / TODO:**
 
 - Add Metro/Babel/TypeScript wiring in p01-t02.
+- Prove shared imports under Metro in p01-t03.
 
 **Blockers:**
 
