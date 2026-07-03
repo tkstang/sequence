@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t06
+oat_current_task_id: p06-t07
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 5/8       |
+| Phase 6 | in_progress | 8     | 6/8       |
 
-**Total:** 40/85 tasks completed
+**Total:** 41/85 tasks completed
 
 ---
 
@@ -2259,6 +2259,61 @@ _In progress._
 
 ---
 
+### Task p06-t06: Scheme deep links
+
+**Status:** completed
+**Commit:** e70d449
+
+**Outcome:**
+
+- Hardened the `join/[code]` route so the untrusted route/deep-link parameter
+  is used only for `game.preview`.
+- Registered-user and guest join mutations now use the server-returned
+  `preview.inviteCode` rather than reusing the raw route parameter.
+- Added feature-level coverage proving join mutations use the preview invite
+  code.
+- Verified `sequence://join/<code>` opens the Expo Router join preview route in
+  the installed dev client.
+
+**Files changed:**
+
+- `apps/mobile/src/app/join/[code].tsx` - join mutation invite-code source
+  hardened to the preview response.
+- `apps/mobile/src/features/join/JoinScreen.test.tsx` - route-param hardening
+  coverage.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/features/join --runInBand`
+- Result: pass, 1 suite / 11 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+- Run: `xcrun simctl openurl booted "sequence://join/TESTCODE"`
+- Result: pass, exit 0; screenshot
+  `/tmp/p06-t06-sequence-join-testcode-preview.png`.
+- Run: simulator garbage-code deep-link proof.
+- Result: unknown-code state screenshot
+  `/tmp/p06-t06-sequence-join-garbage-unknown.png`.
+
+**Notes / Decisions:**
+
+- Simulator proof used a temporary local mock `game.preview` endpoint because
+  the local API/database environment was unavailable. This proves scheme
+  routing and join-preview UI rendering, not a real API-backed invite lookup.
+  API-backed preview/join behavior is covered by earlier p06 API/mobile tests.
+- The garbage-code screenshot includes a development error toast from the
+  mocked failed query; the app body still renders the expected unknown-code
+  state.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2375,7 +2430,8 @@ Chronological log of implementation progress.
 - [x] p06-t03: Create screen - 64686b0
 - [x] p06-t04: Join-by-code preview + registered join - bd5ebda
 - [x] p06-t05: Guest join + guest store/registry + continue-list - 6c7c5bc / ac2a3ee
-- [ ] p06-t06: Scheme deep links - next
+- [x] p06-t06: Scheme deep links - e70d449
+- [ ] p06-t07: Lobby screen + controls + share - next
 
 **What changed (high level):**
 
@@ -2464,6 +2520,9 @@ Chronological log of implementation progress.
 - The mobile app now persists guest game identity, sends stored guest tokens
   through the explicit cookie header, supports anonymous guest joins, surfaces a
   cold-start guest continue list, and keeps the join subtree public.
+- The mobile join deep-link route now treats the route code as untrusted preview
+  input only, uses the server-returned invite code for join mutations, and has
+  simulator evidence for `sequence://join/<code>` routing.
 
 ---
 
@@ -2512,6 +2571,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/create src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 create/root-layout suites, 8 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 join/root-layout suites, 11 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/auth/guest-store.test.ts src/auth/login-screen.test.tsx src/features/join src/api/cookies.test.ts src/test/root-layout.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 6 guest/join/root-layout/stream suites, 34 tests |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/features/join --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `xcrun simctl openurl booted "sequence://join/TESTCODE"` with screenshots `/tmp/p06-t06-sequence-join-testcode-preview.png` and `/tmp/p06-t06-sequence-join-garbage-unknown.png` | yes    | 0      | Scheme route/UI proof used temporary mock API; API-backed preview covered elsewhere |
 
 ## Final Summary (for PR/docs)
 
