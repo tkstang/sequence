@@ -19,6 +19,9 @@ agent instructions.
   locally diagnosable, inspect the worktree, apply the focused fix, re-run the
   relevant gates, and keep the task moving until the configured HiLL checkpoint
   or a true blocker.
+- If a subagent stalls or is closed but leaves useful edits in the worktree,
+  inspect those edits as candidate work rather than discarding them. Adopt,
+  revise, and verify the useful portion locally, then continue.
 
 ## Codebase Patterns
 
@@ -32,6 +35,20 @@ agent instructions.
 - When using React Native `StyleSheet` for layout, set direction explicitly on
   vertical stacks. The default flex direction differs from CSS expectations and
   can turn compact lists or headers into wide, stretched rows.
+- React Strict DOM can be viable for token definition, but native-backed
+  primitives were needed for the full initial chrome-kit surface: Button,
+  TextField, Card, Badge, and Screen all needed native layout/control wrappers
+  after simulator proof.
+
+## Verification Mechanics
+
+- Use zsh arrays for simulator route sweeps. A scalar like
+  `routes="index button ..."` will not split the way bash does under default
+  zsh settings and can create bad screenshot filenames.
+- Scratch-token propagation checks should run the web StyleX generator and then
+  `oxfmt` the generated web token files before checking the diff. The generator
+  writes valid values, while the formatter restores the repo's canonical quote
+  style.
 
 ## Open Follow-Ups
 
