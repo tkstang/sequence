@@ -1,11 +1,10 @@
+import type { SnapshotBoardCell } from '@sequence/client-state';
 import {
   BOARD_MAP,
   isCorner,
   parseBoardCell,
   type Position,
 } from '@sequence/game-logic';
-
-import type { SnapshotBoardCell } from '../game-state.ts';
 
 export type CellHighlight =
   | 'valid-target'

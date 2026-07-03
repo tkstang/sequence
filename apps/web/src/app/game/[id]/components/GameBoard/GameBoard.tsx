@@ -1,5 +1,6 @@
 'use client';
 
+import type { SnapshotBoardCell } from '@sequence/client-state';
 import type { Position } from '@sequence/game-logic';
 import * as stylex from '@stylexjs/stylex';
 import { useEffect, useMemo, useState } from 'react';
@@ -14,7 +15,6 @@ import {
   space,
 } from '@/styles/tokens.stylex.ts';
 
-import type { SnapshotBoardCell } from '../game-state.ts';
 import { BoardCell } from './components/BoardCell.tsx';
 import { allCardAssetPaths, buildBoardCells } from './GameBoard.utils.ts';
 

@@ -139,6 +139,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@sequence/client-state':
+        specifier: workspace:*
+        version: link:../../packages/client-state
       '@sequence/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens

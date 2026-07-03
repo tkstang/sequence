@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@sequence/client-state": "workspace:*",
     "@sequence/design-tokens": "workspace:*",
     "@sequence/game-logic": "workspace:*",
     "@stylexjs/stylex": "^0.19.0",
