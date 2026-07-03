@@ -1,6 +1,6 @@
-import { css, html } from 'react-strict-dom';
+import { StyleSheet, TextInput } from 'react-native';
 
-import { color } from '../theme/vars.css.ts';
+import { useTheme } from '../theme/use-theme.ts';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
 
@@ -25,57 +25,60 @@ export function TextField({
   testID,
   value,
 }: TextFieldProps) {
+  const { colors } = useTheme();
+
   return (
-    <html.input
-      aria-disabled={disabled}
-      aria-label={accessibilityLabel}
-      data-testid={testID}
+    <TextInput
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
       defaultValue={defaultValue}
-      disabled={disabled}
-      onChange={
-        disabled
-          ? undefined
-          : (event: { target: { value: string } }) => {
-              onChangeText?.(event.target.value);
-            }
-      }
+      editable={!disabled}
+      onChangeText={disabled ? undefined : onChangeText}
       placeholder={placeholder}
-      style={[styles.root, styles[size], disabled ? styles.disabled : null]}
-      type="text"
+      placeholderTextColor={colors.textFaint}
+      style={[
+        styles.root,
+        styles[size],
+        {
+          backgroundColor: disabled
+            ? colors.surfaceSunken
+            : colors.surfaceRaised,
+          borderColor: colors.borderStrong,
+          color: disabled ? colors.textMuted : colors.text,
+        },
+        disabled ? styles.disabled : null,
+      ]}
+      testID={testID}
       value={value}
     />
   );
 }
 
-const styles = css.create({
+const styles = StyleSheet.create({
   root: {
-    backgroundColor: color.surfaceRaised,
-    borderColor: color.borderStrong,
     borderRadius: 8,
     borderStyle: 'solid',
     borderWidth: 1,
-    color: color.text,
     fontSize: 16,
     lineHeight: 20,
+    textAlignVertical: 'center',
   },
   sm: {
     minHeight: 36,
-    paddingBlock: 8,
-    paddingInline: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   md: {
     minHeight: 44,
-    paddingBlock: 10,
-    paddingInline: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   lg: {
     minHeight: 52,
-    paddingBlock: 12,
-    paddingInline: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   disabled: {
-    backgroundColor: color.surfaceSunken,
-    color: color.textMuted,
     opacity: 0.65,
   },
 });

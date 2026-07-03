@@ -31,9 +31,7 @@ describe('TextField', () => {
       />,
     );
 
-    fireEvent(getByTestId('chrome.text-field.change'), 'change', {
-      nativeEvent: { text: 'Grace', selection: { start: 5, end: 5 } },
-    });
+    fireEvent.changeText(getByTestId('chrome.text-field.change'), 'Grace');
 
     expect(onChangeText).toHaveBeenCalledWith('Grace');
   });
@@ -49,11 +47,9 @@ describe('TextField', () => {
     );
 
     const field = getByTestId('chrome.text-field.disabled');
-    fireEvent(field, 'change', {
-      nativeEvent: { text: 'Blocked', selection: { start: 7, end: 7 } },
-    });
+    fireEvent.changeText(field, 'Blocked');
 
-    expect(field.props.disabled).toBe(true);
+    expect(field.props.accessibilityState).toEqual({ disabled: true });
     expect(field.props.editable).toBe(false);
     expect(onChangeText).not.toHaveBeenCalled();
   });

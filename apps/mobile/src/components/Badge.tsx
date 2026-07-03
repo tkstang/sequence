@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { css, html } from 'react-strict-dom';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { color } from '../theme/vars.css.ts';
+import { useTheme } from '../theme/use-theme.ts';
 
 export type BadgeVariant =
   | 'neutral'
@@ -26,70 +26,65 @@ export function Badge({
   testID,
   variant = 'neutral',
 }: BadgeProps) {
-  const textStyle =
+  const { colors } = useTheme();
+  const fill =
+    variant === 'neutral'
+      ? colors.neutralBadgeBg
+      : variant === 'accent'
+        ? colors.accent
+        : variant === 'saved'
+          ? colors.savedBg
+          : variant === 'frozen'
+            ? colors.frozenBg
+            : variant === 'teamBlue'
+              ? colors.teamBlue
+              : variant === 'teamGreen'
+                ? colors.teamGreen
+                : colors.teamRed;
+  const labelColor =
     variant === 'saved'
-      ? styles.savedText
+      ? colors.savedFg
       : variant === 'frozen'
-        ? styles.frozenText
+        ? colors.frozenFg
         : variant === 'neutral'
-          ? styles.neutralText
-          : styles.fillText;
+          ? colors.text
+          : colors.accentText;
 
   return (
-    <html.div
-      data-testid={testID}
-      style={[styles.root, styles[variant], styles[size]]}
+    <View
+      style={[styles.root, styles[size], { backgroundColor: fill }]}
+      testID={testID}
     >
-      <html.span style={[styles.label, styles[`${size}Label`], textStyle]}>
+      <Text
+        style={[styles.label, styles[`${size}Label`], { color: labelColor }]}
+      >
         {children}
-      </html.span>
-    </html.div>
+      </Text>
+    </View>
   );
 }
 
-const styles = css.create({
+const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     alignSelf: 'flex-start',
     borderRadius: 999,
-    display: 'flex',
     justifyContent: 'center',
-  },
-  neutral: {
-    backgroundColor: color.neutralBadgeBg,
-  },
-  accent: {
-    backgroundColor: color.accent,
-  },
-  saved: {
-    backgroundColor: color.savedBg,
-  },
-  frozen: {
-    backgroundColor: color.frozenBg,
-  },
-  teamBlue: {
-    backgroundColor: color.teamBlue,
-  },
-  teamGreen: {
-    backgroundColor: color.teamGreen,
-  },
-  teamRed: {
-    backgroundColor: color.teamRed,
   },
   sm: {
     minHeight: 24,
-    paddingBlock: 4,
-    paddingInline: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   md: {
     minHeight: 28,
-    paddingBlock: 5,
-    paddingInline: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   lg: {
     minHeight: 32,
-    paddingBlock: 6,
-    paddingInline: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   label: {
     fontWeight: '700',
@@ -106,17 +101,5 @@ const styles = css.create({
   lgLabel: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  neutralText: {
-    color: color.text,
-  },
-  fillText: {
-    color: color.accentText,
-  },
-  savedText: {
-    color: color.savedFg,
-  },
-  frozenText: {
-    color: color.frozenFg,
   },
 });
