@@ -13,6 +13,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
     typedRoutes: true,
   },
+  extra: {
+    ...config.extra,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001',
+    wsUrl: process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:3001',
+  },
   ios: {
     ...config.ios,
     bundleIdentifier: 'com.tkstang.sequenceonline',
