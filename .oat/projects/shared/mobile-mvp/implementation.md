@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t05
+oat_current_task_id: p04-t06
 oat_generated: false
 ---
 
@@ -29,9 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 4/7       |
+| Phase 4 | in_progress | 7     | 5/7       |
 
-**Total:** 25/85 tasks completed
+**Total:** 26/85 tasks completed
 
 ---
 
@@ -1353,6 +1353,55 @@ oat_generated: false
 
 ---
 
+### Task p04-t05: Session probe + central error policy
+
+**Status:** completed
+**Commit:** a64c521
+
+**Outcome:**
+
+- Added a central tRPC error-policy mapper for auth, participation, backoff,
+  conflict/refetch, and game-rule violation cases.
+- Wired the signed-in home screen to probe `health.me`, render the probed user
+  email when available, and redirect to login when the probe returns
+  `UNAUTHORIZED`.
+- Added focused mapper tests and off-route home-screen tests for the session
+  probe, unauthorized redirect, ping status, and logout behavior.
+
+**Files changed:**
+
+- `apps/mobile/src/api/error-policy.ts` - central tRPC error-to-action mapper.
+- `apps/mobile/src/api/error-policy.test.ts` - unit coverage for every planned
+  mapping.
+- `apps/mobile/src/app/index.tsx` - `health.me` query, unauthorized redirect,
+  and probed-user session display.
+- `apps/mobile/src/test/index.test.tsx` - home-screen probe, redirect, ping,
+  and logout coverage outside the route tree.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/api/error-policy.test.ts src/test/index.test.tsx --runInBand`
+- Result: pass, 2 suites / 8 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass in subagent run.
+
+**Notes / Decisions:**
+
+- `health.me` is now the preferred source for the displayed signed-in user;
+  the Better Auth session hook remains a fallback while the probe is pending or
+  unavailable.
+- Non-auth error-policy actions are mapped now and intentionally consumed by
+  future game/realtime screens in later phases.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1454,7 +1503,8 @@ Chronological log of implementation progress.
 - [x] p04-t02: Mobile auth client + SecureStore session - 24088c1
 - [x] p04-t03: Cookie-header transport in tRPC client - 4d3e24c
 - [x] p04-t04: Login/signup/logout + protected routing - e6d202a / d97bf0d
-- [ ] p04-t05: Session probe + central error policy - next
+- [x] p04-t05: Session probe + central error policy - a64c521
+- [ ] p04-t06: Session persistence scenario (simulator) - next
 
 **What changed (high level):**
 
@@ -1499,6 +1549,8 @@ Chronological log of implementation progress.
 - The mobile app now has login/signup screens, protected root routing, signed-in
   session display, logout behavior, and a Better Auth client route target that
   matches the API's `/api/auth/*` mount.
+- The home route now probes `health.me`, redirects to login on unauthorized
+  probes, and centralizes tRPC error-policy mapping for later game screens.
 
 ---
 
@@ -1531,6 +1583,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/cookies.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx src/components/TextField.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p04-t04` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/mobile exec jest src/api/error-policy.test.ts src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
