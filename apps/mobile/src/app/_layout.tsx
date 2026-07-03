@@ -32,6 +32,7 @@ export default function RootLayout() {
             <Stack.Protected guard>
               <Stack.Screen name="join/index" />
               <Stack.Screen name="join/[code]" />
+              <Stack.Screen name="game/[id]" />
             </Stack.Protected>
           </Stack>
         </ThemeProvider>
