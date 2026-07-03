@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t01
+oat_current_task_id: p01-t02
 oat_generated: false
 ---
 
@@ -26,14 +26,14 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | N     | 0/N       |
-| Phase 2 | pending     | N     | 0/N       |
+| Phase 1 | in_progress | 8     | 1/8       |
+| Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 0/{N} tasks completed
+**Total:** 1/85 tasks completed
 
 ---
 
-## Phase 1: {Phase Name}
+## Phase 1: Foundation
 
 **Status:** in_progress
 **Started:** 2026-07-03
@@ -57,31 +57,45 @@ oat_generated: false
 
 - {trade-offs or deviations discovered during implementation}
 
-### Task p01-t01: {Task Name}
+### Task p01-t01: Scaffold @sequence/mobile Expo workspace
 
-**Status:** completed / in_progress / pending / blocked
-**Commit:** {sha} (if completed)
+**Status:** completed
+**Commit:** fe544ee
 
 **Outcome (required when completed):**
 
-- {what materially changed (not “did task”, but “system now does X”)}
+- Added the Expo SDK 57 `@sequence/mobile` workspace with Expo Router entry,
+  `src/app` route root, Sequence Online app identity, scheme, and iOS bundle id.
+- The placeholder home screen renders "Sequence Online" and Expo public config
+  resolves with React Compiler enabled.
 
 **Files changed:**
 
-- `{path}` - {why}
+- `apps/mobile/package.json` - Expo SDK 57 workspace manifest, scripts, and
+  runtime dependencies.
+- `apps/mobile/app.config.ts` - app identity, scheme, iOS bundle id, router
+  plugin, and React Compiler experiment.
+- `apps/mobile/tsconfig.json` - initial Expo TypeScript config.
+- `apps/mobile/src/app/_layout.tsx` - Expo Router stack root.
+- `apps/mobile/src/app/index.tsx` - placeholder home route.
+- `apps/mobile/.gitignore` - CNG native artifacts ignored.
+- `pnpm-lock.yaml` - resolved mobile workspace dependencies.
 
 **Verification:**
 
-- Run: `{command(s)}`
-- Result: {pass/fail + notes}
+- Run: `pnpm install && pnpm --filter @sequence/mobile exec expo config --type public | head -20`
+- Result: pass. Public config resolves SDK 57 and scheme `sequence`; targeted
+  follow-up confirmed bundle id `com.tkstang.sequenceonline`.
 
 **Notes / Decisions:**
 
-- {gotchas, trade-offs, design deltas, important context for future sessions}
+- Jest-specific dev dependencies are deferred to p01-t04 to avoid introducing
+  test-tool peer noise before the Jest setup task.
 
 **Issues Encountered:**
 
-- {Issue and resolution}
+- Expo SDK 57 companion modules use SDK-major package versions; adjusted the
+  scaffold manifest to the registry-backed SDK 57 line.
 
 ---
 
@@ -130,28 +144,30 @@ Chronological log of implementation progress.
 
 ### 2026-07-03
 
-**Session Start:** {time}
+**Session Start:** 03:13 UTC
 
-- [x] p01-t01: {Task name} - {commit sha}
-- [ ] p01-t02: {Task name} - in progress
+- [x] p01-t01: Scaffold @sequence/mobile Expo workspace - fe544ee
+- [ ] p01-t02: Metro, TypeScript, and lint/format wiring - next
 
 **What changed (high level):**
 
-- {short bullets suitable for PR/docs}
+- Mobile Expo workspace scaffolded with app identity, router entry, CNG ignores,
+  placeholder home route, and lockfile dependencies.
 
 **Decisions:**
 
-- {Decision made and rationale}
+- Deferred Jest packages to p01-t04 so p01-t01 remains a clean Expo scaffold;
+  the test script is present but test tooling lands with the planned Jest task.
 
 **Follow-ups / TODO:**
 
-- {anything discovered during implementation that should be captured for later}
+- Add Metro/Babel/TypeScript wiring in p01-t02.
 
 **Blockers:**
 
-- {Blocker description} - {status: resolved/pending}
+- None.
 
-**Session End:** {time}
+**Session End:** in progress
 
 ---
 
