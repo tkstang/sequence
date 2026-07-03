@@ -501,32 +501,32 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 
 | ID | Description | Priority | Verification | Planned Tasks |
 | --- | --- | --- | --- | --- |
-| FR1 | Email/password auth with persistent sessions | P0 | integration + manual: session across restart | TBD - see plan.md |
-| FR2 | Guest invite join with durable game-scoped identity | P0 | manual + unit: join/preview flows | TBD - see plan.md |
-| FR3 | Dashboard of resumable/recent games | P0 | unit + manual: myGames rendering | TBD - see plan.md |
-| FR4 | Game creation incl. local mode | P0 | unit + manual: create flows | TBD - see plan.md |
-| FR5 | Live lobby with team/creator controls | P0 | manual: multi-client lobby; unit: components | TBD - see plan.md |
-| FR6 | Realtime tap-mode gameplay | P0 | unit + manual: board/hand components, live game | TBD - see plan.md |
-| FR7 | Drag mode with validation feedback | P0 | manual + unit: drag interaction | TBD - see plan.md |
-| FR8 | Sequence choice, dead-card turn-in, auto-swap | P0 | unit + manual: special flows | TBD - see plan.md |
-| FR9 | Synchronized turn timers | P0 | unit + manual: deadline sync | TBD - see plan.md |
-| FR10 | Save/concede/freeze/resume lifecycle | P0 | manual + unit: lifecycle states | TBD - see plan.md |
-| FR11 | Local pass-and-play with handoff | P0 | unit + manual: handoff gating | TBD - see plan.md |
-| FR12 | Game over and rematch | P0 | unit + manual: outcome + rematch | TBD - see plan.md |
-| FR13 | History record/list/head-to-head | P1 | unit + manual: history screens | TBD - see plan.md |
-| FR14 | In-app notification affordances | P1 | unit + manual: event feedback | TBD - see plan.md |
-| FR15 | Light/dark theming from shared tokens | P1 | unit + manual: theme switching | TBD - see plan.md |
-| FR16 | Shared design tokens, no web regression | P0 | unit + manual: web gates + playground parity | TBD - see plan.md |
-| FR17 | Agentic tooling loop | P0 | manual: demonstrated agent loop | TBD - see plan.md |
-| FR18 | TestFlight distribution | P0 | manual: external install + production smoke | TBD - see plan.md |
-| FR19 | Operator runbook documentation | P0 | manual: runbook completeness review | TBD - see plan.md |
-| NFR1 | Hand privacy on device | P0 | integration + manual: redaction and handoff | TBD - see plan.md |
-| NFR2 | Reconnect/lifecycle robustness | P0 | manual: scenario matrix | TBD - see plan.md |
-| NFR3 | Interaction performance | P1 | perf + manual: device spot checks | TBD - see plan.md |
-| NFR4 | Client security posture | P0 | manual: release build audit | TBD - see plan.md |
-| NFR5 | Testability identifiers | P1 | unit + manual: identifier convention | TBD - see plan.md |
-| NFR6 | Quality gates cover mobile | P0 | manual: root gates | TBD - see plan.md |
-| NFR7 | Autonomous executability of pre-final phases | P0 | manual: phase audit for operator-free execution | TBD - see plan.md |
+| FR1 | Email/password auth with persistent sessions | P0 | integration + manual: session across restart | p04-t01, p04-t02, p04-t03, p04-t04, p04-t05, p04-t06 |
+| FR2 | Guest invite join with durable game-scoped identity | P0 | manual + unit: join/preview flows | p06-t01, p06-t04, p06-t05, p06-t06, p06-t08 |
+| FR3 | Dashboard of resumable/recent games | P0 | unit + manual: myGames rendering | p06-t02 |
+| FR4 | Game creation incl. local mode | P0 | unit + manual: create flows | p06-t03 |
+| FR5 | Live lobby with team/creator controls | P0 | manual: multi-client lobby; unit: components | p06-t07, p06-t08 |
+| FR6 | Realtime tap-mode gameplay | P0 | unit + manual: board/hand components, live game | p07-t01, p07-t02, p07-t03, p07-t04, p07-t06, p07-t07, p07-t09 |
+| FR7 | Drag mode with validation feedback | P0 | manual + unit: drag interaction | p08-t01, p08-t02, p08-t06 |
+| FR8 | Sequence choice, dead-card turn-in, auto-swap | P0 | unit + manual: special flows | p08-t03, p08-t04, p08-t06 |
+| FR9 | Synchronized turn timers | P0 | unit + manual: deadline sync | p07-t05, p07-t09 |
+| FR10 | Save/concede/freeze/resume lifecycle | P0 | manual + unit: lifecycle states | p09-t01, p09-t02, p09-t07 |
+| FR11 | Local pass-and-play with handoff | P0 | unit + manual: handoff gating | p09-t05, p09-t06, p09-t07 |
+| FR12 | Game over and rematch | P0 | unit + manual: outcome + rematch | p09-t03, p09-t04, p09-t07 |
+| FR13 | History record/list/head-to-head | P1 | unit + manual: history screens | p10-t01, p10-t07 |
+| FR14 | In-app notification affordances | P1 | unit + manual: event feedback | p10-t02, p10-t07 |
+| FR15 | Light/dark theming from shared tokens | P1 | unit + manual: theme switching | p03-t04, p10-t03, p10-t06, p10-t07 |
+| FR16 | Shared design tokens, no web regression | P0 | unit + manual: web gates + playground parity | p03-t01, p03-t02, p03-t08 |
+| FR17 | Agentic tooling loop | P0 | manual: demonstrated agent loop | p02-t01, p02-t02, p02-t03, p02-t05 |
+| FR18 | TestFlight distribution | P0 | manual: external install + production smoke | p12-t01, p12-t02, p12-t03, p12-t04, p12-t05 |
+| FR19 | Operator runbook documentation | P0 | manual: runbook completeness review | p02-t04, p04-t07, p11-t05, p12-t05 |
+| NFR1 | Hand privacy on device | P0 | integration + manual: redaction and handoff | p09-t05, p11-t03 |
+| NFR2 | Reconnect/lifecycle robustness | P0 | manual: scenario matrix | p05-t03, p05-t05, p05-t07, p11-t01 |
+| NFR3 | Interaction performance | P1 | perf + manual: device spot checks | p07-t06, p11-t02 |
+| NFR4 | Client security posture | P0 | manual: release build audit | p11-t03 |
+| NFR5 | Testability identifiers | P1 | unit + manual: identifier convention | p02-t02, p10-t05 |
+| NFR6 | Quality gates cover mobile | P0 | manual: root gates | p01-t05, p11-t04 |
+| NFR7 | Autonomous executability of pre-final phases | P0 | manual: phase audit for operator-free execution | p11-t05 |
 
 **Notes:**
 
