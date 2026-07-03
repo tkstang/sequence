@@ -7,6 +7,7 @@ import { useSubscription } from '@trpc/tanstack-react-query';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useTRPC } from '../api/client.ts';
+import { removeGuestGame, updateGuestGameStatus } from '../auth/guest-store.ts';
 import {
   createRealtimeLifecycle,
   type RealtimeLifecycle,
@@ -35,6 +36,14 @@ function reducer(
   item: GameStreamItem,
 ): GameViewState | null {
   return applyStreamItem(state, item);
+}
+
+function getErrorCode(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) return null;
+  const data = 'data' in error ? error.data : undefined;
+  if (typeof data !== 'object' || data === null) return null;
+  const code = 'code' in data ? data.code : undefined;
+  return typeof code === 'string' ? code : null;
 }
 
 export function useGameStream(
@@ -97,9 +106,13 @@ export function useGameStream(
           lifecycle.markLive('subscription-started');
         },
         onData: (item) => handleData(item as TrackedStreamItem),
-        onError: () => {
+        onError: (error) => {
           socketStateRef.current = 'errored';
           lifecycle.markError('subscription-error');
+          const code = getErrorCode(error);
+          if (code === 'NOT_FOUND' || code === 'FORBIDDEN') {
+            void removeGuestGame(gameId);
+          }
         },
         onConnectionStateChange: (next) => {
           if (next.state === 'connecting') {
@@ -133,6 +146,17 @@ export function useGameStream(
     lifecycle.start();
     return () => lifecycle.stop();
   }, [lifecycle]);
+
+  useEffect(() => {
+    if (!view?.status) return;
+
+    if (view.status === 'finished') {
+      void removeGuestGame(gameId);
+      return;
+    }
+
+    void updateGuestGameStatus(gameId, view.status);
+  }, [gameId, view?.status]);
 
   return {
     view,

@@ -2,16 +2,25 @@ jest.mock('../auth/client.ts', () => ({
   getCookie: jest.fn(),
 }));
 
+jest.mock('../auth/guest-store.ts', () => ({
+  getGuestToken: jest.fn(),
+}));
+
 import { getCookie } from '../auth/client.ts';
+import { getGuestToken } from '../auth/guest-store.ts';
 import { buildCookieHeader, getGuestTokenForGame } from './cookies.ts';
 
 const mockedGetCookie = getCookie as unknown as jest.MockedFunction<
   () => string | undefined
 >;
+const mockedGetGuestToken = getGuestToken as unknown as jest.MockedFunction<
+  (gameId: string) => Promise<string | null>
+>;
 
 describe('buildCookieHeader', () => {
   beforeEach(() => {
     mockedGetCookie.mockReset();
+    mockedGetGuestToken.mockReset();
   });
 
   it('returns the Better Auth cookie for a registered session', async () => {
@@ -46,7 +55,16 @@ describe('buildCookieHeader', () => {
 });
 
 describe('getGuestTokenForGame', () => {
-  it('is stubbed until the guest store lands', async () => {
+  it('reads guest tokens from the guest store', async () => {
+    mockedGetGuestToken.mockResolvedValue('stored-token');
+
+    await expect(getGuestTokenForGame('game-1')).resolves.toBe('stored-token');
+    expect(mockedGetGuestToken).toHaveBeenCalledWith('game-1');
+  });
+
+  it('normalizes missing guest tokens to undefined', async () => {
+    mockedGetGuestToken.mockResolvedValue(null);
+
     await expect(getGuestTokenForGame('game-1')).resolves.toBeUndefined();
   });
 });

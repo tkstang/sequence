@@ -20,6 +20,8 @@ type SubscriptionInput = {
 
 var mockSubscriptionInputs: SubscriptionInput[] = [];
 var mockLatestOptions: SubscriptionOptions | null = null;
+var mockRemoveGuestGame = jest.fn();
+var mockUpdateGuestGameStatus = jest.fn();
 
 jest.mock('@trpc/tanstack-react-query', () => ({
   useSubscription: jest.fn(() => ({ error: null, status: 'pending' })),
@@ -49,6 +51,12 @@ jest.mock('../lib/logger.ts', () => ({
   },
 }));
 
+jest.mock('../auth/guest-store.ts', () => ({
+  removeGuestGame: (...args: unknown[]) => mockRemoveGuestGame(...args),
+  updateGuestGameStatus: (...args: unknown[]) =>
+    mockUpdateGuestGameStatus(...args),
+}));
+
 import { useGameStream } from './use-game-stream.ts';
 
 const snapshot = gameFixtures[0]!.snapshot;
@@ -62,6 +70,8 @@ async function emit(item: GameStreamItem | { data: GameStreamItem }) {
 beforeEach(() => {
   mockSubscriptionInputs = [];
   mockLatestOptions = null;
+  mockRemoveGuestGame = jest.fn();
+  mockUpdateGuestGameStatus = jest.fn();
 });
 
 afterEach(() => {
@@ -165,5 +175,41 @@ describe('useGameStream', () => {
     await waitFor(() => {
       expect(result.current.connectionState).toBe('live');
     });
+  });
+
+  it('updates the guest registry from stream status changes', async () => {
+    await renderHook(() => useGameStream('game-1'));
+
+    await emit({ kind: 'snapshot', snapshot });
+
+    await waitFor(() => {
+      expect(mockUpdateGuestGameStatus).toHaveBeenCalledWith(
+        'game-1',
+        snapshot.status,
+      );
+    });
+  });
+
+  it('removes the guest registry entry on terminal stream status', async () => {
+    await renderHook(() => useGameStream('game-1'));
+
+    await emit({
+      kind: 'snapshot',
+      snapshot: { ...snapshot, status: 'finished' },
+    });
+
+    await waitFor(() => {
+      expect(mockRemoveGuestGame).toHaveBeenCalledWith('game-1');
+    });
+  });
+
+  it('removes the guest registry entry on not-found or forbidden stream errors', async () => {
+    await renderHook(() => useGameStream('game-1'));
+
+    await act(async () => {
+      mockLatestOptions?.onError?.({ data: { code: 'FORBIDDEN' } });
+    });
+
+    expect(mockRemoveGuestGame).toHaveBeenCalledWith('game-1');
   });
 });

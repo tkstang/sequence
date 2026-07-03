@@ -63,8 +63,12 @@ describe('RootLayout protected routing', () => {
   it('exposes only auth routes when unauthenticated', async () => {
     await render(<RootLayout />);
 
-    expect(mockProtectedGuards).toEqual([false, true]);
-    expect(mockRenderedScreenNames).toEqual(['(auth)/login', '(auth)/signup']);
+    expect(mockProtectedGuards).toEqual([false, true, true]);
+    expect(mockRenderedScreenNames).toEqual([
+      '(auth)/login',
+      '(auth)/signup',
+      'join/[code]',
+    ]);
   });
 
   it('exposes the signed-in routes when authenticated', async () => {
@@ -75,7 +79,7 @@ describe('RootLayout protected routing', () => {
 
     await render(<RootLayout />);
 
-    expect(mockProtectedGuards).toEqual([true, false]);
+    expect(mockProtectedGuards).toEqual([true, false, true]);
     expect(mockRenderedScreenNames).toEqual([
       'index',
       'create',

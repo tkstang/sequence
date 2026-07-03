@@ -6,9 +6,12 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTRPC } from '../../api/client.ts';
 import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
+import { useSession } from '../../auth/client.ts';
+import { saveGuestGame, saveGuestToken } from '../../auth/guest-store.ts';
 import { Button } from '../../components/Button.tsx';
 import { Card } from '../../components/Card.tsx';
 import { Screen } from '../../components/Screen.tsx';
+import { TextField } from '../../components/TextField.tsx';
 import {
   getPreviewUnavailableMessage,
   normalizeInviteCode,
@@ -52,6 +55,9 @@ export default function JoinPreviewScreen() {
   const params = useLocalSearchParams<{ code?: string | string[] }>();
   const inviteCode = normalizeInviteCode(firstParam(params.code));
   const trpc = useTRPC();
+  const session = useSession();
+  const isSignedIn = Boolean(session.data?.user);
+  const [guestName, setGuestName] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
 
   const preview = useQuery({
@@ -63,16 +69,51 @@ export default function JoinPreviewScreen() {
       onError(error) {
         setJoinError(messageForJoinError(error));
       },
-      onSuccess(result: { gameId: string }) {
-        router.replace(`/game/${encodeURIComponent(result.gameId)}` as Href);
-      },
     }),
   );
 
   async function joinAsUser() {
     setJoinError(null);
     try {
-      await join.mutateAsync({ inviteCode });
+      const result = (await join.mutateAsync({ inviteCode })) as {
+        gameId: string;
+      };
+      router.replace(`/game/${encodeURIComponent(result.gameId)}` as Href);
+    } catch {
+      // Mutation onError maps API failures into friendly route state.
+    }
+  }
+
+  async function joinAsGuest(previewData: JoinPreview) {
+    const nextGuestName = guestName.trim();
+
+    if (nextGuestName.length === 0) {
+      setJoinError('Enter a guest name.');
+      return;
+    }
+
+    setJoinError(null);
+    try {
+      const result = (await join.mutateAsync({
+        guestName: nextGuestName,
+        inviteCode,
+        returnGuestToken: true,
+      })) as { gameId: string; guestToken?: string };
+
+      if (!result.guestToken) {
+        setJoinError('Could not save guest access. Try again.');
+        return;
+      }
+
+      await saveGuestToken(result.gameId, result.guestToken);
+      await saveGuestGame({
+        gameId: result.gameId,
+        guestName: nextGuestName,
+        inviteCode: previewData.inviteCode,
+        joinedAt: new Date().toISOString(),
+        lastKnownStatus: previewData.status,
+      });
+      router.replace(`/game/${encodeURIComponent(result.gameId)}` as Href);
     } catch {
       // Mutation onError maps API failures into friendly route state.
     }
@@ -118,16 +159,48 @@ export default function JoinPreviewScreen() {
               </Text>
             </Card>
           ) : (
-            <Button
-              disabled={join.isPending}
-              onPress={() => {
-                void joinAsUser();
-              }}
-              size="lg"
-              testID={testId('join', 'preview', 'join')}
-            >
-              {join.isPending ? 'Joining...' : 'Join game'}
-            </Button>
+            <View style={styles.stack}>
+              {isSignedIn ? (
+                <Button
+                  disabled={join.isPending}
+                  onPress={() => {
+                    void joinAsUser();
+                  }}
+                  size="lg"
+                  testID={testId('join', 'preview', 'join')}
+                >
+                  {join.isPending ? 'Joining...' : 'Join game'}
+                </Button>
+              ) : (
+                <Card
+                  variant="sunken"
+                  testID={testId('join', 'preview', 'guest')}
+                >
+                  <View style={styles.guestForm}>
+                    <Text style={[styles.stateTitle, { color: colors.text }]}>
+                      Join as guest
+                    </Text>
+                    <TextField
+                      accessibilityLabel="Guest name"
+                      onChangeText={setGuestName}
+                      placeholder="Guest name"
+                      testID={testId('join', 'preview', 'guestName')}
+                      value={guestName}
+                    />
+                    <Button
+                      disabled={join.isPending}
+                      onPress={() => {
+                        void joinAsGuest(data);
+                      }}
+                      size="lg"
+                      testID={testId('join', 'preview', 'guestJoin')}
+                    >
+                      {join.isPending ? 'Joining...' : 'Continue as guest'}
+                    </Button>
+                  </View>
+                </Card>
+              )}
+            </View>
           )}
           {joinError ? (
             <Text
@@ -166,5 +239,10 @@ const styles = StyleSheet.create({
   error: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  guestForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
   },
 });

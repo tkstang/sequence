@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import type { Href } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { signIn } from '../../auth/client.ts';
+import { listGuestGames, type GuestGameEntry } from '../../auth/guest-store.ts';
 import { Button } from '../../components/Button.tsx';
 import { Card } from '../../components/Card.tsx';
 import { Screen } from '../../components/Screen.tsx';
@@ -32,7 +34,22 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [guestGames, setGuestGames] = useState<GuestGameEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void listGuestGames().then((entries) => {
+      if (isMounted) {
+        setGuestGames(entries);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function submit() {
     const nextEmail = email.trim();
@@ -124,6 +141,38 @@ export default function LoginScreen() {
           </View>
         </View>
       </Card>
+      {guestGames.length > 0 ? (
+        <Card variant="sunken" testID="auth.guest.continueList">
+          <View style={styles.guestList}>
+            <Text style={[styles.guestTitle, { color: colors.text }]}>
+              Continue as guest
+            </Text>
+            {guestGames.map((game) => (
+              <View key={game.gameId} style={styles.guestRow}>
+                <View style={styles.guestCopy}>
+                  <Text style={[styles.guestName, { color: colors.text }]}>
+                    {game.guestName}
+                  </Text>
+                  <Text style={[styles.guestMeta, { color: colors.textMuted }]}>
+                    {game.inviteCode}
+                  </Text>
+                </View>
+                <Button
+                  onPress={() => {
+                    router.push(
+                      `/game/${encodeURIComponent(game.gameId)}` as Href,
+                    );
+                  }}
+                  testID={`auth.guest.continue.${game.gameId}`}
+                  variant="secondary"
+                >
+                  Continue
+                </Button>
+              </View>
+            ))}
+          </View>
+        </Card>
+      ) : null}
     </Screen>
   );
 }
@@ -148,5 +197,35 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+  },
+  guestCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  guestList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  guestMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  guestName: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  guestRow: {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  guestTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
   },
 });

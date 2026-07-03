@@ -1,4 +1,5 @@
 import { getCookie } from '../auth/client.ts';
+import { getGuestToken as readGuestToken } from '../auth/guest-store.ts';
 
 export type GetGuestTokenForGame = (
   gameId: string,
@@ -10,9 +11,9 @@ export type BuildCookieHeaderOptions = {
 };
 
 export async function getGuestTokenForGame(
-  _gameId: string,
+  gameId: string,
 ): Promise<string | undefined> {
-  return undefined;
+  return (await readGuestToken(gameId)) ?? undefined;
 }
 
 export async function buildCookieHeader(
@@ -26,8 +27,8 @@ export async function buildCookieHeader(
   }
 
   if (options.gameId) {
-    const getGuestToken = options.getGuestToken ?? getGuestTokenForGame;
-    const guestToken = await getGuestToken(options.gameId);
+    const guestTokenReader = options.getGuestToken ?? getGuestTokenForGame;
+    const guestToken = await guestTokenReader(options.gameId);
 
     if (guestToken) {
       cookies.push(`sequence_guest=${guestToken}`);

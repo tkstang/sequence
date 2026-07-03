@@ -8,6 +8,13 @@ import {
 var mockRouterReplace = jest.fn();
 var mockRouterPush = jest.fn();
 var mockSignInEmail = jest.fn();
+var mockGuestGames: {
+  gameId: string;
+  guestName: string;
+  inviteCode: string;
+  joinedAt: string;
+  lastKnownStatus: string;
+}[] = [];
 
 jest.mock('expo-router', () => ({
   router: {
@@ -22,11 +29,16 @@ jest.mock('./client.ts', () => ({
   },
 }));
 
+jest.mock('./guest-store.ts', () => ({
+  listGuestGames: jest.fn(async () => mockGuestGames),
+}));
+
 import LoginScreen from '../app/(auth)/login.tsx';
 
 afterEach(() => {
   cleanup();
   jest.clearAllMocks();
+  mockGuestGames = [];
 });
 
 describe('LoginScreen', () => {
@@ -92,5 +104,29 @@ describe('LoginScreen', () => {
     await user.press(getByTestId('auth.login.signup'));
 
     expect(mockRouterPush).toHaveBeenCalledWith('./signup');
+  });
+
+  it('renders guest games from the registry and continues to a game route', async () => {
+    mockGuestGames = [
+      {
+        gameId: 'guest-game-1',
+        guestName: 'Ada',
+        inviteCode: 'ABCD2345EF',
+        joinedAt: '2026-07-03T12:00:00.000Z',
+        lastKnownStatus: 'active',
+      },
+    ];
+    const user = userEvent.setup();
+    const { getByTestId, getByText } = await render(<LoginScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId('auth.guest.continue.guest-game-1')).toBeTruthy();
+    });
+    expect(getByText('Ada')).toBeTruthy();
+    expect(getByText('ABCD2345EF')).toBeTruthy();
+
+    await user.press(getByTestId('auth.guest.continue.guest-game-1'));
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/game/guest-game-1');
   });
 });

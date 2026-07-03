@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   cleanup,
+  fireEvent,
   render,
   userEvent,
   waitFor,
@@ -20,13 +21,19 @@ var mockRouterPush = jest.fn();
 var mockRouterReplace = jest.fn();
 var mockQueryResult: MockQueryResult;
 var mockJoinResult: {
+  guestToken?: string;
   gameId: string;
+  isGuest: boolean;
   seat: number;
   team: number;
-  isGuest: false;
 };
 var mockJoinError: unknown;
 var mockRouteParams: Record<string, string | string[] | undefined> = {};
+var mockSession: { data: { user?: unknown } | null } = {
+  data: { user: { email: 'ada@example.test' } },
+};
+var mockSaveGuestGame = jest.fn();
+var mockSaveGuestToken = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   useMutation: jest.fn(
@@ -62,6 +69,15 @@ jest.mock('../../api/client.ts', () => ({
       },
     },
   })),
+}));
+
+jest.mock('../../auth/client.ts', () => ({
+  useSession: () => mockSession,
+}));
+
+jest.mock('../../auth/guest-store.ts', () => ({
+  saveGuestGame: (...args: unknown[]) => mockSaveGuestGame(...args),
+  saveGuestToken: (...args: unknown[]) => mockSaveGuestToken(...args),
 }));
 
 jest.mock('expo-router', () => ({
@@ -115,6 +131,9 @@ beforeEach(() => {
     seat: 1,
     team: 2,
   };
+  mockSession = { data: { user: { email: 'ada@example.test' } } };
+  mockSaveGuestGame = jest.fn();
+  mockSaveGuestToken = jest.fn();
   mockQueryResult = {
     data: preview(),
     isError: false,
@@ -201,11 +220,50 @@ describe('JoinPreviewScreen', () => {
 
     await user.press(getByTestId('join.preview.join'));
 
-    const mutation = jest.mocked(useMutation).mock.results[0]!.value;
+    const mutation = jest.mocked(useMutation).mock.results.at(-1)!.value;
     await waitFor(() => {
       expect(mutation.mutateAsync).toHaveBeenCalledWith({
         inviteCode: 'ABCD2345EF',
       });
+      expect(mockRouterReplace).toHaveBeenCalledWith('/game/game-123');
+    });
+  });
+
+  it('stores token and registry metadata when joining as a guest', async () => {
+    mockSession = { data: null };
+    mockRouteParams = { code: 'ABCD2345EF' };
+    mockJoinResult = {
+      gameId: 'game-123',
+      guestToken: 'raw-guest-token',
+      isGuest: true,
+      seat: 2,
+      team: 2,
+    };
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<JoinPreviewScreen />);
+
+    fireEvent.changeText(getByTestId('join.preview.guestName'), 'Couch Friend');
+    await user.press(getByTestId('join.preview.guestJoin'));
+
+    const mutation = jest.mocked(useMutation).mock.results.at(-1)!.value;
+    await waitFor(() => {
+      expect(mutation.mutateAsync).toHaveBeenCalledWith({
+        guestName: 'Couch Friend',
+        inviteCode: 'ABCD2345EF',
+        returnGuestToken: true,
+      });
+      expect(mockSaveGuestToken).toHaveBeenCalledWith(
+        'game-123',
+        'raw-guest-token',
+      );
+      expect(mockSaveGuestGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gameId: 'game-123',
+          guestName: 'Couch Friend',
+          inviteCode: 'ABCD2345EF',
+          lastKnownStatus: 'lobby',
+        }),
+      );
       expect(mockRouterReplace).toHaveBeenCalledWith('/game/game-123');
     });
   });
