@@ -8,17 +8,17 @@ oat_parent: null # optional child-only coordination parent slug
 oat_siblings: [] # optional child-only sibling slugs
 oat_depends_on: [] # optional child-only sibling dependencies
 oat_children: [] # optional coordination-parent child slugs
-oat_hill_checkpoints: { OAT_HILL_CHECKPOINTS } # Configured: which phases require human-in-the-loop lifecycle approval
+oat_hill_checkpoints: [final] # Configured: which phases require human-in-the-loop lifecycle approval
 oat_hill_completed: [] # Progress: which HiLL checkpoints have been completed
 oat_parallel_execution: false
-oat_phase: { OAT_PHASE } # Current phase: discovery | spec | design | plan | implement | decomposition
-oat_phase_status: in_progress # Status: in_progress | complete | pr_open
+oat_phase: discovery # Current phase: discovery | spec | design | plan | implement | decomposition
+oat_phase_status: complete # Status: in_progress | complete | pr_open
 # oat_orchestration_retry_limit: 2  # optional; override fix-loop retry limit (range 0-5)
 # oat_dispatch_ceiling: # optional project override for provider-aware dispatch ceilings
 #   provider: codex # codex | claude
 #   value: high # codex: low|medium|high|xhigh; claude: haiku|sonnet|opus
 #   source: project-state
-oat_workflow_mode: { OAT_WORKFLOW_MODE } # spec-driven | quick | import
+oat_workflow_mode: spec-driven # spec-driven | quick | import
 oat_workflow_origin: native # native | imported
 oat_docs_updated: null # null | skipped | complete — documentation sync status
 oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
@@ -31,17 +31,21 @@ oat_generated: false
 
 # Project State: mobile-mvp
 
-**Status:** Discovery
+**Status:** Discovery complete — ready for design
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-03
 
 ## Current Phase
 
-Discovery - Gathering requirements and understanding the problem space
+Discovery - complete. Seeded from an OAT brainstorm session (2026-07-02) that
+settled scope (full web parity, iOS-first, TestFlight final phase), the stack
+(Expo SDK 57, hybrid React Strict DOM + StyleX tokens, tRPC wsLink, Better Auth
+Expo, jest-expo), and the agentic-tooling setup (Expo MCP + Argent), backed by
+three research briefs on the July-2026 Expo/RSD/Xcode-MCP landscape.
 
 ## Artifacts
 
-- **Discovery:** `discovery.md` (in_progress)
+- **Discovery:** `discovery.md` (complete — ready for `oat-project-design`)
 - **Spec:** `spec.md` (scaffolded template — authored inline by `oat-project-design`)
 - **Design:** `design.md` (scaffolded template — not started)
 - **Plan:** `plan.md` (scaffolded template — not started)
@@ -49,9 +53,11 @@ Discovery - Gathering requirements and understanding the problem space
 
 ## Progress
 
-- ✓ Discovery started
+- ✓ Discovery complete (brainstorm-seeded, user-validated decisions)
 - ✓ Downstream lifecycle files scaffolded
-- ⧗ Awaiting user input
+- ✓ Deferred follow-ups captured as backlog items (EAS Updates, universal
+  links, Maestro e2e, Android support, Xcode 27 MCP re-evaluation)
+- ⧗ Awaiting `oat-project-design`
 
 ## Blockers
 
@@ -59,4 +65,4 @@ None
 
 ## Next Milestone
 
-Complete discovery and move to design phase
+Run `oat-project-design` to produce `spec.md` and `design.md`
