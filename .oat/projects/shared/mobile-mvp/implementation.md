@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t03
+oat_current_task_id: p05-t04
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 2/7       |
+| Phase 5 | in_progress | 7     | 3/7       |
 
-**Total:** 30/85 tasks completed
+**Total:** 31/85 tasks completed
 
 ---
 
@@ -1631,6 +1631,55 @@ _In progress._
 
 ---
 
+### Task p05-t03: AuthedWebSocket + wsLink split transport
+
+**Status:** completed
+**Commit:** 3c20b66
+**Fix Commit:** 2c3cd91
+
+**Outcome:**
+
+- Added mobile `splitLink` transport so tRPC subscriptions use `wsLink` while
+  queries and mutations continue through `httpBatchLink`.
+- Added an `AuthedWebSocket` ponyfill that resolves the explicit Better Auth /
+  guest cookie header via `buildCookieHeader()` and passes it as the React
+  Native WebSocket options argument.
+- Added shared mobile WebSocket timing constants for keepalive, lazy close, and
+  reconnect backoff.
+- Hardened WebSocket URL construction so `EXPO_PUBLIC_WS_URL` values with a
+  trailing slash still produce a single `/trpc` suffix.
+
+**Files changed:**
+
+- `apps/mobile/src/api/client.ts` - split subscriptions to `wsLink`, preserving
+  explicit-cookie HTTP behavior for queries/mutations.
+- `apps/mobile/src/api/ws.ts` / `ws.test.ts` - authed WebSocket ponyfill,
+  WebSocket client options, URL normalization, and timing-contract tests.
+- `apps/mobile/src/realtime/timing.ts` - WebSocket keepalive, lazy, and retry
+  constants.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts --runInBand`
+- Result: pass, 1 suite / 6 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- tRPC's WebSocket client uses `addEventListener`, so the authed wrapper queues
+  listeners while awaiting `buildCookieHeader()` and attaches them once the
+  underlying native WebSocket is constructed.
+- The timing contract is centralized under `apps/mobile/src/realtime/timing.ts`
+  for later lifecycle/watchdog work.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1737,7 +1786,8 @@ Chronological log of implementation progress.
 - [x] p04-t07: Phase gate sweep + configuration docs - dc3fde7
 - [x] p05-t01: Extract @sequence/client-state - 6e74bcc
 - [x] p05-t02: Web consumes client-state - 87271e2
-- [ ] p05-t03: AuthedWebSocket + wsLink split transport - next
+- [x] p05-t03: AuthedWebSocket + wsLink split transport - 3c20b66 / 2c3cd91
+- [ ] p05-t04: useGameStream with snapshot-first event application - next
 
 **What changed (high level):**
 
@@ -1796,6 +1846,9 @@ Chronological log of implementation progress.
 - The web game route now consumes `@sequence/client-state` for shared stream
   state, fixtures, and rule-violation copy; the duplicated web-local reducer and
   fixture files have been removed.
+- The mobile tRPC client now uses a cookie-authed WebSocket transport for
+  subscriptions with centralized keepalive, lazy, and reconnect timing
+  constants.
 
 ---
 
@@ -1834,6 +1887,7 @@ Track test execution during implementation.
 | 4     | `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/client-state exec vitest run`; `pnpm --filter @sequence/client-state typecheck`; `pnpm exec oxlint packages/client-state`; `pnpm exec oxfmt --check packages/client-state`; framework-boundary import scan over `packages/client-state` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/web test`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web build`; `pnpm typecheck`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
