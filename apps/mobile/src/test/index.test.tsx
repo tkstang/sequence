@@ -4,7 +4,9 @@ type MockQueryResult = {
   data?: unknown;
   error?: unknown;
   isError: boolean;
+  isFetching: boolean;
   isPending: boolean;
+  refetch: jest.Mock;
 };
 
 var mockRouterReplace = jest.fn();
@@ -20,16 +22,10 @@ jest.mock('@tanstack/react-query', () => ({
 
 jest.mock('../api/client.ts', () => ({
   useTRPC: jest.fn(() => ({
-    health: {
-      me: {
+    game: {
+      myGames: {
         queryOptions: jest.fn(() => ({
-          queryKey: ['health', 'me'],
-          queryFn: jest.fn(),
-        })),
-      },
-      ping: {
-        queryOptions: jest.fn(() => ({
-          queryKey: ['health', 'ping'],
+          queryKey: ['game', 'myGames'],
           queryFn: jest.fn(),
         })),
       },
@@ -57,15 +53,15 @@ import HomeScreen from '../app/index.tsx';
 
 beforeEach(() => {
   mockQueries = {
-    'health.me': {
-      data: { user: { email: 'probe@example.test', name: 'Probe User' } },
+    'game.myGames': {
+      data: {
+        recents: [],
+        resumables: [],
+      },
       isError: false,
+      isFetching: false,
       isPending: false,
-    },
-    'health.ping': {
-      data: { pong: true },
-      isError: false,
-      isPending: false,
+      refetch: jest.fn(),
     },
   };
   mockRouterReplace = jest.fn();
@@ -73,21 +69,22 @@ beforeEach(() => {
 });
 
 describe('HomeScreen', () => {
-  it('renders the app name, health.me email, and ping result', async () => {
+  it('renders the dashboard shell and empty states', async () => {
     const { getByTestId, getByText } = await render(<HomeScreen />);
 
     expect(getByText('Sequence Online')).toBeTruthy();
-    expect(getByText('probe@example.test')).toBeTruthy();
-    expect(getByText('pong: true')).toBeTruthy();
-    expect(getByTestId('home.ping')).toBeTruthy();
-    expect(getByTestId('home.logout')).toBeTruthy();
+    expect(getByText('No games to resume right now.')).toBeTruthy();
+    expect(getByText('No finished games yet.')).toBeTruthy();
+    expect(getByTestId('dashboard.logout')).toBeTruthy();
   });
 
-  it('redirects to login when the session probe is unauthorized', async () => {
-    mockQueries['health.me'] = {
+  it('redirects to login when the dashboard query is unauthorized', async () => {
+    mockQueries['game.myGames'] = {
       error: { data: { code: 'UNAUTHORIZED' } },
       isError: true,
+      isFetching: false,
       isPending: false,
+      refetch: jest.fn(),
     };
 
     await render(<HomeScreen />);
@@ -101,7 +98,7 @@ describe('HomeScreen', () => {
     const user = userEvent.setup();
     const { getByTestId } = await render(<HomeScreen />);
 
-    await user.press(getByTestId('home.logout'));
+    await user.press(getByTestId('dashboard.logout'));
 
     await waitFor(() => {
       expect(mockSignOut).toHaveBeenCalledWith();
