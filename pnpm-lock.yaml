@@ -45,6 +45,9 @@ importers:
       '@sequence/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@sequence/client-state':
+        specifier: workspace:*
+        version: link:../../packages/client-state
       '@sequence/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -8434,7 +8437,9 @@ snapshots:
       '@react-native/codegen': 0.86.0(@babel/core@7.29.7)
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/babel-preset@0.86.0(@babel/core@7.29.7)':
     dependencies:
@@ -8575,9 +8580,7 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

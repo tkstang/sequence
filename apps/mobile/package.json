@@ -16,6 +16,7 @@
     "@expo/metro-runtime": "^57.0.2",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@sequence/api": "workspace:*",
+    "@sequence/client-state": "workspace:*",
     "@sequence/design-tokens": "workspace:*",
     "@sequence/game-logic": "workspace:*",
     "@tanstack/react-query": "^5.101.0",
