@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p03-t08
+oat_current_task_id: p04-t01
 oat_generated: false
 ---
 
@@ -28,9 +28,9 @@ oat_generated: false
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
-| Phase 3 | in_progress | 8     | 7/8       |
+| Phase 3 | completed   | 8     | 8/8       |
 
-**Total:** 20/85 tasks completed
+**Total:** 21/85 tasks completed
 
 ---
 
@@ -662,8 +662,53 @@ oat_generated: false
 
 ## Phase 3: Tokens, Theming, Chrome Kit
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
+
+### Phase Summary
+
+**Outcome (what changed):**
+
+- Added framework-free design tokens, generated web StyleX token/theme files
+  from them, and wired mobile RSD token vars to the same palette source.
+- Verified the React Strict DOM token bridge on the iOS simulator in both
+  light and dark schemes, then added persisted mobile theme mode support.
+- Built the first mobile chrome kit surface: Button, TextField, Card, Badge,
+  and Screen, plus a dev-only playground with list/detail stories and theme
+  toggle.
+- Device visual proof moved layout-sensitive chrome components to native-backed
+  React Native primitives while preserving their public APIs.
+- Proved token propagation by introducing and reverting a scratch token: an
+  incomplete token failed dark-palette parity, and the completed scratch token
+  passed through mobile vars, web StyleX generation, and mobile/web typechecks.
+
+**Key files touched:**
+
+- `packages/design-tokens/` - source palette and dimension tokens plus web
+  StyleX generator.
+- `apps/web/src/styles/tokens.stylex.ts` /
+  `apps/web/src/styles/themes.stylex.ts` - generated web token consumers.
+- `apps/mobile/src/theme/` - full mobile token vars and persisted theme
+  provider.
+- `apps/mobile/src/components/` - initial chrome-kit primitives and tests.
+- `apps/mobile/src/app/dev/` / `apps/mobile/src/dev/` - dev-only kit
+  playground and story registry.
+
+**Verification:**
+
+- Run: design-token Vitest, web build/test/typecheck, mobile Jest/typecheck/
+  lint/format, Expo iOS rebuild for AsyncStorage, simulator visual screenshots
+  for the RSD spike, dev playground, and every kit story in light/dark mode.
+- Result: pass. Phase 3 screenshot evidence includes `/tmp/p03-t03-*`,
+  `/tmp/p03-t07-*`, and `/tmp/p03-t08-{light,dark}-{index,button,text-field,card,badge,screen}.png`.
+
+**Notes / Decisions:**
+
+- RSD remains useful for token vars, but the initial mobile chrome-kit
+  component implementations are native-backed for predictable iOS layout and
+  control behavior.
+- Route tests stay outside `src/app` because Expo Router can bundle route-local
+  tests into Metro.
 
 ### Task p03-t01: packages/design-tokens
 
@@ -1028,6 +1073,76 @@ oat_generated: false
 
 ---
 
+### Task p03-t08: Both-scheme visual verification
+
+**Status:** completed
+**Commit:** b2083f8
+
+**Outcome:**
+
+- Captured light and dark simulator screenshots for the dev playground index
+  and every chrome-kit story route.
+- Fixed the visual issues surfaced by that sweep by moving `TextField` and
+  `Badge` to native-backed React Native primitives with theme-token colors.
+- Updated TextField tests to use native `changeText` interaction and assert
+  native disabled state.
+- Proved FR16 token propagation with a scratch token that was reverted before
+  committing: incomplete light-only coverage failed dark-palette parity, then
+  completed light/dark + mobile vars + web StyleX generation passed mobile and
+  web typechecks.
+
+**Files changed:**
+
+- `apps/mobile/src/components/TextField.tsx` - native `TextInput` backed
+  implementation with theme-token colors and placeholder/disabled handling.
+- `apps/mobile/src/components/TextField.test.tsx` - native change and disabled
+  assertions.
+- `apps/mobile/src/components/Badge.tsx` - native `View` / `Text` backed badge
+  implementation with theme-token colors.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/components`
+- Result: pass, 5 suites / 15 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm --filter @sequence/web typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`
+- Result: pass, 1 file / 2 tests.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: light/dark simulator screenshot sweep over `sequence:///dev`,
+  `sequence:///dev/button`, `sequence:///dev/text-field`,
+  `sequence:///dev/card`, `sequence:///dev/badge`, and
+  `sequence:///dev/screen`.
+- Result: pass. Evidence:
+  `/tmp/p03-t08-light-index.png`,
+  `/tmp/p03-t08-light-button.png`,
+  `/tmp/p03-t08-light-text-field.png`,
+  `/tmp/p03-t08-light-card.png`,
+  `/tmp/p03-t08-light-badge.png`,
+  `/tmp/p03-t08-light-screen.png`,
+  `/tmp/p03-t08-dark-index.png`,
+  `/tmp/p03-t08-dark-button.png`,
+  `/tmp/p03-t08-dark-text-field.png`,
+  `/tmp/p03-t08-dark-card.png`,
+  `/tmp/p03-t08-dark-badge.png`,
+  `/tmp/p03-t08-dark-screen.png`.
+
+**Notes / Decisions:**
+
+- The p03-t08 subagent stalled, but it left useful partial `TextField` and
+  `Badge` native-backed edits. The orchestrator inspected, adopted, completed,
+  and verified them locally.
+- The scratch-token proof was not committed; the committed tree has no scratch
+  token drift.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1124,7 +1239,8 @@ Chronological log of implementation progress.
 - [x] p03-t05: Chrome kit — Button + TextField - 9444737
 - [x] p03-t06: Chrome kit — Card, Badge, Screen scaffold - b5214b2
 - [x] p03-t07: Dev playground scaffold + kit stories - de17181 / f28fae6
-- [ ] p03-t08: Both-scheme visual verification - next
+- [x] p03-t08: Both-scheme visual verification - b2083f8
+- [ ] p04-t01: API — Better Auth expo() plugin + trustedOrigins - next
 
 **What changed (high level):**
 
@@ -1154,6 +1270,12 @@ Chronological log of implementation progress.
   with a theme toggle and simulator screenshot evidence.
 - Device visual proof moved layout-sensitive chrome and dev-route wrappers to
   native-backed primitives while preserving the exported component APIs.
+- Both-scheme visual verification now covers the dev index and every chrome-kit
+  story route; TextField and Badge were stabilized with native-backed
+  implementations.
+- Token propagation was proven with a reverted scratch token that exercised
+  dark-palette parity, mobile token vars, web StyleX generation, and mobile/web
+  typechecks.
 
 ---
 
@@ -1168,6 +1290,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t03       | plan.md         | `pnpm --filter @sequence/mobile ios` for the RSD spike proof | Existing installed dev client plus Metro LAN mode verified the JS/Babel spike | The inherited `expo run:ios` process stalled; p03-t03 did not require a native rebuild, and simulator visual gate passed | `/tmp/p03-t03-rsd-light-clean.png`; `/tmp/p03-t03-rsd-dark-clean.png` | Completed by the p03-t04 native rebuild when AsyncStorage landed |
 | p03-t07       | plan.md         | Dev route guard test at `apps/mobile/src/app/dev/_layout.test.tsx` | Test lives at `apps/mobile/src/dev/dev-layout.test.tsx` | Expo Router bundled the route-local test into Metro and pulled in test-only Node stdlib imports | `apps/mobile/src/dev/dev-layout.test.tsx` | Keep route tests outside `src/app` unless Expo Router behavior changes |
 | p03-t07       | plan.md / design.md | RSD `html.*` wrappers for chrome-kit and dev playground layout | Layout-sensitive `Button`, `Card`, `Screen`, and dev-route wrappers are native-backed while preserving public APIs | Simulator screenshots showed oversized and stretched RSD native layouts; native primitives matched the intended mobile chrome | `apps/mobile/src/components/Button.tsx`; `apps/mobile/src/components/Card.tsx`; `apps/mobile/src/components/Screen.tsx`; `apps/mobile/src/app/dev/` | p03-t08 continues light/dark story verification across the kit |
+| p03-t08       | plan.md / design.md | RSD `html.*` wrappers for remaining TextField and Badge chrome-kit primitives | `TextField` and `Badge` are native-backed while preserving public APIs | Both-scheme simulator verification showed the native-backed approach is the stable baseline for the full chrome-kit surface | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Badge.tsx` | Continue using native-backed chrome primitives unless a later RSD issue is deliberately re-evaluated |
 
 ## Test Results
 
@@ -1179,6 +1302,7 @@ Track test execution during implementation.
 | 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section; `test -f docs/mobile-operator-runbook.md && rg -n "mobile-operator-runbook.md|## 0\\. Local Machine Setup|## 1\\. Expo Account|## 7\\. Production Smoke" docs/index.md docs/mobile-operator-runbook.md`; p02-t05 Metro + `simctl launch --initialUrl`; Expo MCP stdio `automation_take_screenshot` (`/tmp/p02-t05-expo-mcp-screenshot.jpg`), `automation_find_view home.ping`, `collect_app_logs`; Argent `tools`, `describe`, `boot-device`, `launch-app`, `native-describe-screen`, `gesture-tap`; `pnpm format:check` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; `pnpm --filter @sequence/mobile exec jest src/components/Button.test.tsx src/components/TextField.test.tsx`; `pnpm --filter @sequence/mobile exec jest src/components` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components src/dev/dev-layout.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; dev-client screenshots `/tmp/p03-t07-dev-playground-accepted.png`, `/tmp/p03-t07-dev-story-button-final.png` | yes    | 0      | -        |
+| 3     | `pnpm --filter @sequence/mobile exec jest src/components`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm format:check`; scratch-token proof (`pnpm --filter @sequence/mobile typecheck` failed while dark palette missed `scratchProbe`, then passed after completed scratch propagation through mobile vars and web StyleX generation); dev-client screenshots `/tmp/p03-t08-{light,dark}-{index,button,text-field,card,badge,screen}.png` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
