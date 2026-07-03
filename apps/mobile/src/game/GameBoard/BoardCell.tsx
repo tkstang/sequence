@@ -6,6 +6,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { testId } from '../../test/test-ids.ts';
 import { CardFace } from '../cards/CardFace.tsx';
 
+export type BoardCellSpotlight = 'dimmed' | 'none' | 'target';
+
 export interface BoardCellProps {
   cellHeight: number;
   cellWidth: number;
@@ -13,6 +15,7 @@ export interface BoardCellProps {
   lockedBy?: number;
   onRender?: (position: Position) => void;
   position: Position;
+  spotlight?: BoardCellSpotlight;
   teamColor?: string;
 }
 
@@ -23,6 +26,7 @@ function BoardCellImpl({
   lockedBy,
   onRender,
   position,
+  spotlight = 'none',
   teamColor,
 }: BoardCellProps) {
   onRender?.(position);
@@ -75,6 +79,22 @@ function BoardCellImpl({
           )}
         </View>
       ) : null}
+
+      {spotlight === 'target' ? (
+        <View
+          pointerEvents="none"
+          style={styles.spotlightTarget}
+          testID={`${cellTestId}.spotlight.target`}
+        />
+      ) : null}
+
+      {spotlight === 'dimmed' ? (
+        <View
+          pointerEvents="none"
+          style={styles.spotlightDim}
+          testID={`${cellTestId}.spotlight.dim`}
+        />
+      ) : null}
     </View>
   );
 }
@@ -96,6 +116,7 @@ export const BoardCell = memo(
     previous.lockedBy === next.lockedBy &&
     previous.onRender === next.onRender &&
     previous.position === next.position &&
+    previous.spotlight === next.spotlight &&
     previous.teamColor === next.teamColor,
 );
 BoardCell.displayName = 'BoardCell';
@@ -137,5 +158,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     height: 5,
     width: 5,
+  },
+  spotlightDim: {
+    backgroundColor: 'rgba(15,23,42,0.54)',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  spotlightTarget: {
+    borderColor: 'rgba(250,204,21,0.92)',
+    borderRadius: 3,
+    borderWidth: 2,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
 });

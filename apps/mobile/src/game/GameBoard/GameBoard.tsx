@@ -2,7 +2,7 @@ import type {
   SnapshotBoardCell,
   SnapshotSequence,
 } from '@sequence/client-state';
-import type { Position, Team } from '@sequence/game-logic';
+import type { Card, Position, Team } from '@sequence/game-logic';
 import { BOARD_MAP, BOARD_SIZE, isCorner } from '@sequence/game-logic';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -10,12 +10,19 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '../../theme/use-theme.ts';
 import { BoardCell } from './BoardCell.tsx';
 import type { BoardLayoutMap } from './layout-map.ts';
+import {
+  createBoardSpotlight,
+  isSpotlightDimmed,
+  isSpotlightTarget,
+} from './spotlight.ts';
 
 export interface GameBoardProps {
   board: Readonly<Record<Position, SnapshotBoardCell | undefined>>;
+  currentTeam?: Team | null;
   layoutMap?: BoardLayoutMap;
   maxWidth?: number;
   onCellRender?: (position: Position) => void;
+  selectedCard?: Card | null;
   sequences?: readonly SnapshotSequence[];
 }
 
@@ -29,9 +36,11 @@ const CARD_ASPECT_RATIO = 224.225 / 312.808;
 
 export function GameBoard({
   board,
+  currentTeam,
   layoutMap,
   maxWidth,
   onCellRender,
+  selectedCard,
   sequences = [],
 }: GameBoardProps) {
   const { colors } = useTheme();
@@ -45,6 +54,10 @@ export function GameBoard({
   const sequenceLookup = useMemo(
     () => buildSequenceLookup(sequences),
     [sequences],
+  );
+  const spotlight = useMemo(
+    () => createBoardSpotlight({ board, currentTeam, selectedCard }),
+    [board, currentTeam, selectedCard],
   );
   const teamColors = {
     1: colors.teamBlue,
@@ -109,6 +122,13 @@ export function GameBoard({
                 lockedBy={lockedBy}
                 onRender={onCellRender}
                 position={position}
+                spotlight={
+                  isSpotlightTarget(spotlight, position)
+                    ? 'target'
+                    : isSpotlightDimmed(spotlight, position)
+                      ? 'dimmed'
+                      : 'none'
+                }
                 teamColor={chip === undefined ? undefined : teamColors[chip]}
               />
             );
