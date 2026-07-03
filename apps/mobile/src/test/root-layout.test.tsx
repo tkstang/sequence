@@ -60,13 +60,14 @@ afterEach(() => {
 });
 
 describe('RootLayout protected routing', () => {
-  it('exposes only auth routes when unauthenticated', async () => {
+  it('exposes auth and public join routes when unauthenticated', async () => {
     await render(<RootLayout />);
 
     expect(mockProtectedGuards).toEqual([false, true, true]);
     expect(mockRenderedScreenNames).toEqual([
       '(auth)/login',
       '(auth)/signup',
+      'join/index',
       'join/[code]',
     ]);
   });
