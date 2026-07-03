@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t06
+oat_current_task_id: p05-t07
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 5/7       |
+| Phase 5 | in_progress | 7     | 6/7       |
 
-**Total:** 33/85 tasks completed
+**Total:** 34/85 tasks completed
 
 ---
 
@@ -1782,6 +1782,47 @@ _In progress._
 
 ---
 
+### Task p05-t06: Connection banners + debug event feed
+
+**Status:** completed
+**Commit:** e33ef1b
+
+**Outcome:**
+
+- Added a `ConnectionBanner` chrome component that renders nothing while live
+  and shows clear connecting, reconnecting, or error copy for degraded stream
+  states.
+- The banner exposes the planned stable testID
+  `game.connection.banner`.
+- Added a development-only `/dev/stream` route that accepts a game id,
+  subscribes to raw `game.onGameEvent` items, and renders recent timestamped
+  stream payloads for agent debugging.
+
+**Files changed:**
+
+- `apps/mobile/src/components/ConnectionBanner.tsx` /
+  `ConnectionBanner.test.tsx` - connection-state banner and tests.
+- `apps/mobile/src/app/dev/stream.tsx` - raw event stream debug route.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/components/ConnectionBanner.test.tsx --runInBand`
+- Result: pass, 1 suite / 2 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The debug stream screen remains under the development-only `/dev` route
+  group and does not add route-local tests under `src/app`.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1891,7 +1932,8 @@ Chronological log of implementation progress.
 - [x] p05-t03: AuthedWebSocket + wsLink split transport - 3c20b66 / 2c3cd91
 - [x] p05-t04: useGameStream with snapshot-first event application - 73f1469 / 060493f
 - [x] p05-t05: AppState lifecycle + inactivity watchdog - 6a4c8ce / 1826565
-- [ ] p05-t06: Connection banners + debug event feed - next
+- [x] p05-t06: Connection banners + debug event feed - e33ef1b
+- [ ] p05-t07: Two-client live + recovery-time verification - next
 
 **What changed (high level):**
 
@@ -1959,6 +2001,8 @@ Chronological log of implementation progress.
 - The realtime hook now includes AppState foreground recovery, a 15s
   inactivity watchdog, and timestamped lifecycle logs for later NFR2 timing
   verification.
+- The mobile app now has a reusable connection banner and a development-only
+  raw stream screen for live subscription debugging.
 
 ---
 
@@ -2000,6 +2044,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/mobile exec jest src/components/ConnectionBanner.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
