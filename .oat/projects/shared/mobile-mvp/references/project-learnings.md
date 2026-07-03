@@ -101,6 +101,10 @@ value. Expo MCP and Argent usage details belong in
   just on "a card is selected". This preserves web parity and avoids dimming
   the entire board when a dead card or otherwise unplayable selected card has no
   legal targets.
+- Dead-card hand affordances should stay hard-mode focused. Tap mode auto-swaps
+  dead cards through the event stream, while drag mode needs visible badges and
+  a turn-in control; nested turn-in controls should stop press propagation so
+  turning in a card does not also toggle selected-card state.
 
 ## Verification Mechanics
 

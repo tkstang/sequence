@@ -64,7 +64,7 @@ export function CardHand({
           const code = cardCode(card);
           const cardTestId = testId('hand', 'card', code);
           const selected = activeSelectedIndex === index;
-          const dead = deadCardCodes.has(code);
+          const dead = mode === 'drag' && deadCardCodes.has(code);
           const showTurnIn =
             mode === 'drag' && dead && onTurnInDeadCard !== undefined;
 
@@ -101,7 +101,10 @@ export function CardHand({
                 <Pressable
                   accessibilityLabel={`Turn in ${code}`}
                   accessibilityRole="button"
-                  onPress={() => onTurnInDeadCard(card, index)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onTurnInDeadCard(card, index);
+                  }}
                   style={[
                     styles.turnInButton,
                     { backgroundColor: colors.accent },

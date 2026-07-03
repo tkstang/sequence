@@ -116,6 +116,14 @@ describe('CardHand', () => {
     expect(queryByTestId('hand.card.KH.dead')).toBeNull();
   });
 
+  it('does not badge dead cards in tap mode', async () => {
+    const { queryByTestId } = await render(
+      <CardHand board={deadAceBoard()} hand={hand} mode="tap" />,
+    );
+
+    expect(queryByTestId('hand.card.AC.dead')).toBeNull();
+  });
+
   it('shows dead-card turn-in affordance only in drag-mode games', async () => {
     const { getByTestId, queryByTestId, rerender } = await render(
       <CardHand
@@ -138,5 +146,25 @@ describe('CardHand', () => {
     );
 
     expect(getByTestId('hand.card.AC.turnIn')).toBeTruthy();
+  });
+
+  it('turns in a dead card without toggling selection', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = jest.fn();
+    const onTurnInDeadCard = jest.fn();
+    const { getByTestId } = await render(
+      <CardHand
+        board={deadAceBoard()}
+        hand={hand}
+        mode="drag"
+        onSelectionChange={onSelectionChange}
+        onTurnInDeadCard={onTurnInDeadCard}
+      />,
+    );
+
+    await user.press(getByTestId('hand.card.AC.turnIn'));
+
+    expect(onTurnInDeadCard).toHaveBeenCalledWith(hand[0], 0);
+    expect(onSelectionChange).not.toHaveBeenCalled();
   });
 });
