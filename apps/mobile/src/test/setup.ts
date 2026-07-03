@@ -57,6 +57,10 @@ jest.mock('react-native/Libraries/TurboModule/TurboModuleRegistry', () => {
         },
       }),
     },
+    KeyboardObserver: {
+      addListener: jest.fn(),
+      removeListeners: jest.fn(),
+    },
     SettingsManager: {
       deleteValues: jest.fn(),
       getConstants: () => ({ settings: {} }),
