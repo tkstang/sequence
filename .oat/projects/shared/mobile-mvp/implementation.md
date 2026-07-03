@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t04
+oat_current_task_id: p04-t05
 oat_generated: false
 ---
 
@@ -29,9 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 3/7       |
+| Phase 4 | in_progress | 7     | 4/7       |
 
-**Total:** 24/85 tasks completed
+**Total:** 25/85 tasks completed
 
 ---
 
@@ -1292,6 +1292,67 @@ oat_generated: false
 
 ---
 
+### Task p04-t04: Login/signup/logout + protected routing
+
+**Status:** completed
+**Commit:** e6d202a
+**Fix Commit:** d97bf0d
+
+**Outcome:**
+
+- Added login and signup route screens backed by the Better Auth mobile client.
+- Added protected root routing so authenticated sessions see the home route and
+  unauthenticated sessions see the auth routes.
+- Added signed-in home-screen session copy and logout behavior.
+- Hardened the integration after review by pointing the Better Auth client at
+  the API's mounted `/api/auth` route, moving route tests out of `src/app`,
+  and adding secure native password-entry passthrough to `TextField`.
+
+**Files changed:**
+
+- `apps/mobile/src/app/(auth)/login.tsx` - login form, validation, error
+  rendering, and auth-client submit flow.
+- `apps/mobile/src/app/(auth)/signup.tsx` - signup form, validation, error
+  rendering, and auth-client submit flow.
+- `apps/mobile/src/app/_layout.tsx` - session-gated protected route groups.
+- `apps/mobile/src/app/index.tsx` - signed-in session card and logout action.
+- `apps/mobile/src/auth/client.ts` / `client.test.ts` - Better Auth base URL
+  normalization to `/api/auth`.
+- `apps/mobile/src/auth/login-screen.test.tsx` /
+  `signup-screen.test.tsx` - auth route tests kept outside the route tree.
+- `apps/mobile/src/test/root-layout.test.tsx` / `index.test.tsx` - protected
+  routing and logout coverage outside the route tree.
+- `apps/mobile/src/components/TextField.tsx` / `TextField.test.tsx` - secure
+  text-entry passthrough for password inputs.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx src/components/TextField.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`
+- Result: pass, 6 suites / 21 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p04-t04`
+- Result: pass; iOS bundle exported to
+  `/tmp/sequence-mobile-export-p04-t04`.
+
+**Notes / Decisions:**
+
+- Better Auth appends endpoint paths to `baseURL`; because the API mounts
+  Better Auth under `/api/auth/*`, the mobile client must use
+  `{apiUrl}/api/auth` rather than the tRPC API origin alone.
+- The auth route tests were moved out of `src/app` to preserve the Expo Router
+  route-tree rule proven in Phase 3.
+- Expo's generated typed-route declaration currently accepts the relative auth
+  navigation strings used here; the export smoke confirms the route tree still
+  bundles cleanly.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1392,7 +1453,8 @@ Chronological log of implementation progress.
 - [x] p04-t01: API — Better Auth expo() plugin + trustedOrigins - eb58299
 - [x] p04-t02: Mobile auth client + SecureStore session - 24088c1
 - [x] p04-t03: Cookie-header transport in tRPC client - 4d3e24c
-- [ ] p04-t04: Login/signup/logout + protected routing - next
+- [x] p04-t04: Login/signup/logout + protected routing - e6d202a / d97bf0d
+- [ ] p04-t05: Session probe + central error policy - next
 
 **What changed (high level):**
 
@@ -1434,6 +1496,9 @@ Chronological log of implementation progress.
   session storage and env-derived API base URL.
 - The mobile tRPC HTTP client now sends explicit Better Auth and guest-token
   cookies while keeping native fetch cookie-jar behavior disabled.
+- The mobile app now has login/signup screens, protected root routing, signed-in
+  session display, logout behavior, and a Better Auth client route target that
+  matches the API's `/api/auth/*` mount.
 
 ---
 
@@ -1449,6 +1514,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t07       | plan.md         | Dev route guard test at `apps/mobile/src/app/dev/_layout.test.tsx` | Test lives at `apps/mobile/src/dev/dev-layout.test.tsx` | Expo Router bundled the route-local test into Metro and pulled in test-only Node stdlib imports | `apps/mobile/src/dev/dev-layout.test.tsx` | Keep route tests outside `src/app` unless Expo Router behavior changes |
 | p03-t07       | plan.md / design.md | RSD `html.*` wrappers for chrome-kit and dev playground layout | Layout-sensitive `Button`, `Card`, `Screen`, and dev-route wrappers are native-backed while preserving public APIs | Simulator screenshots showed oversized and stretched RSD native layouts; native primitives matched the intended mobile chrome | `apps/mobile/src/components/Button.tsx`; `apps/mobile/src/components/Card.tsx`; `apps/mobile/src/components/Screen.tsx`; `apps/mobile/src/app/dev/` | p03-t08 continues light/dark story verification across the kit |
 | p03-t08       | plan.md / design.md | RSD `html.*` wrappers for remaining TextField and Badge chrome-kit primitives | `TextField` and `Badge` are native-backed while preserving public APIs | Both-scheme simulator verification showed the native-backed approach is the stable baseline for the full chrome-kit surface | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Badge.tsx` | Continue using native-backed chrome primitives unless a later RSD issue is deliberately re-evaluated |
+| p04-t04       | plan.md         | Auth route tests under `apps/mobile/src/app/(auth)` and root layout test under `apps/mobile/src/app` | Auth and root-route tests live under `apps/mobile/src/auth` and `apps/mobile/src/test` | Expo Router can bundle route-local tests into Metro; this preserves the already proven route-tree rule | `apps/mobile/src/auth/login-screen.test.tsx`; `apps/mobile/src/auth/signup-screen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
 
 ## Test Results
 
@@ -1464,6 +1530,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/api exec vitest run src/user/auth-expo.test.ts`; `pnpm --filter @sequence/api test` (subagent; DB-backed suites skipped because `DATABASE_URL_TEST` absent); `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/cookies.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx src/components/TextField.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p04-t04` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
