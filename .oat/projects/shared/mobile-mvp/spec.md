@@ -294,6 +294,21 @@ surface for native clients.
   - A smoke checklist for TestFlight builds is documented
 - **Priority:** P0
 
+**FR19: Operator runbook**
+
+- **Description:** Every operator-dependent step in the project — Apple
+  Developer Program enrollment, App Store Connect setup, EAS account/project
+  setup, Expo MCP account authentication, TestFlight tester management,
+  physical-device verification — is documented as clear, step-by-step
+  operator guidance in durable repo documentation.
+- **Acceptance Criteria:**
+  - A runbook exists in the repo's documentation covering all operator steps
+    with prerequisites, exact actions, and how to verify each step succeeded
+  - No operator step exists only as tribal knowledge or a chat instruction
+  - The runbook distinguishes required steps from optional ones and states
+    which project phase needs each
+- **Priority:** P0
+
 ### Non-Functional Requirements
 
 **NFR1: Hand privacy**
@@ -362,6 +377,21 @@ surface for native clients.
   - Existing web/API/game-logic gates remain green throughout
 - **Priority:** P0
 
+**NFR7: Autonomous executability**
+
+- **Description:** The project runs autonomously until it truly needs the
+  operator: every phase before the final distribution phase is executable
+  and verifiable by a coding agent alone (simulator-based), with
+  operator-dependent steps and operator-dependent verification consolidated
+  into the final phase unless they genuinely block development.
+- **Acceptance Criteria:**
+  - No pre-final phase has a required step that only a human can perform
+  - Operator-dependent verification (physical device, external testers,
+    account setup) is consolidated and explicitly labeled
+  - Any optional operator step earlier in the project is marked optional and
+    the phase completes without it
+- **Priority:** P0
+
 ## Constraints
 
 - The rules engine stays framework-free; no React/RN imports are added to it.
@@ -379,6 +409,10 @@ surface for native clients.
   the game surface. No Tailwind/NativeWind.
 - Dev-only surfaces must be excluded from release builds.
 - iOS-first: no Android-specific work beyond what Expo provides structurally.
+- Autonomy-first execution: operator-dependent steps and verification are
+  consolidated into the final phase unless they truly block development;
+  everything an operator must eventually do is documented in a runbook as it
+  is discovered, not after the fact.
 
 ## Dependencies
 
@@ -485,12 +519,14 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 | FR16 | Shared design tokens, no web regression | P0 | unit + manual: web gates + playground parity | TBD - see plan.md |
 | FR17 | Agentic tooling loop | P0 | manual: demonstrated agent loop | TBD - see plan.md |
 | FR18 | TestFlight distribution | P0 | manual: external install + production smoke | TBD - see plan.md |
+| FR19 | Operator runbook documentation | P0 | manual: runbook completeness review | TBD - see plan.md |
 | NFR1 | Hand privacy on device | P0 | integration + manual: redaction and handoff | TBD - see plan.md |
 | NFR2 | Reconnect/lifecycle robustness | P0 | manual: scenario matrix | TBD - see plan.md |
 | NFR3 | Interaction performance | P1 | perf + manual: device spot checks | TBD - see plan.md |
 | NFR4 | Client security posture | P0 | manual: release build audit | TBD - see plan.md |
 | NFR5 | Testability identifiers | P1 | unit + manual: identifier convention | TBD - see plan.md |
 | NFR6 | Quality gates cover mobile | P0 | manual: root gates | TBD - see plan.md |
+| NFR7 | Autonomous executability of pre-final phases | P0 | manual: phase audit for operator-free execution | TBD - see plan.md |
 
 **Notes:**
 
