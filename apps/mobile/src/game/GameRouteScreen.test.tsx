@@ -8,10 +8,10 @@ import { boardCellsFor } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import { cleanup, render, userEvent } from '@testing-library/react-native';
 
-import type { UseMoveSubmitResult } from '../game/use-move-submit.ts';
-import { useMoveSubmit } from '../game/use-move-submit.ts';
 import type { GameStreamConnectionState } from '../realtime/use-game-stream.ts';
 import { useGameStream } from '../realtime/use-game-stream.ts';
+import type { UseMoveSubmitResult } from './use-move-submit.ts';
+import { useMoveSubmit } from './use-move-submit.ts';
 
 type MutationOptions = {
   onError?: (error: unknown) => void;
@@ -47,7 +47,7 @@ jest.mock('../api/client.ts', () => ({
   })),
 }));
 
-jest.mock('../game/cards/CardFace.tsx', () => {
+jest.mock('./cards/CardFace.tsx', () => {
   const { Text } = require('react-native') as typeof import('react-native');
 
   return {
@@ -70,7 +70,7 @@ jest.mock('../realtime/use-game-stream.ts', () => ({
   })),
 }));
 
-jest.mock('../game/use-move-submit.ts', () => ({
+jest.mock('./use-move-submit.ts', () => ({
   useMoveSubmit: jest.fn(() => ({
     canSubmit: true,
     clearFeedback: jest.fn(),
@@ -82,7 +82,7 @@ jest.mock('../game/use-move-submit.ts', () => ({
   })),
 }));
 
-import GameRouteScreen from './game/[id].tsx';
+import GameRouteScreen from '../app/game/[id].tsx';
 
 function defaultMoveSubmitResult(): UseMoveSubmitResult {
   return {

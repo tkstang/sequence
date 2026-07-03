@@ -42,9 +42,12 @@ value. Expo MCP and Argent usage details belong in
 
 ## Codebase Patterns
 
-- Keep route-adjacent tests out of `apps/mobile/src/app`; Expo Router can bundle
-  route-local test files into Metro. Place mobile component and route tests in
-  non-route test locations unless a later pattern explicitly proves otherwise.
+- Keep mobile route and route-adjacent tests out of `apps/mobile/src/app`
+  entirely; Expo Router can bundle any `.test.*` file under the app tree into
+  Metro. During p07-t08, `expo export --platform ios` failed because
+  `apps/mobile/src/app/game-screen.test.tsx` imported Testing Library and
+  pulled Node-only modules into the bundle; moving it to
+  `apps/mobile/src/game/GameRouteScreen.test.tsx` restored export.
 - Avoid `cleanup()` in the middle of a React Native route test. In the mobile
   game-screen test, mid-test cleanup followed by a second render triggered
   overlapping React `act()` warnings; use separate tests for separate route
