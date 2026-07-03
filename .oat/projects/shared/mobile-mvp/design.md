@@ -802,9 +802,13 @@ existing web gates and visual parity in `/dev`. Rollback is git.
 
 ## Open Questions
 
-- **Bundle identifier + display name:** proposal `com.tkstang.sequence` /
-  "Sequence" — needs owner confirmation before Phase 12 (changing later is
-  painful); recorded in the runbook when decided.
+- **Bundle identifier + display name:** RESOLVED (owner, 2026-07-03) —
+  `com.tkstang.sequenceonline` / "Sequence Online". Rooted in the
+  owner-controlled `tkstang.com`; hyphen-free so the same string works as the
+  Android package later. `sequence-online.games` (available at decision time)
+  may be bought later purely for the website/universal links — the bundle ID
+  deliberately does not depend on it. Recorded in the runbook's App Store
+  Connect section when authored.
 - **Crash reporting:** RESOLVED (owner, 2026-07-03) — deferred out of v1;
   tracked as backlog `BL-260703-adopt-sentry-crash-reporting` (Sentry only;
   no Crashlytics — it would drag in the otherwise-unused Firebase SDK).
