@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t07
+oat_current_task_id: p06-t01
 oat_generated: false
 ---
 
@@ -30,9 +30,10 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 6/7       |
+| Phase 5 | completed   | 7     | 7/7       |
+| Phase 6 | in_progress | 8     | 0/8       |
 
-**Total:** 34/85 tasks completed
+**Total:** 35/85 tasks completed
 
 ---
 
@@ -1522,7 +1523,48 @@ oat_generated: false
 
 ### Phase Summary
 
-_In progress._
+**Outcome (what changed):**
+
+- Extracted shared framework-free client state into `@sequence/client-state`
+  and moved the web game route onto that package.
+- Added mobile cookie-authenticated WebSocket subscriptions with shared
+  keepalive, retry, lazy-close, and inactivity-watchdog timing constants.
+- Added the mobile `useGameStream()` hook with snapshot-first projection,
+  explicit cursor-based recovery, AppState foreground recovery, lifecycle
+  logging, and a 15s watchdog.
+- Added a reusable connection banner and `/dev/stream` debug route for live
+  raw stream and lifecycle verification.
+- Verified two-client web/mobile realtime, API restart recovery,
+  foreground recovery, and stale-cursor snapshot fallback beyond the replay
+  window.
+
+**Key files touched:**
+
+- `packages/client-state/` - shared reducer, fixtures, and rule-violation
+  message catalog.
+- `apps/mobile/src/api/client.ts` / `ws.ts` / `cookies.ts` - explicit cookie
+  WebSocket and HTTP transport plumbing.
+- `apps/mobile/src/realtime/` - stream hook, lifecycle manager, and timing
+  constants.
+- `apps/mobile/src/components/ConnectionBanner.tsx` and
+  `apps/mobile/src/app/dev/stream.tsx` - debug and connection UI surfaces.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/web test`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web build`; `pnpm typecheck`.
+- Result: pass during p05-t02.
+- Run: targeted mobile realtime/component Jest suites, mobile typecheck/lint,
+  and `pnpm format:check`.
+- Result: pass across p05-t03 through p05-t07.
+- Run: local API + web + Metro LAN + iOS dev-client p05-t07 scenario.
+- Result: pass; measured recovery was within contract and stale-cursor
+  snapshot fallback was proven with `lastEventId=1`.
+
+**Notes / Decisions:**
+
+- Simulator backgrounding through non-UI controls did not suspend dev-client JS
+  strongly enough to leave a stale cursor, so p05-t07 added an explicit
+  dev-stream stale-cursor control to exercise that recovery path.
 
 ### Task p05-t01: Extract @sequence/client-state
 
@@ -1826,6 +1868,9 @@ _In progress._
 ### Task p05-t07: Two-client live + recovery-time verification
 
 **Status:** completed
+**Commit:** 0111bb5
+**Fix Commits:** c4a9033, e5a5c97
+**Evidence Update:** 50664e7
 
 **Outcome:**
 
@@ -1931,6 +1976,17 @@ subscription input lastEventId=505; latest card kind=event seq=505
   even when the raw debug subscription remains open. Each observed watchdog
   resubscribe recovered in under `0.1s`; this is useful reviewer context but
   did not block the measured recovery checks.
+
+---
+
+## Phase 6: Dashboard, Create, Join, Lobby
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Phase Summary
+
+_Not started._
 
 ---
 
@@ -2044,7 +2100,8 @@ Chronological log of implementation progress.
 - [x] p05-t04: useGameStream with snapshot-first event application - 73f1469 / 060493f
 - [x] p05-t05: AppState lifecycle + inactivity watchdog - 6a4c8ce / 1826565
 - [x] p05-t06: Connection banners + debug event feed - e33ef1b
-- [x] p05-t07: Two-client live + recovery-time verification - evidence recorded
+- [x] p05-t07: Two-client live + recovery-time verification - c4a9033 / e5a5c97 / 0111bb5 / 50664e7
+- [ ] p06-t01: API — game.join returnGuestToken flag - next
 
 **What changed (high level):**
 

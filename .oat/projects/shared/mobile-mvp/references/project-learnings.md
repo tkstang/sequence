@@ -101,6 +101,11 @@ value. Expo MCP and Argent usage details belong in
   simulator-auth substitute for mutating local verification. Use the branch's
   direct read-write host for `drizzle-kit push`; pooled hosts can conflict with
   prepared-statement behavior.
+- Opening Safari or another app in the simulator does not necessarily suspend a
+  dev-client React Native JS subscription. To verify stale-cursor replay or
+  snapshot fallback deterministically, add an explicit debug cursor control
+  such as `/dev/stream?lastEventId=1` instead of relying on wall-clock
+  background time.
 
 ## Open Follow-Ups
 
