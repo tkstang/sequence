@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t08
+oat_current_task_id: p02-t01
 oat_generated: false
 ---
 
@@ -26,36 +26,59 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 7/8       |
+| Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 7/85 tasks completed
+**Total:** 8/85 tasks completed
 
 ---
 
 ## Phase 1: Foundation
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
-### Phase Summary (fill when phase is complete)
+### Phase Summary
 
 **Outcome (what changed):**
 
-- {2-5 bullets describing user-visible / behavior-level changes delivered in this phase}
+- Added the Expo SDK 57 `@sequence/mobile` workspace with Expo Router,
+  TypeScript, Metro/Babel wiring, Jest, and root gate participation.
+- Proved the monorepo seams by exporting a route that consumed
+  `@sequence/game-logic` runtime data and the type-only `AppRouter` contract.
+- Installed and launched the iOS development build on the simulator.
+- Added the minimal mobile tRPC HTTP client and home-screen `health.ping`
+  smoke status.
+- Documented the mobile workspace stub and removed the temporary import spike
+  route.
 
 **Key files touched:**
 
-- `{path}` - {why}
+- `apps/mobile/` - new Expo app workspace, config, route tree, tests, README,
+  and dev-client dependency.
+- `scripts/run-tests.mjs` / `vitest.workspace.ts` - root test orchestration
+  includes mobile Jest and excludes mobile from Vitest collection.
+- `pnpm-lock.yaml` - mobile workspace dependencies.
 
 **Verification:**
 
-- Run: `{command(s)}`
-- Result: {pass/fail + notes}
+- Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test`
+- Result: pass during p01-t05 with mobile included in the root gates.
+- Run: `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`
+- Result: pass after p01-t08.
+- Run: simulator launches/screenshots for p01-t06 and p01-t07.
+- Result: pass; screenshots `/tmp/p01-t06-boot-home.png` and
+  `/tmp/p01-t07-health-ping.png`.
 
 **Notes / Decisions:**
 
-- {trade-offs or deviations discovered during implementation}
+- Expo CLI's simulator activation path can fail without `osascript` assistive
+  access; direct `simctl launch --initialUrl` is the reliable simulator proof.
+- Route-local tests under `src/app` are unsafe with Expo Router and now live
+  outside the route tree.
+- `p01-t07` local API smoke could not use `@sequence/api dev` because
+  `packages/api/.env` was absent; simulator evidence used the documented
+  production API origin while committed defaults remain localhost.
 
 ### Task p01-t01: Scaffold @sequence/mobile Expo workspace
 
@@ -352,6 +375,40 @@ oat_generated: false
 
 ---
 
+### Task p01-t08: Workspace doc stubs + spike cleanup
+
+**Status:** completed
+**Commit:** 3d61683
+
+**Outcome:**
+
+- Added the initial `apps/mobile/README.md` with purpose, commands, API config,
+  and early development notes.
+- Removed the temporary `src/app/spike.tsx` import spike route now that the
+  monorepo import proof is recorded.
+
+**Files changed:**
+
+- `apps/mobile/README.md` - mobile workspace quick reference and dev workflow
+  pointer.
+- `apps/mobile/src/app/spike.tsx` - deleted temporary proof route.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `test ! -e apps/mobile/src/app/spike.tsx`
+- Result: pass; spike route removed.
+
+**Notes / Decisions:**
+
+- Full mobile docs remain planned for p11-t06; this README is intentionally a
+  Phase 1 stub.
+
+---
+
 ## Phase 2: {Phase Name}
 
 **Status:** pending
@@ -395,7 +452,8 @@ Chronological log of implementation progress.
 - [x] p01-t05: Root gate integration - 95f1aca
 - [x] p01-t06: First dev build boots on the simulator - 5911833
 - [x] p01-t07: health.ping screen via minimal tRPC client - e463438
-- [ ] p01-t08: Workspace doc stubs + spike cleanup - next
+- [x] p01-t08: Workspace doc stubs + spike cleanup - 3d61683
+- [ ] p02-t01: MCP configuration + expo-mcp local tools - next
 
 **What changed (high level):**
 
@@ -413,6 +471,8 @@ Chronological log of implementation progress.
   the iPhone 17 Pro simulator.
 - The mobile home route now renders a real tRPC `health.ping` result through
   the QueryClient/tRPC provider stack.
+- The mobile workspace now has an initial README, and the temporary import
+  spike route has been removed.
 
 **Decisions:**
 
@@ -429,13 +489,13 @@ Chronological log of implementation progress.
 
 **Follow-ups / TODO:**
 
-- Add the mobile README stub and remove the p01-t03 spike route in p01-t08.
+- Begin Phase 2 with MCP configuration and expo-mcp local tools.
 
 **Blockers:**
 
 - None.
 
-**Session End:** in progress
+**Session End:** 13:39 UTC
 
 ---
 
@@ -461,7 +521,7 @@ Track test execution during implementation.
 
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
-| 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm format:check`; simulator screenshot `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
+| 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
 | 2     | -         | -      | -      | -        |
 
 ## Final Summary (for PR/docs)
