@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t01
+oat_current_task_id: p05-t02
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 0/7       |
+| Phase 5 | in_progress | 7     | 1/7       |
 
-**Total:** 28/85 tasks completed
+**Total:** 29/85 tasks completed
 
 ---
 
@@ -1524,6 +1524,56 @@ oat_generated: false
 
 _In progress._
 
+### Task p05-t01: Extract @sequence/client-state
+
+**Status:** completed
+**Commit:** 6e74bcc
+
+**Outcome:**
+
+- Added the framework-free `@sequence/client-state` workspace package for
+  shared game-view state projection.
+- Copied the web route's snapshot/event reducer, screen routing helper, and
+  representative fixtures into the package without changing web consumption
+  yet.
+- Added a shared rule-violation message catalog with coverage for all 13
+  current `RuleViolation['code']` variants from `@sequence/game-logic`.
+- Exported the view-state helpers, fixtures, and violation-message utilities
+  from the package root for upcoming web and mobile consumers.
+
+**Files changed:**
+
+- `packages/client-state/package.json` / `tsconfig.json` - new workspace
+  package configuration.
+- `packages/client-state/src/game-state.ts` / `game-state.test.ts` - shared
+  snapshot/event view-state projection and tests.
+- `packages/client-state/src/fixtures.ts` - representative game-state fixtures
+  adapted from the web dev playground.
+- `packages/client-state/src/violation-messages.ts` /
+  `violation-messages.test.ts` - shared rule-violation message catalog and
+  exhaustive coverage tests.
+- `packages/client-state/src/index.ts` - package exports.
+- `pnpm-lock.yaml` - adds the new workspace importer.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/client-state exec vitest run`
+- Result: pass, 2 files / 10 tests.
+- Run: `pnpm --filter @sequence/client-state typecheck`
+- Result: pass.
+- Run: `pnpm exec oxlint packages/client-state`
+- Result: pass.
+- Run: `pnpm exec oxfmt --check packages/client-state`
+- Result: pass in delegated p05-t01 run.
+- Run: `rg -n "from ['\"](react|next|fastify|drizzle|postgres|@trpc|@tanstack|@/|\\.\\./\\.\\./apps|document|window|fetch)" packages/client-state -S`
+- Result: no matches.
+
+**Notes / Decisions:**
+
+- Web imports intentionally remain unchanged until p05-t02, which owns web
+  consumption and deletion of the old web-local files.
+- `@sequence/client-state` depends only on `@sequence/game-logic` at runtime.
+
 ---
 
 ## Orchestration Runs
@@ -1630,7 +1680,8 @@ Chronological log of implementation progress.
 - [x] p04-t05: Session probe + central error policy - a64c521
 - [x] p04-t06: Session persistence scenario (simulator) - 8d260e3
 - [x] p04-t07: Phase gate sweep + configuration docs - dc3fde7
-- [ ] p05-t01: Extract @sequence/client-state - next
+- [x] p05-t01: Extract @sequence/client-state - 6e74bcc
+- [ ] p05-t02: Web consumes client-state - next
 
 **What changed (high level):**
 
@@ -1683,6 +1734,9 @@ Chronological log of implementation progress.
 - The auth slice configuration docs now cover mobile `EXPO_PUBLIC_*` API URL
   defaults, release/simulator overrides, and the dev-client rebuild requirement
   after native auth peer/plugin changes.
+- The framework-free `@sequence/client-state` package now contains the shared
+  game-view reducer, fixtures, and exhaustive rule-violation message catalog for
+  upcoming web and mobile consumers.
 
 ---
 
@@ -1719,6 +1773,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/error-policy.test.ts src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; local API + Metro LAN simulator scenario with screenshots `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`, `/tmp/p04-t06-after-logout.png`, `/tmp/p04-t06-after-logout-relaunch.png` | yes    | 0      | -        |
 | 4     | `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/client-state exec vitest run`; `pnpm --filter @sequence/client-state typecheck`; `pnpm exec oxlint packages/client-state`; `pnpm exec oxfmt --check packages/client-state`; framework-boundary import scan over `packages/client-state` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
