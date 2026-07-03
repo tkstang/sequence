@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t07
+oat_current_task_id: p05-t01
 oat_generated: false
 ---
 
@@ -29,9 +29,10 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 6/7       |
+| Phase 4 | completed   | 7     | 7/7       |
+| Phase 5 | in_progress | 7     | 0/7       |
 
-**Total:** 27/85 tasks completed
+**Total:** 28/85 tasks completed
 
 ---
 
@@ -1475,6 +1476,56 @@ oat_generated: false
 
 ---
 
+### Task p04-t07: Phase gate sweep + configuration docs
+
+**Status:** completed
+**Commit:** dc3fde7
+
+**Outcome:**
+
+- Documented the mobile Expo public API URL model in the canonical
+  configuration reference.
+- Added mobile variable rows for `EXPO_PUBLIC_API_URL` and
+  `EXPO_PUBLIC_WS_URL`, including their `extra.apiUrl` / `extra.wsUrl`
+  defaults and runtime use.
+- Updated the mobile operator runbook with an auth-slice simulator reminder to
+  choose the API endpoint before starting Metro and to rebuild the dev client
+  after native auth peer/config plugin changes.
+- Ran the full root Phase 4 gate sweep through the delegated OAT implementer.
+
+**Files changed:**
+
+- `docs/configuration.md` - mobile env variable reference and mobile API URL
+  section.
+- `docs/mobile-operator-runbook.md` - auth-slice simulator setup and native
+  module rebuild troubleshooting notes.
+
+**Verification:**
+
+- Run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test`
+- Result: pass in delegated p04-t07 run. `pnpm lint` emitted existing warnings
+  only; mobile Jest emitted the existing Watchman recrawl warning only.
+
+**Notes / Decisions:**
+
+- The mobile env variables are documented as public Expo config values, not
+  secrets.
+- The Better Auth mobile client is documented as appending `/api/auth` itself,
+  so operators configure only the API origin in `EXPO_PUBLIC_API_URL`.
+
+---
+
+## Phase 5: Realtime Plumbing + Client-State Extraction
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Phase Summary
+
+_In progress._
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1578,7 +1629,8 @@ Chronological log of implementation progress.
 - [x] p04-t04: Login/signup/logout + protected routing - e6d202a / d97bf0d
 - [x] p04-t05: Session probe + central error policy - a64c521
 - [x] p04-t06: Session persistence scenario (simulator) - 8d260e3
-- [ ] p04-t07: Phase gate sweep + configuration docs - next
+- [x] p04-t07: Phase gate sweep + configuration docs - dc3fde7
+- [ ] p05-t01: Extract @sequence/client-state - next
 
 **What changed (high level):**
 
@@ -1628,6 +1680,9 @@ Chronological log of implementation progress.
 - The p04-t06 simulator scenario now proves SecureStore-backed auth persists
   across app termination/relaunch, that `health.me` works after relaunch, and
   that logout remains cleared after another relaunch.
+- The auth slice configuration docs now cover mobile `EXPO_PUBLIC_*` API URL
+  defaults, release/simulator overrides, and the dev-client rebuild requirement
+  after native auth peer/plugin changes.
 
 ---
 
@@ -1663,6 +1718,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx src/components/TextField.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p04-t04` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/error-policy.test.ts src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; local API + Metro LAN simulator scenario with screenshots `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`, `/tmp/p04-t06-after-logout.png`, `/tmp/p04-t06-after-logout-relaunch.png` | yes    | 0      | -        |
+| 4     | `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
