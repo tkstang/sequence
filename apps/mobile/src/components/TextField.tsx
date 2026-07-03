@@ -8,6 +8,7 @@ export interface TextFieldProps {
   value?: string;
   defaultValue?: string;
   placeholder?: string;
+  secureTextEntry?: boolean;
   size?: TextFieldSize;
   disabled?: boolean;
   testID?: string;
@@ -21,6 +22,7 @@ export function TextField({
   disabled = false,
   onChangeText,
   placeholder,
+  secureTextEntry = false,
   size = 'md',
   testID,
   value,
@@ -36,6 +38,7 @@ export function TextField({
       onChangeText={disabled ? undefined : onChangeText}
       placeholder={placeholder}
       placeholderTextColor={colors.textFaint}
+      secureTextEntry={secureTextEntry}
       style={[
         styles.root,
         styles[size],

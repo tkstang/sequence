@@ -106,6 +106,7 @@ export default function SignupScreen() {
             accessibilityLabel="Password"
             onChangeText={setPassword}
             placeholder="Password"
+            secureTextEntry
             testID={testId('auth', 'signup', 'password')}
             value={password}
           />

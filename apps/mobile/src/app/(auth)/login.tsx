@@ -92,6 +92,7 @@ export default function LoginScreen() {
             accessibilityLabel="Password"
             onChangeText={setPassword}
             placeholder="Password"
+            secureTextEntry
             testID={testId('auth', 'login', 'password')}
             value={password}
           />

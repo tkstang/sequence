@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native';
+import { render, userEvent, waitFor } from '@testing-library/react-native';
 
 var mockRouterReplace = jest.fn();
 var mockSignOut = jest.fn();
@@ -51,5 +51,17 @@ describe('HomeScreen', () => {
     expect(getByText('pong: true')).toBeTruthy();
     expect(getByTestId('home.ping')).toBeTruthy();
     expect(getByTestId('home.logout')).toBeTruthy();
+  });
+
+  it('signs out and returns to login', async () => {
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<HomeScreen />);
+
+    await user.press(getByTestId('home.logout'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith();
+    });
+    expect(mockRouterReplace).toHaveBeenCalledWith('./login');
   });
 });

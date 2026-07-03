@@ -16,13 +16,13 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-jest.mock('../../auth/client.ts', () => ({
+jest.mock('./client.ts', () => ({
   signIn: {
     email: (...args: unknown[]) => mockSignInEmail(...args),
   },
 }));
 
-import LoginScreen from './login.tsx';
+import LoginScreen from '../app/(auth)/login.tsx';
 
 afterEach(() => {
   cleanup();
@@ -83,5 +83,14 @@ describe('LoginScreen', () => {
     });
     expect(getByTestId('auth.login.error')).toBeTruthy();
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('links to the signup route', async () => {
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<LoginScreen />);
+
+    await user.press(getByTestId('auth.login.signup'));
+
+    expect(mockRouterPush).toHaveBeenCalledWith('./signup');
   });
 });

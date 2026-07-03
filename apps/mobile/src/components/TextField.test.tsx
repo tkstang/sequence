@@ -61,4 +61,14 @@ describe('TextField', () => {
 
     expect(getByTestId('chrome.text-field.large')).toBeTruthy();
   });
+
+  it('passes password entry behavior through to the native input', async () => {
+    const { getByTestId } = await render(
+      <TextField secureTextEntry testID="chrome.text-field.password" />,
+    );
+
+    expect(
+      getByTestId('chrome.text-field.password').props.secureTextEntry,
+    ).toBe(true);
+  });
 });

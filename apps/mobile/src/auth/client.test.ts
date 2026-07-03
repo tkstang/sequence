@@ -29,9 +29,11 @@ jest.mock('expo-constants', () => ({
 import { expoClient } from '@better-auth/expo/client';
 
 import {
+  AUTH_BASE_PATH,
   AUTH_SECURE_STORE_KEYS,
   AUTH_STORAGE_PREFIX,
   createAuthClientConfig,
+  getAuthBaseURL,
   secureStoreSessionStorage,
 } from './client.ts';
 
@@ -50,7 +52,7 @@ describe('mobile auth client config', () => {
     });
 
     expect(config).toMatchObject({
-      baseURL: 'https://api.example.test',
+      baseURL: 'https://api.example.test/api/auth',
     });
     expect(expoClient).toHaveBeenCalledWith({
       scheme: 'sequence',
@@ -78,8 +80,18 @@ describe('mobile auth client config', () => {
     };
 
     expect(createAuthClientConfig()).toMatchObject({
-      baseURL: 'https://env-api.example.test',
+      baseURL: 'https://env-api.example.test/api/auth',
     });
+  });
+
+  it('normalizes the Better Auth route path onto the API origin', () => {
+    expect(AUTH_BASE_PATH).toBe('/api/auth');
+    expect(
+      getAuthBaseURL({
+        apiUrl: 'https://api.example.test/',
+        wsUrl: 'wss://api.example.test',
+      }),
+    ).toBe('https://api.example.test/api/auth');
   });
 
   it('keeps SecureStore keys inside the Expo-supported character set', () => {

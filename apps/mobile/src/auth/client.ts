@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { getApiEnv, type ApiEnv } from '../api/env.ts';
 
 export const AUTH_STORAGE_PREFIX = 'sequence.auth';
+export const AUTH_BASE_PATH = '/api/auth';
 export const AUTH_SECURE_STORE_KEYS = [
   `${AUTH_STORAGE_PREFIX}_cookie`,
   `${AUTH_STORAGE_PREFIX}_session_data`,
@@ -15,9 +16,13 @@ export const secureStoreSessionStorage = {
   setItem: (key: string, value: string) => SecureStore.setItem(key, value),
 };
 
+export function getAuthBaseURL(env: ApiEnv = getApiEnv()) {
+  return `${env.apiUrl.replace(/\/+$/, '')}${AUTH_BASE_PATH}`;
+}
+
 export function createAuthClientConfig(env: ApiEnv = getApiEnv()) {
   return {
-    baseURL: env.apiUrl,
+    baseURL: getAuthBaseURL(env),
     plugins: [
       expoClient({
         scheme: 'sequence',

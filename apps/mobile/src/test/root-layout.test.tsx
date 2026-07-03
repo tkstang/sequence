@@ -13,6 +13,7 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('expo-router', () => {
+  // oxlint-disable-next-line unicorn/consistent-function-scoping
   function Stack({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
@@ -49,7 +50,7 @@ jest.mock('../theme/theme-provider.tsx', () => ({
   ThemeProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
-import RootLayout from './_layout.tsx';
+import RootLayout from '../app/_layout.tsx';
 
 afterEach(() => {
   cleanup();
