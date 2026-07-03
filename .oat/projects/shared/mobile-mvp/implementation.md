@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t03
+oat_current_task_id: p06-t04
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 2/8       |
+| Phase 6 | in_progress | 8     | 3/8       |
 
-**Total:** 37/85 tasks completed
+**Total:** 38/85 tasks completed
 
 ---
 
@@ -2085,6 +2085,60 @@ _In progress._
 
 ---
 
+### Task p06-t03: Create screen
+
+**Status:** completed
+**Commit:** 64686b0
+
+**Outcome:**
+
+- Added the signed-in create-game route backed by `game.create`.
+- Added a native create form with player count, play mode, turn timer, and
+  pass-and-play settings that mirror the web/API option set.
+- Local pass-and-play creation forces two players and validates a trimmed
+  opponent name between 1 and 40 characters.
+- Successful creates route to `/game/<id>`, where the later game route will
+  render the lobby or active branch based on the returned game status.
+
+**Files changed:**
+
+- `apps/mobile/src/app/create.tsx` - route-level mutation binding, create
+  error handling, and post-create navigation.
+- `apps/mobile/src/features/create/CreateForm.tsx` /
+  `CreateForm.test.tsx` - create settings form, timer option helper, local
+  validation, and form behavior coverage.
+- `apps/mobile/src/features/create/CreateScreen.test.tsx` - route-level
+  create mutation and navigation tests outside `src/app`.
+- `apps/mobile/src/app/_layout.tsx` /
+  `apps/mobile/src/test/root-layout.test.tsx` - protected route registration
+  for the signed-in create screen.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/features/create src/test/root-layout.test.tsx --runInBand`
+- Result: pass, 3 suites / 8 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Current mobile navigation already treats lobby and active games as status
+  branches of `/game/<id>`, matching the dashboard route behavior. The concrete
+  lobby branch is planned for p06-t07.
+- The mobile local toggle uses the task wording literally: enabling local
+  forces the player count back to two. Selecting another player count while
+  local is enabled turns local mode back off, matching the web constraint that
+  local games cannot be non-2-player games.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2198,7 +2252,8 @@ Chronological log of implementation progress.
 - [x] p05-t07: Two-client live + recovery-time verification - c4a9033 / e5a5c97 / 0111bb5 / 50664e7
 - [x] p06-t01: API — game.join returnGuestToken flag - c2f08a3 / 2b68ed7
 - [x] p06-t02: Dashboard screen - b0ef411
-- [ ] p06-t03: Create screen - next
+- [x] p06-t03: Create screen - 64686b0
+- [ ] p06-t04: Join-by-code preview + registered join - next
 
 **What changed (high level):**
 
@@ -2278,6 +2333,9 @@ Chronological log of implementation progress.
 - The mobile home route is now the dashboard, backed by `game.myGames`, with
   resumable/recent game cards, empty states, pull-to-refresh, create/join CTAs,
   and status-aware navigation.
+- The mobile app now has a signed-in create-game flow over `game.create` with
+  web-parity settings, local pass-and-play validation, protected route
+  registration, and route-level mutation/error tests.
 
 ---
 
@@ -2323,6 +2381,7 @@ Track test execution during implementation.
 | 5     | Local API + web + Metro LAN + iOS dev-client p05-t07 scenario; web-created game with mobile `/dev/stream`; API kill/restart timing; 10s background/foreground timing; replay-window event-count attempt; stale-cursor `/dev/stream?lastEventId=1` proof; screenshots `/tmp/p05-t07-web-created-lobby.png`, `/tmp/p05-t07-mobile-initial-stream.png`, `/tmp/p05-t07-web-after-start.png`, `/tmp/p05-t07-mobile-after-start.png`, `/tmp/p05-t07-mobile-after-foreground.png`, `/tmp/p05-t07-mobile-replay-window.png`, `/tmp/p05-t07-replay-window-proof.png`; `pnpm format:check`; `git diff --check` | yes    | 0      | Replay-window fallback proven by snapshot item id `504` after requested `lastEventId=1` |
 | 6     | `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts` with disposable local `DATABASE_URL_TEST`; `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 11 join/preview integration tests executed |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | 3 dashboard/home suites, 13 tests |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/features/create src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 create/root-layout suites, 8 tests |
 
 ## Final Summary (for PR/docs)
 
