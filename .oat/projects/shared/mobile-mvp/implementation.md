@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t04
+oat_current_task_id: p06-t05
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 3/8       |
+| Phase 6 | in_progress | 8     | 4/8       |
 
-**Total:** 38/85 tasks completed
+**Total:** 39/85 tasks completed
 
 ---
 
@@ -2139,6 +2139,58 @@ _In progress._
 
 ---
 
+### Task p06-t04: Join flow — code entry + preview + registered join
+
+**Status:** completed
+**Commit:** bd5ebda
+
+**Outcome:**
+
+- Added signed-in join routes for invite-code entry and invite preview.
+- Code entry validates non-empty input and normalizes lower-case pasted codes
+  with spaces or hyphens before routing to the preview screen.
+- Preview uses `game.preview.queryOptions()` and renders invite settings,
+  roster rows, host/guest markers, and friendly unavailable states for unknown,
+  full, started, and local games.
+- Registered-user join uses `game.join.mutationOptions()` and navigates to
+  `/game/<id>` on success.
+
+**Files changed:**
+
+- `apps/mobile/src/app/join/index.tsx` - invite-code entry route.
+- `apps/mobile/src/app/join/[code].tsx` - preview query, registered join
+  mutation, unavailable states, and navigation.
+- `apps/mobile/src/features/join/PreviewCard.tsx` /
+  `JoinScreen.test.tsx` - preview card, invite-code normalization helper, and
+  route behavior tests outside `src/app`.
+- `apps/mobile/src/app/_layout.tsx` /
+  `apps/mobile/src/test/root-layout.test.tsx` - protected join route
+  registration for signed-in users.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/features/join src/test/root-layout.test.tsx --runInBand`
+- Result: pass, 2 suites / 11 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- p06-t04 intentionally implements the registered-user join path only. Guest
+  join persistence, guest store, and continue-list behavior remain p06-t05
+  scope.
+- The join and preview routes are signed-in protected for this task; p06-t05
+  can loosen or split route protection when guest join support lands.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2253,7 +2305,8 @@ Chronological log of implementation progress.
 - [x] p06-t01: API — game.join returnGuestToken flag - c2f08a3 / 2b68ed7
 - [x] p06-t02: Dashboard screen - b0ef411
 - [x] p06-t03: Create screen - 64686b0
-- [ ] p06-t04: Join-by-code preview + registered join - next
+- [x] p06-t04: Join-by-code preview + registered join - bd5ebda
+- [ ] p06-t05: Guest join + guest store/registry + continue-list - next
 
 **What changed (high level):**
 
@@ -2336,6 +2389,9 @@ Chronological log of implementation progress.
 - The mobile app now has a signed-in create-game flow over `game.create` with
   web-parity settings, local pass-and-play validation, protected route
   registration, and route-level mutation/error tests.
+- The mobile app now has signed-in join-by-code entry and preview routes with
+  normalized invite codes, roster/settings preview, friendly unavailable
+  states, and registered-user join navigation.
 
 ---
 
@@ -2382,6 +2438,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts` with disposable local `DATABASE_URL_TEST`; `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 11 join/preview integration tests executed |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | 3 dashboard/home suites, 13 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/create src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 create/root-layout suites, 8 tests |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/features/join src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 join/root-layout suites, 11 tests |
 
 ## Final Summary (for PR/docs)
 
