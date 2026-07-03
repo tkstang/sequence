@@ -10,6 +10,16 @@ export type BuildCookieHeaderOptions = {
   getGuestToken?: GetGuestTokenForGame;
 };
 
+let activeGameCookieGameId: string | undefined;
+
+export function setActiveGameCookieGameId(gameId: string | undefined): void {
+  activeGameCookieGameId = gameId;
+}
+
+export function getActiveGameCookieGameId(): string | undefined {
+  return activeGameCookieGameId;
+}
+
 export async function getGuestTokenForGame(
   gameId: string,
 ): Promise<string | undefined> {

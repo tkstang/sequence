@@ -22,6 +22,7 @@ var mockSubscriptionInputs: SubscriptionInput[] = [];
 var mockLatestOptions: SubscriptionOptions | null = null;
 var mockRemoveGuestGame = jest.fn();
 var mockUpdateGuestGameStatus = jest.fn();
+var mockActiveGameCookieGameId: string | undefined;
 
 jest.mock('@trpc/tanstack-react-query', () => ({
   useSubscription: jest.fn(() => ({ error: null, status: 'pending' })),
@@ -41,6 +42,13 @@ jest.mock('../api/client.ts', () => ({
       },
     },
   })),
+}));
+
+jest.mock('../api/cookies.ts', () => ({
+  getActiveGameCookieGameId: () => mockActiveGameCookieGameId,
+  setActiveGameCookieGameId: (gameId: string | undefined) => {
+    mockActiveGameCookieGameId = gameId;
+  },
 }));
 
 jest.mock('../lib/logger.ts', () => ({
@@ -72,6 +80,7 @@ beforeEach(() => {
   mockLatestOptions = null;
   mockRemoveGuestGame = jest.fn();
   mockUpdateGuestGameStatus = jest.fn();
+  mockActiveGameCookieGameId = undefined;
 });
 
 afterEach(() => {
@@ -148,6 +157,20 @@ describe('useGameStream', () => {
       gameId: 'game-1',
       lastEventId: 4,
     });
+  });
+
+  it('sets the active game id for game-scoped transport cookies while mounted', async () => {
+    const { unmount } = await renderHook(() => useGameStream('game-1'));
+
+    await waitFor(() => {
+      expect(mockActiveGameCookieGameId).toBe('game-1');
+    });
+
+    await act(async () => {
+      unmount();
+    });
+
+    expect(mockActiveGameCookieGameId).toBeUndefined();
   });
 
   it('transitions connection state from connecting to live', async () => {

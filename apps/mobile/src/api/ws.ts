@@ -5,7 +5,7 @@ import {
   WS_LAZY,
   websocketRetryDelayMs,
 } from '../realtime/timing.ts';
-import { buildCookieHeader } from './cookies.ts';
+import { buildCookieHeader, getActiveGameCookieGameId } from './cookies.ts';
 import type { ApiEnv } from './env.ts';
 
 type NativeWebSocketOptions = {
@@ -120,7 +120,10 @@ export function createAuthedWebSocketClass(
     }
 
     private async open(url: string | URL, protocols?: string | string[]) {
-      const cookie = await buildCookieHeader();
+      const activeGameId = getActiveGameCookieGameId();
+      const cookie = activeGameId
+        ? await buildCookieHeader({ gameId: activeGameId })
+        : await buildCookieHeader();
       const options = cookie ? { headers: { Cookie: cookie } } : undefined;
       const socket = new BaseWebSocket(url, protocols, options);
 

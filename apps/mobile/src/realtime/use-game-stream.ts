@@ -7,6 +7,10 @@ import { useSubscription } from '@trpc/tanstack-react-query';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useTRPC } from '../api/client.ts';
+import {
+  getActiveGameCookieGameId,
+  setActiveGameCookieGameId,
+} from '../api/cookies.ts';
 import { removeGuestGame, updateGuestGameStatus } from '../auth/guest-store.ts';
 import {
   createRealtimeLifecycle,
@@ -131,6 +135,17 @@ export function useGameStream(
       },
     ),
   );
+
+  useEffect(() => {
+    if (!gameId) return;
+
+    setActiveGameCookieGameId(gameId);
+    return () => {
+      if (getActiveGameCookieGameId() === gameId) {
+        setActiveGameCookieGameId(undefined);
+      }
+    };
+  }, [gameId]);
 
   const resubscribe = useCallback(() => {
     const nextEventId = lastEventIdRef.current;

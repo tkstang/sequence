@@ -10,9 +10,28 @@ import {
 } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
 
-import { buildCookieHeader } from './cookies.ts';
+import { buildCookieHeader, getActiveGameCookieGameId } from './cookies.ts';
 import { getApiEnv, type ApiEnv } from './env.ts';
 import { createWebSocketClientOptions } from './ws.ts';
+
+type TRPCHeaderOperation = {
+  input?: unknown;
+};
+
+function gameIdFromInput(input: unknown): string | undefined {
+  if (typeof input !== 'object' || input === null) return undefined;
+  const gameId = 'gameId' in input ? input.gameId : undefined;
+  return typeof gameId === 'string' ? gameId : undefined;
+}
+
+export function getGameIdForCookieHeader(
+  opList: readonly TRPCHeaderOperation[] | undefined,
+): string | undefined {
+  return (
+    opList?.map((op) => gameIdFromInput(op.input)).find(Boolean) ??
+    getActiveGameCookieGameId()
+  );
+}
 
 export function createSequenceQueryClient() {
   return new QueryClient({
@@ -28,8 +47,10 @@ export function createSequenceQueryClient() {
 export function createTRPCLinks(env: ApiEnv = getApiEnv()) {
   const httpLink = httpBatchLink<AppRouter>({
     url: `${env.apiUrl}/trpc`,
-    async headers() {
-      const cookie = await buildCookieHeader();
+    async headers({ opList }) {
+      const cookie = await buildCookieHeader({
+        gameId: getGameIdForCookieHeader(opList),
+      });
       return cookie ? { Cookie: cookie } : {};
     },
     fetch(url, options) {

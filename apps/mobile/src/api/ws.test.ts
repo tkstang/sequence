@@ -1,5 +1,6 @@
 jest.mock('./cookies.ts', () => ({
   buildCookieHeader: jest.fn(),
+  getActiveGameCookieGameId: jest.fn(),
 }));
 
 import {
@@ -9,6 +10,7 @@ import {
   websocketRetryDelayMs,
 } from '../realtime/timing.ts';
 import { buildCookieHeader } from './cookies.ts';
+import { getActiveGameCookieGameId } from './cookies.ts';
 import {
   createAuthedWebSocketClass,
   createWebSocketClientOptions,
@@ -16,6 +18,10 @@ import {
 
 const mockedBuildCookieHeader =
   buildCookieHeader as unknown as jest.MockedFunction<typeof buildCookieHeader>;
+const mockedGetActiveGameCookieGameId =
+  getActiveGameCookieGameId as unknown as jest.MockedFunction<
+    typeof getActiveGameCookieGameId
+  >;
 
 type ConstructedSocket = {
   protocols?: string | string[];
@@ -42,6 +48,8 @@ class SpyWebSocket {
 describe('AuthedWebSocket', () => {
   beforeEach(() => {
     mockedBuildCookieHeader.mockReset();
+    mockedGetActiveGameCookieGameId.mockReset();
+    mockedGetActiveGameCookieGameId.mockReturnValue(undefined);
     SpyWebSocket.instances = [];
   });
 
@@ -71,6 +79,29 @@ describe('AuthedWebSocket', () => {
         },
       },
     ]);
+  });
+
+  it('includes the active game id when assembling the WebSocket cookie header', async () => {
+    mockedGetActiveGameCookieGameId.mockReturnValue('game-1');
+    mockedBuildCookieHeader.mockResolvedValue('sequence_guest=guest-token-1');
+    const AuthedWebSocket = createAuthedWebSocketClass(
+      SpyWebSocket as unknown as Parameters<
+        typeof createAuthedWebSocketClass
+      >[0],
+    );
+
+    const socket = new AuthedWebSocket('ws://localhost:3001/trpc');
+    await Promise.resolve();
+
+    expect(socket.readyState).toBe(SpyWebSocket.CONNECTING);
+    expect(mockedBuildCookieHeader).toHaveBeenCalledWith({
+      gameId: 'game-1',
+    });
+    expect(SpyWebSocket.instances.at(-1)?.options).toEqual({
+      headers: {
+        Cookie: 'sequence_guest=guest-token-1',
+      },
+    });
   });
 
   it('omits headers when there is no cookie to send', async () => {

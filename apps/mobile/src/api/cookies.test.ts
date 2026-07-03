@@ -8,7 +8,12 @@ jest.mock('../auth/guest-store.ts', () => ({
 
 import { getCookie } from '../auth/client.ts';
 import { getGuestToken } from '../auth/guest-store.ts';
-import { buildCookieHeader, getGuestTokenForGame } from './cookies.ts';
+import {
+  buildCookieHeader,
+  getActiveGameCookieGameId,
+  getGuestTokenForGame,
+  setActiveGameCookieGameId,
+} from './cookies.ts';
 
 const mockedGetCookie = getCookie as unknown as jest.MockedFunction<
   () => string | undefined
@@ -21,6 +26,7 @@ describe('buildCookieHeader', () => {
   beforeEach(() => {
     mockedGetCookie.mockReset();
     mockedGetGuestToken.mockReset();
+    setActiveGameCookieGameId(undefined);
   });
 
   it('returns the Better Auth cookie for a registered session', async () => {
@@ -51,6 +57,22 @@ describe('buildCookieHeader', () => {
     await expect(buildCookieHeader({ gameId: 'missing-game' })).resolves.toBe(
       undefined,
     );
+  });
+});
+
+describe('active game cookie context', () => {
+  afterEach(() => {
+    setActiveGameCookieGameId(undefined);
+  });
+
+  it('tracks the game id used for game-scoped transport cookies', () => {
+    setActiveGameCookieGameId('game-1');
+
+    expect(getActiveGameCookieGameId()).toBe('game-1');
+
+    setActiveGameCookieGameId(undefined);
+
+    expect(getActiveGameCookieGameId()).toBeUndefined();
   });
 });
 
