@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t05
+oat_current_task_id: p05-t06
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 4/7       |
+| Phase 5 | in_progress | 7     | 5/7       |
 
-**Total:** 32/85 tasks completed
+**Total:** 33/85 tasks completed
 
 ---
 
@@ -1730,6 +1730,58 @@ _In progress._
 
 ---
 
+### Task p05-t05: AppState lifecycle + inactivity watchdog
+
+**Status:** completed
+**Commit:** 6a4c8ce
+**Fix Commit:** 1826565
+
+**Outcome:**
+
+- Added a reusable realtime lifecycle manager for AppState foreground checks,
+  connection-state transitions, inactivity watchdog scheduling, and forced
+  resubscribe reasons.
+- Wired `useGameStream()` into that lifecycle manager so subscription start,
+  stream items, transport connecting/idle states, and subscription errors feed
+  one connection-state source.
+- Added a console-backed shared mobile logger that emits timestamped lifecycle
+  state transitions for later NFR2 recovery-time measurement.
+- Added the 15s inactivity watchdog timing constant, matching the design's
+  two-missed-keepalive hard ceiling.
+- Hardened foreground recovery so a background→active transition forces
+  resubscribe even when the local socket flag still reports `live`.
+
+**Files changed:**
+
+- `apps/mobile/src/realtime/lifecycle.ts` / `lifecycle.test.ts` - lifecycle
+  manager, AppState liveness checks, watchdog behavior, transition logging,
+  and fake-timer coverage.
+- `apps/mobile/src/realtime/use-game-stream.ts` /
+  `use-game-stream.test.tsx` - lifecycle integration and quieted hook-test
+  logger output.
+- `apps/mobile/src/realtime/timing.ts` - inactivity watchdog ceiling.
+- `apps/mobile/src/lib/logger.ts` - shared console-backed logger.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 2 suites / 9 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Foreground recovery treats the prior AppState transition as authoritative:
+  after backgrounding, the lifecycle resubscribes even if the JS-side socket
+  flag still says `live`, because mobile suspension can leave that flag stale.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1838,7 +1890,8 @@ Chronological log of implementation progress.
 - [x] p05-t02: Web consumes client-state - 87271e2
 - [x] p05-t03: AuthedWebSocket + wsLink split transport - 3c20b66 / 2c3cd91
 - [x] p05-t04: useGameStream with snapshot-first event application - 73f1469 / 060493f
-- [ ] p05-t05: AppState lifecycle + inactivity watchdog - next
+- [x] p05-t05: AppState lifecycle + inactivity watchdog - 6a4c8ce / 1826565
+- [ ] p05-t06: Connection banners + debug event feed - next
 
 **What changed (high level):**
 
@@ -1903,6 +1956,9 @@ Chronological log of implementation progress.
 - The mobile app now has a shared-client-state-backed `useGameStream()` hook
   with snapshot-first projection, event application, connection-state tracking,
   and explicit cursor-based resubscription.
+- The realtime hook now includes AppState foreground recovery, a 15s
+  inactivity watchdog, and timestamped lifecycle logs for later NFR2 timing
+  verification.
 
 ---
 
@@ -1943,6 +1999,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/web test`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web build`; `pnpm typecheck`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 

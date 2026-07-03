@@ -62,6 +62,10 @@ value. Expo MCP and Argent usage details belong in
   put a live event cursor in hook state that feeds the subscription input unless
   every event is supposed to force a resubscribe; track the cursor separately
   and move it into the input only during explicit recovery.
+- On mobile foreground recovery, do not fully trust a JS-side socket state flag
+  that still says `live` after backgrounding. App suspension can leave that flag
+  stale, so AppState `background`/`inactive` → `active` should force
+  resubscribe even when local state appears healthy.
 
 ## Verification Mechanics
 
