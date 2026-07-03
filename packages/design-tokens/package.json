@@ -10,6 +10,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "generate:web-stylex": "node --experimental-transform-types scripts/write-web-stylex.ts",
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {

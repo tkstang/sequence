@@ -115,6 +115,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@sequence/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@sequence/game-logic':
         specifier: workspace:*
         version: link:../../packages/game-logic

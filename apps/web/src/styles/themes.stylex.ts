@@ -1,15 +1,13 @@
+/**
+ * Generated from @sequence/design-tokens.
+ *
+ * Do not edit token values here. Run:
+ * pnpm --filter @sequence/design-tokens generate:web-stylex
+ */
+
 import * as stylex from '@stylexjs/stylex';
 
 import { color } from './tokens.stylex.ts';
-
-/**
- * Explicit theme overrides for the user-facing light/dark toggle.
- *
- * The base `color` tokens already flip on `prefers-color-scheme`, so "System"
- * mode applies neither theme. Selecting Light or Dark applies one of these,
- * pinning every variable to a single value so the choice wins regardless of the
- * OS setting. Values mirror the `default` / dark pairs in `tokens.stylex.ts`.
- */
 
 export const lightTheme = stylex.createTheme(color, {
   scheme: 'light',
