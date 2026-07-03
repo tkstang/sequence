@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t05
+oat_current_task_id: p07-t06
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 4/9       |
+| Phase 7 | in_progress | 9     | 5/9       |
 
-**Total:** 47/85 tasks completed
+**Total:** 48/85 tasks completed
 
 ---
 
@@ -2531,6 +2531,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added the mobile `CardHand` with card-face rendering, controlled and
   uncontrolled selection, hard-mode dead-card badges, and drag-mode turn-in
   affordances.
+- Added `PlayerRail` and `TimerBadge` for active-game player state, current
+  turn highlight, connection state, sequence counts, round display, and
+  server-deadline timer countdown.
 
 **Verification:**
 
@@ -2558,6 +2561,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`
 - Result: pass, 1 suite / 7 tests; Watchman emitted the existing recrawl
   warning only.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`
+- Result: pass, 2 suites / 4 tests; Watchman emitted the existing recrawl
+  warning only.
 
 **Notes / Decisions:**
 
@@ -2578,6 +2584,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the p07-t04 follow-up fix commit because dead-card
   badges and turn-in controls belong to hard/drag mode, and nested turn-in
   presses should not also toggle selected-card state.
+- The orchestrator added the p07-t05 follow-up fix commit so inactive turn and
+  connected/offline markers do not render as hidden-but-queryable text; only
+  visible rail status badges are mounted.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2807,6 +2816,59 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `GameBoard/spotlight.ts` and `CardHand.tsx`; extract a shared mobile helper
   if a third consumer appears.
 
+### Task p07-t05: PlayerRail + TimerBadge
+
+**Status:** completed
+**Commit:** 8c612b1
+**Fix Commit:** f2c3dbb
+
+**Outcome:**
+
+- Added a native-backed `PlayerRail` for active-game player names, seats, team
+  swatches, connected/offline state, and current-turn highlight.
+- Added round and sequence-count display for the active game surface.
+- Added `TimerBadge` with countdown display derived from `turnDeadlineAt`,
+  immediate re-sync when deadline props change, and `0:00` clamping on expiry.
+- Kept timer expiry display-only; no client-side forfeit or mutation path was
+  added.
+- Rendered only visible status badges so tests and accessibility do not see
+  hidden inactive/offline copy.
+
+**Files changed:**
+
+- `apps/mobile/src/game/PlayerRail/PlayerRail.tsx` /
+  `PlayerRail.test.tsx` - player rail, connection/current-turn display, round
+  and sequence-count coverage.
+- `apps/mobile/src/game/PlayerRail/TimerBadge.tsx` /
+  `TimerBadge.test.tsx` - server-deadline countdown, deadline re-sync, expiry
+  clamp, and no-local-forfeit coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the server-deadline timer learning.
+
+**Verification:**
+
+- RED run: `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`
+- Result: failed before implementation on missing PlayerRail modules.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`
+- Result: pass, 2 suites / 4 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- `turnDeadlineAt` remains the timer source of truth; client expiry does not
+  trigger any local forfeit behavior.
+- `nowMs` is available as a deterministic test/preview override.
+- Visual PlayerRail proof remains part of the planned p07-t08 game-surface
+  playground sweep.
+
 ---
 
 ## Orchestration Runs
@@ -2932,7 +2994,8 @@ Chronological log of implementation progress.
 - [x] p07-t02: GameBoard grid + chips + sequences - 136bfb6 / d6a2c5a
 - [x] p07-t03: Spotlight targeting - 06dfe66 / e358852
 - [x] p07-t04: CardHand - 7172173 / 6d11693
-- [ ] p07-t05: PlayerRail + TimerBadge - next
+- [x] p07-t05: PlayerRail + TimerBadge - 8c612b1 / f2c3dbb
+- [ ] p07-t06: Move submission + submitting state + violation feedback - next
 
 **What changed (high level):**
 
@@ -3044,6 +3107,9 @@ Chronological log of implementation progress.
 - The mobile hand fan now renders hand cards with stable testIDs, supports
   controlled/uncontrolled selection, and exposes drag-mode dead-card turn-in
   affordances.
+- The active-game player rail now displays seats, team colors,
+  connected/offline state, current turn, round/sequence counts, and a
+  server-deadline-synced timer badge.
 
 ---
 
@@ -3100,6 +3166,7 @@ Track test execution during implementation.
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 GameBoard/layout-map suites, 9 tests; includes per-cell memo probe and board-local frame registration |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/spotlight.test.ts src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 3 GameBoard/spotlight suites, 14 tests; includes no-target selected-card parity and one-eyed jack targets |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/CardHand --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 CardHand suite, 7 tests; includes drag-only dead-card affordance and nested press isolation |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/PlayerRail --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 PlayerRail/TimerBadge suites, 4 tests; includes deadline re-sync and no local forfeit path |
 
 ## Final Summary (for PR/docs)
 

@@ -1,6 +1,6 @@
 ---
-oat_current_task: p07-t05
-oat_last_commit: 6d11693
+oat_current_task: p07-t06
+oat_last_commit: f2c3dbb
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,19 +27,19 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-03T22:05:30Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-03T22:14:03Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p07-t05
+**Status:** Implementation in progress — current task p07-t06
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-03
 
 ## Current Phase
 
-Implementation - Phase 7 game-surface work is in progress; next task p07-t05. The plan has 12 phases / 85 tasks tracing
+Implementation - Phase 7 game-surface work is in progress; next task p07-t06. The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
@@ -51,7 +51,7 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p07-t05)
+- **Implementation:** `implementation.md` (initialized — current task p07-t06)
 
 ## Progress
 
@@ -66,7 +66,7 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 4 auth vertical slice complete (7/7)
 - ✓ Phase 5 realtime/client-state work complete (7/7)
 - ✓ Phase 6 dashboard/create/join/lobby work complete (8/8)
-- ⧗ Implementation in progress at p07-t05 (Phase 7 4/9 complete)
+- ⧗ Implementation in progress at p07-t06 (Phase 7 5/9 complete)
 
 ## Blockers
 
