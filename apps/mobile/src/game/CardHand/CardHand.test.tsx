@@ -167,4 +167,28 @@ describe('CardHand', () => {
     expect(onTurnInDeadCard).toHaveBeenCalledWith(hand[0], 0);
     expect(onSelectionChange).not.toHaveBeenCalled();
   });
+
+  it('disables dead-card turn-in controls with the rest of the hand', async () => {
+    const user = userEvent.setup();
+    const onTurnInDeadCard = jest.fn();
+    const { getByTestId } = await render(
+      <CardHand
+        board={deadAceBoard()}
+        disabled
+        hand={hand}
+        mode="drag"
+        onTurnInDeadCard={onTurnInDeadCard}
+      />,
+    );
+
+    expect(
+      getByTestId('hand.card.AC.turnIn').props.accessibilityState,
+    ).toMatchObject({
+      disabled: true,
+    });
+
+    await user.press(getByTestId('hand.card.AC.turnIn'));
+
+    expect(onTurnInDeadCard).not.toHaveBeenCalled();
+  });
 });

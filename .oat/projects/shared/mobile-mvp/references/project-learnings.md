@@ -45,6 +45,10 @@ value. Expo MCP and Argent usage details belong in
 - Keep route-adjacent tests out of `apps/mobile/src/app`; Expo Router can bundle
   route-local test files into Metro. Place mobile component and route tests in
   non-route test locations unless a later pattern explicitly proves otherwise.
+- Avoid `cleanup()` in the middle of a React Native route test. In the mobile
+  game-screen test, mid-test cleanup followed by a second render triggered
+  overlapping React `act()` warnings; use separate tests for separate route
+  states, or rerender only when the mocked hook/source actually re-evaluates.
 - Better Auth mobile clients need the mounted auth route, not only the API
   origin. In this repo `apiUrl` is the API origin for tRPC, while Better Auth
   REST is mounted at `/api/auth/*`; mobile auth config should normalize to

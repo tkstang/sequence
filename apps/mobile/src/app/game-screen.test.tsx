@@ -6,7 +6,7 @@ import {
 import type { Move } from '@sequence/game-logic';
 import { boardCellsFor } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
+import { cleanup, render, userEvent } from '@testing-library/react-native';
 
 import type { UseMoveSubmitResult } from '../game/use-move-submit.ts';
 import { useMoveSubmit } from '../game/use-move-submit.ts';
@@ -129,6 +129,7 @@ afterEach(() => {
 
 describe('GameRouteScreen active turn flow', () => {
   it('shows pending feedback and blocks new selection while a move is submitting', async () => {
+    const user = userEvent.setup();
     mockStreamView = fixtureView('active-your-turn');
     jest.mocked(useMoveSubmit).mockReturnValue({
       ...defaultMoveSubmitResult(),
@@ -154,13 +155,12 @@ describe('GameRouteScreen active turn flow', () => {
       disabled: true,
     });
 
-    await act(async () => {
-      fireEvent.press(getByTestId('hand.card.5C'));
-    });
+    await user.press(getByTestId('hand.card.5C'));
     expect(mockSubmitMove).not.toHaveBeenCalled();
   });
 
   it('assembles the active game surface and submits a selected legal target on my turn', async () => {
+    const user = userEvent.setup();
     mockStreamView = fixtureView('active-your-turn');
     const [firstFiveClubsTarget] = boardCellsFor('5', 'C');
     if (!firstFiveClubsTarget) {
@@ -176,17 +176,13 @@ describe('GameRouteScreen active turn flow', () => {
     expect(getByTestId('game.turn.banner')).toBeTruthy();
     expect(getByTestId('game.controls')).toBeTruthy();
 
-    await act(async () => {
-      fireEvent.press(getByTestId('hand.card.5C'));
-    });
+    await user.press(getByTestId('hand.card.5C'));
 
     expect(
       getByTestId(`board.cell.${firstFiveClubsTarget}.spotlight.target`),
     ).toBeTruthy();
 
-    await act(async () => {
-      fireEvent.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
-    });
+    await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
 
     const expectedMove = {
       card: { rank: '5', suit: 'C' },
@@ -202,6 +198,7 @@ describe('GameRouteScreen active turn flow', () => {
   });
 
   it('keeps the board visible but disables move submission on an opponent turn', async () => {
+    const user = userEvent.setup();
     mockStreamView = fixtureView('active-not-your-turn');
     const [firstFiveClubsTarget] = boardCellsFor('5', 'C');
     if (!firstFiveClubsTarget) {
@@ -215,31 +212,28 @@ describe('GameRouteScreen active turn flow', () => {
       disabled: true,
     });
 
-    await act(async () => {
-      fireEvent.press(getByTestId('hand.card.5C'));
-    });
+    await user.press(getByTestId('hand.card.5C'));
     expect(
       queryByTestId(`board.cell.${firstFiveClubsTarget}.spotlight.target`),
     ).toBeNull();
 
-    await act(async () => {
-      fireEvent.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
-    });
+    await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
     expect(mockSubmitMove).not.toHaveBeenCalled();
   });
 
-  it('keeps lobby and non-active status branches intact', async () => {
+  it('keeps the lobby branch intact', async () => {
     mockStreamView = fixtureView('lobby');
-    const lobby = await render(<GameRouteScreen />);
+    const { getByTestId, queryByTestId } = await render(<GameRouteScreen />);
 
-    expect(lobby.getByTestId('lobby.screen')).toBeTruthy();
-    expect(lobby.queryByTestId('board.grid')).toBeNull();
+    expect(getByTestId('lobby.screen')).toBeTruthy();
+    expect(queryByTestId('board.grid')).toBeNull();
+  });
 
-    cleanup();
+  it('keeps non-active status branches as placeholders', async () => {
     mockStreamView = fixtureView('game-over');
-    const finished = await render(<GameRouteScreen />);
+    const { getByTestId, getByText } = await render(<GameRouteScreen />);
 
-    expect(finished.getByTestId('game.placeholder')).toBeTruthy();
-    expect(finished.getByText('Game finished')).toBeTruthy();
+    expect(getByTestId('game.placeholder')).toBeTruthy();
+    expect(getByText('Game finished')).toBeTruthy();
   });
 });

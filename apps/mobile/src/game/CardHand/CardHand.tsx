@@ -105,7 +105,10 @@ export function CardHand({
                 <Pressable
                   accessibilityLabel={`Turn in ${code}`}
                   accessibilityRole="button"
+                  accessibilityState={{ disabled }}
+                  disabled={disabled}
                   onPress={(event) => {
+                    if (disabled) return;
                     event.stopPropagation();
                     onTurnInDeadCard(card, index);
                   }}
