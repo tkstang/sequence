@@ -1,0 +1,145 @@
+import {
+  createRealtimeLifecycle,
+  type AppStateLike,
+  type RealtimeSocketState,
+} from './lifecycle.ts';
+import { STREAM_INACTIVITY_WATCHDOG_MS } from './timing.ts';
+
+function createMockAppState(): {
+  appState: AppStateLike;
+  emit: (
+    state: Parameters<AppStateLike['addEventListener']>[1] extends (
+      state: infer State,
+    ) => void
+      ? State
+      : never,
+  ) => void;
+  remove: jest.Mock;
+} {
+  let listener: Parameters<AppStateLike['addEventListener']>[1] | null = null;
+  const remove = jest.fn();
+
+  return {
+    appState: {
+      currentState: 'active',
+      addEventListener: jest.fn((_event, nextListener) => {
+        listener = nextListener;
+        return { remove };
+      }),
+    },
+    emit: (state) => {
+      listener?.(state);
+    },
+    remove,
+  };
+}
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('createRealtimeLifecycle', () => {
+  it('checks liveness on foreground and resubscribes when the socket is closed', () => {
+    const { appState, emit, remove } = createMockAppState();
+    const resubscribe = jest.fn();
+    const getSocketState = jest.fn<RealtimeSocketState, []>(() => 'closed');
+    const states: string[] = [];
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState,
+      logger: { info: jest.fn() },
+      onConnectionStateChange: (state) => states.push(state),
+      onResubscribe: resubscribe,
+    });
+
+    lifecycle.start();
+    emit('background');
+    emit('active');
+
+    expect(getSocketState).toHaveBeenCalledWith();
+    expect(states).toEqual(['reconnecting']);
+    expect(resubscribe).toHaveBeenCalledWith('app-active');
+
+    lifecycle.stop();
+    expect(remove).toHaveBeenCalledWith();
+  });
+
+  it('forces teardown and resubscribe at the inactivity ceiling', () => {
+    const { appState } = createMockAppState();
+    const resubscribe = jest.fn();
+    const states: string[] = [];
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState: () => 'live',
+      logger: { info: jest.fn() },
+      onConnectionStateChange: (state) => states.push(state),
+      onResubscribe: resubscribe,
+    });
+
+    lifecycle.start();
+    lifecycle.markLive('subscription-started');
+    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS - 1);
+
+    expect(resubscribe).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1);
+
+    expect(states).toEqual(['live', 'reconnecting']);
+    expect(resubscribe).toHaveBeenCalledWith('watchdog-timeout');
+  });
+
+  it('logs live to reconnecting to live transitions with timestamps', () => {
+    const { appState } = createMockAppState();
+    const logger = { info: jest.fn() };
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState: () => 'live',
+      logger,
+      onConnectionStateChange: jest.fn(),
+      onResubscribe: jest.fn(),
+    });
+
+    lifecycle.start();
+    lifecycle.markLive('subscription-started');
+    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS);
+    lifecycle.recordStreamItem();
+
+    expect(logger.info).toHaveBeenNthCalledWith(
+      1,
+      'realtime.connection_state',
+      expect.objectContaining({
+        nextState: 'live',
+        reason: 'subscription-started',
+        timestamp: '2026-07-03T12:00:00.000Z',
+      }),
+    );
+    expect(logger.info).toHaveBeenNthCalledWith(
+      2,
+      'realtime.connection_state',
+      expect.objectContaining({
+        nextState: 'reconnecting',
+        previousState: 'live',
+        reason: 'watchdog-timeout',
+        timestamp: '2026-07-03T12:00:15.000Z',
+      }),
+    );
+    expect(logger.info).toHaveBeenNthCalledWith(
+      3,
+      'realtime.connection_state',
+      expect.objectContaining({
+        nextState: 'live',
+        previousState: 'reconnecting',
+        reason: 'stream-item',
+        timestamp: '2026-07-03T12:00:15.000Z',
+      }),
+    );
+  });
+});

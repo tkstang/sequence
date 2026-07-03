@@ -14,6 +14,8 @@ export const WS_LAZY = {
   closeMs: 30_000,
 } as const;
 
+export const STREAM_INACTIVITY_WATCHDOG_MS = 15_000;
+
 export function websocketRetryDelayMs(attemptIndex: number): number {
   return Math.min(
     WS_RETRY_DELAY.initialMs * 2 ** Math.max(0, attemptIndex),

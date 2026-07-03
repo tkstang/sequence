@@ -4,9 +4,15 @@ import {
   type GameViewState,
 } from '@sequence/client-state';
 import { useSubscription } from '@trpc/tanstack-react-query';
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useTRPC } from '../api/client.ts';
+import {
+  createRealtimeLifecycle,
+  type RealtimeLifecycle,
+  type RealtimeResubscribeReason,
+  type RealtimeSocketState,
+} from './lifecycle.ts';
 
 export type GameStreamConnectionState =
   | 'connecting'
@@ -36,19 +42,39 @@ export function useGameStream(gameId: string): {
   const trpc = useTRPC();
   const [view, dispatch] = useReducer(reducer, null);
   const lastEventIdRef = useRef<number | null>(null);
+  const socketStateRef = useRef<RealtimeSocketState>('connecting');
+  const resubscribeRef = useRef<(reason?: RealtimeResubscribeReason) => void>(
+    () => {},
+  );
   const [recoveryEventId, setRecoveryEventId] = useState<number | null>(null);
   const [connectionState, setConnectionState] =
     useState<GameStreamConnectionState>('connecting');
+  const connectionStateRef = useRef<GameStreamConnectionState>(connectionState);
+  const lifecycleRef = useRef<RealtimeLifecycle | null>(null);
 
-  const handleData = useCallback((rawItem: TrackedStreamItem) => {
-    const item = unwrapStreamItem(rawItem);
+  lifecycleRef.current ??= createRealtimeLifecycle({
+    getSocketState: () => socketStateRef.current,
+    onConnectionStateChange: (nextState) => {
+      connectionStateRef.current = nextState;
+      setConnectionState(nextState);
+    },
+    onResubscribe: (reason) => resubscribeRef.current(reason),
+  });
+  const lifecycle = lifecycleRef.current;
 
-    dispatch(item);
-    if (item.kind === 'event') {
-      lastEventIdRef.current = item.event.seq;
-    }
-    setConnectionState('live');
-  }, []);
+  const handleData = useCallback(
+    (rawItem: TrackedStreamItem) => {
+      const item = unwrapStreamItem(rawItem);
+
+      dispatch(item);
+      if (item.kind === 'event') {
+        lastEventIdRef.current = item.event.seq;
+      }
+      socketStateRef.current = 'live';
+      lifecycle.recordStreamItem();
+    },
+    [lifecycle],
+  );
 
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
@@ -56,17 +82,27 @@ export function useGameStream(gameId: string): {
         ? { gameId }
         : { gameId, lastEventId: recoveryEventId },
       {
-        onStarted: () => setConnectionState('live'),
+        onStarted: () => {
+          socketStateRef.current = 'live';
+          lifecycle.markLive('subscription-started');
+        },
         onData: (item) => handleData(item as TrackedStreamItem),
-        onError: () => setConnectionState('error'),
+        onError: () => {
+          socketStateRef.current = 'errored';
+          lifecycle.markError('subscription-error');
+        },
         onConnectionStateChange: (next) => {
           if (next.state === 'connecting') {
-            setConnectionState((current) =>
-              current === 'live' ? 'reconnecting' : 'connecting',
-            );
+            socketStateRef.current = 'connecting';
+            if (connectionStateRef.current === 'live') {
+              lifecycle.markReconnecting('transport-connecting');
+              return;
+            }
+            lifecycle.markConnecting('transport-connecting');
           }
           if (next.state === 'idle') {
-            setConnectionState('reconnecting');
+            socketStateRef.current = 'closed';
+            lifecycle.markReconnecting('transport-idle');
           }
         },
       },
@@ -81,6 +117,12 @@ export function useGameStream(gameId: string): {
     }
     setRecoveryEventId(nextEventId);
   }, [recoveryEventId, subscription]);
+  resubscribeRef.current = resubscribe;
+
+  useEffect(() => {
+    lifecycle.start();
+    return () => lifecycle.stop();
+  }, [lifecycle]);
 
   return {
     view,
