@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p05-t04
+oat_current_task_id: p05-t05
 oat_generated: false
 ---
 
@@ -30,9 +30,9 @@ oat_generated: false
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
-| Phase 5 | in_progress | 7     | 3/7       |
+| Phase 5 | in_progress | 7     | 4/7       |
 
-**Total:** 31/85 tasks completed
+**Total:** 32/85 tasks completed
 
 ---
 
@@ -1680,6 +1680,56 @@ _In progress._
 
 ---
 
+### Task p05-t04: useGameStream with snapshot-first event application
+
+**Status:** completed
+**Commit:** 73f1469
+**Fix Commit:** 060493f
+
+**Outcome:**
+
+- Added a mobile `useGameStream()` hook that subscribes to
+  `game.onGameEvent` and applies stream snapshots/events through the shared
+  `@sequence/client-state` reducer.
+- The hook exposes the projected `GameViewState`, connection state, latest
+  applied event sequence, and an explicit `resubscribe()` recovery action.
+- The stream state initializes from snapshots before applying incremental
+  events, including tRPC's `{ data }` subscription payload wrapper shape.
+- Hardened cursor handling so the latest event sequence is tracked without
+  changing the live subscription key on every received event.
+
+**Files changed:**
+
+- `apps/mobile/src/realtime/use-game-stream.ts` - stream subscription hook,
+  snapshot/event reducer bridge, connection-state mapping, cursor tracking, and
+  explicit resubscribe action.
+- `apps/mobile/src/realtime/use-game-stream.test.tsx` - hook coverage for
+  snapshot initialization, event application, connection states, wrapped
+  subscription payloads, and explicit resubscription.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - mobile now depends on
+  `@sequence/client-state`.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 1 suite / 5 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- tRPC's React Query subscription hook keys the subscription by input. Keeping
+  `lastEventId` as regular React state in that input would resubscribe on every
+  event; the accepted implementation stores the live cursor in a ref and only
+  moves it into the subscription input when recovery explicitly requests it.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1787,7 +1837,8 @@ Chronological log of implementation progress.
 - [x] p05-t01: Extract @sequence/client-state - 6e74bcc
 - [x] p05-t02: Web consumes client-state - 87271e2
 - [x] p05-t03: AuthedWebSocket + wsLink split transport - 3c20b66 / 2c3cd91
-- [ ] p05-t04: useGameStream with snapshot-first event application - next
+- [x] p05-t04: useGameStream with snapshot-first event application - 73f1469 / 060493f
+- [ ] p05-t05: AppState lifecycle + inactivity watchdog - next
 
 **What changed (high level):**
 
@@ -1849,6 +1900,9 @@ Chronological log of implementation progress.
 - The mobile tRPC client now uses a cookie-authed WebSocket transport for
   subscriptions with centralized keepalive, lazy, and reconnect timing
   constants.
+- The mobile app now has a shared-client-state-backed `useGameStream()` hook
+  with snapshot-first projection, event application, connection-state tracking,
+  and explicit cursor-based resubscription.
 
 ---
 
@@ -1888,6 +1942,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/client-state exec vitest run`; `pnpm --filter @sequence/client-state typecheck`; `pnpm exec oxlint packages/client-state`; `pnpm exec oxfmt --check packages/client-state`; framework-boundary import scan over `packages/client-state` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/web test`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/web build`; `pnpm typecheck`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 | 5     | `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
+| 5     | `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 

@@ -54,6 +54,10 @@ value. Expo MCP and Argent usage details belong in
   primitives were needed for the full initial chrome-kit surface: Button,
   TextField, Card, Badge, and Screen all needed native layout/control wrappers
   after simulator proof.
+- tRPC React Query subscription inputs are part of the subscription key. Do not
+  put a live event cursor in hook state that feeds the subscription input unless
+  every event is supposed to force a resubscribe; track the cursor separately
+  and move it into the input only during explicit recovery.
 
 ## Verification Mechanics
 
