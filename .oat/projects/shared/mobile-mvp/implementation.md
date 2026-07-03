@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t01
+oat_current_task_id: p04-t02
 oat_generated: false
 ---
 
@@ -29,8 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
+| Phase 4 | in_progress | 7     | 1/7       |
 
-**Total:** 21/85 tasks completed
+**Total:** 22/85 tasks completed
 
 ---
 
@@ -1143,6 +1144,62 @@ oat_generated: false
 
 ---
 
+## Phase 4: Auth Vertical Slice
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Task p04-t01: API — Better Auth expo() plugin + trustedOrigins
+
+**Status:** completed
+**Commit:** eb58299
+
+**Outcome:**
+
+- Added the Better Auth Expo plugin to the API auth configuration.
+- Extended trusted origins so the native `sequence://` scheme is always
+  trusted, while the Expo development `exp://**` wildcard is allowed only
+  outside production.
+- Added focused config coverage for plugin registration and production versus
+  non-production trusted-origin behavior.
+
+**Files changed:**
+
+- `packages/api/src/user/auth.ts` - registers `expo()` and computes native/dev
+  trusted origins.
+- `packages/api/src/user/auth-expo.test.ts` - focused Better Auth Expo config
+  tests.
+- `packages/api/package.json` - adds `@better-auth/expo`.
+- `pnpm-lock.yaml` - resolves the new API dependency.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/api exec vitest run src/user/auth-expo.test.ts`
+- Result: pass, 1 file / 3 tests. Subagent recorded the expected RED failure
+  before implementation.
+- Run: `pnpm --filter @sequence/api test`
+- Result: pass in subagent run, 53 passed / 110 skipped; DB-backed suites
+  skipped because `DATABASE_URL_TEST` was absent.
+- Run: `pnpm --filter @sequence/api typecheck`
+- Result: pass.
+- Run: `pnpm lint`
+- Result: pass with existing warnings only.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass in subagent run.
+
+**Notes / Decisions:**
+
+- `DATABASE_URL_TEST` was absent, so the plan's Neon-backed integration path
+  could not execute on this machine. The focused config test is non-skipped and
+  covers the required p04-t01 behavior.
+- `pnpm-lock.yaml` changed substantially because adding `@better-auth/expo`
+  records optional Expo peer snapshots from the existing mobile workspace; the
+  dependency boundary remains the task-declared API package addition.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1240,7 +1297,8 @@ Chronological log of implementation progress.
 - [x] p03-t06: Chrome kit — Card, Badge, Screen scaffold - b5214b2
 - [x] p03-t07: Dev playground scaffold + kit stories - de17181 / f28fae6
 - [x] p03-t08: Both-scheme visual verification - b2083f8
-- [ ] p04-t01: API — Better Auth expo() plugin + trustedOrigins - next
+- [x] p04-t01: API — Better Auth expo() plugin + trustedOrigins - eb58299
+- [ ] p04-t02: Mobile auth client + SecureStore session - next
 
 **What changed (high level):**
 
@@ -1276,6 +1334,8 @@ Chronological log of implementation progress.
 - Token propagation was proven with a reverted scratch token that exercised
   dark-palette parity, mobile token vars, web StyleX generation, and mobile/web
   typechecks.
+- The API auth configuration now registers the Better Auth Expo plugin and
+  trusts native/development origins according to environment.
 
 ---
 
@@ -1303,6 +1363,7 @@ Track test execution during implementation.
 | 3     | `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm --filter @sequence/web build`; `pnpm --filter @sequence/web test`; `pnpm typecheck`; Playwright/system Chrome screenshots `/tmp/p03-t02-web-dev-light.png`, `/tmp/p03-t02-web-dev-dark.png`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; RSD spike simulator screenshots `/tmp/p03-t03-rsd-light-clean.png`, `/tmp/p03-t03-rsd-dark-clean.png`; `pnpm --filter @sequence/mobile exec jest src/theme/theme-provider.test.tsx`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; `pnpm --filter @sequence/mobile exec jest src/components/Button.test.tsx src/components/TextField.test.tsx`; `pnpm --filter @sequence/mobile exec jest src/components` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components src/dev/dev-layout.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; dev-client screenshots `/tmp/p03-t07-dev-playground-accepted.png`, `/tmp/p03-t07-dev-story-button-final.png` | yes    | 0      | -        |
 | 3     | `pnpm --filter @sequence/mobile exec jest src/components`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/web typecheck`; `pnpm --filter @sequence/design-tokens exec vitest run src/palette.test.ts`; `pnpm format:check`; scratch-token proof (`pnpm --filter @sequence/mobile typecheck` failed while dark palette missed `scratchProbe`, then passed after completed scratch propagation through mobile vars and web StyleX generation); dev-client screenshots `/tmp/p03-t08-{light,dark}-{index,button,text-field,card,badge,screen}.png` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/api exec vitest run src/user/auth-expo.test.ts`; `pnpm --filter @sequence/api test` (subagent; DB-backed suites skipped because `DATABASE_URL_TEST` absent); `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
