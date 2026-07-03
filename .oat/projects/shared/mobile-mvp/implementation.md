@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t02
+oat_current_task_id: p06-t03
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 1/8       |
+| Phase 6 | in_progress | 8     | 2/8       |
 
-**Total:** 36/85 tasks completed
+**Total:** 37/85 tasks completed
 
 ---
 
@@ -1986,7 +1986,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ### Phase Summary
 
-_Not started._
+_In progress._
 
 ---
 
@@ -2034,6 +2034,54 @@ _Not started._
   verification.
 - The raw guest token is never logged and remains opt-in because it is only
   needed by the mobile guest-token persistence path.
+
+---
+
+### Task p06-t02: Dashboard screen
+
+**Status:** completed
+**Commit:** b0ef411
+
+**Outcome:**
+
+- Replaced the signed-in placeholder home screen with a dashboard backed by
+  `game.myGames.queryOptions()`.
+- Added native dashboard cards for resumable and recent games with status,
+  roster, round/result metadata, and stable testIDs
+  `dashboard.resumable.<id>` / `dashboard.recent.<id>`.
+- Added dashboard actions for create and join flows, logout in the header,
+  unauthorized redirect handling, empty states, and pull-to-refresh via
+  `myGames.refetch()`.
+- Dashboard navigation now sends non-finished games to `/game/<id>` and
+  finished games to `/game/<id>?view=game-over`.
+
+**Files changed:**
+
+- `apps/mobile/src/app/index.tsx` - dashboard route, query binding,
+  pull-to-refresh, actions, navigation, and logout handling.
+- `apps/mobile/src/features/dashboard/GameCard.tsx` /
+  `GameCard.test.tsx` - reusable native game card and display/press coverage.
+- `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx` - route-level
+  dashboard behavior tests outside `src/app`.
+- `apps/mobile/src/test/index.test.tsx` - updated home smoke coverage for the
+  dashboard shell.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/test/index.test.tsx --runInBand`
+- Result: pass, 3 suites / 13 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Dashboard tests remain outside `src/app` to preserve the Expo Router
+  route-tree guardrail.
 
 ---
 
@@ -2149,7 +2197,8 @@ Chronological log of implementation progress.
 - [x] p05-t06: Connection banners + debug event feed - e33ef1b
 - [x] p05-t07: Two-client live + recovery-time verification - c4a9033 / e5a5c97 / 0111bb5 / 50664e7
 - [x] p06-t01: API — game.join returnGuestToken flag - c2f08a3 / 2b68ed7
-- [ ] p06-t02: Dashboard screen - next
+- [x] p06-t02: Dashboard screen - b0ef411
+- [ ] p06-t03: Create screen - next
 
 **What changed (high level):**
 
@@ -2226,6 +2275,9 @@ Chronological log of implementation progress.
 - The API `game.join` route now supports an opt-in raw guest-token return for
   mobile guest persistence while preserving httpOnly cookie issuance and the
   default no-token response.
+- The mobile home route is now the dashboard, backed by `game.myGames`, with
+  resumable/recent game cards, empty states, pull-to-refresh, create/join CTAs,
+  and status-aware navigation.
 
 ---
 
@@ -2270,6 +2322,7 @@ Track test execution during implementation.
 | 5     | `pnpm --filter @sequence/mobile exec jest src/components/ConnectionBanner.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 5     | Local API + web + Metro LAN + iOS dev-client p05-t07 scenario; web-created game with mobile `/dev/stream`; API kill/restart timing; 10s background/foreground timing; replay-window event-count attempt; stale-cursor `/dev/stream?lastEventId=1` proof; screenshots `/tmp/p05-t07-web-created-lobby.png`, `/tmp/p05-t07-mobile-initial-stream.png`, `/tmp/p05-t07-web-after-start.png`, `/tmp/p05-t07-mobile-after-start.png`, `/tmp/p05-t07-mobile-after-foreground.png`, `/tmp/p05-t07-mobile-replay-window.png`, `/tmp/p05-t07-replay-window-proof.png`; `pnpm format:check`; `git diff --check` | yes    | 0      | Replay-window fallback proven by snapshot item id `504` after requested `lastEventId=1` |
 | 6     | `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts` with disposable local `DATABASE_URL_TEST`; `pnpm --filter @sequence/api typecheck`; `pnpm lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 11 join/preview integration tests executed |
+| 6     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | 3 dashboard/home suites, 13 tests |
 
 ## Final Summary (for PR/docs)
 
