@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p06-t08
+oat_current_task_id: p07-t01
 oat_generated: false
 ---
 
@@ -31,9 +31,9 @@ oat_generated: false
 | Phase 3 | completed   | 8     | 8/8       |
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
-| Phase 6 | in_progress | 8     | 7/8       |
+| Phase 6 | completed   | 8     | 8/8       |
 
-**Total:** 42/85 tasks completed
+**Total:** 43/85 tasks completed
 
 ---
 
@@ -1986,7 +1986,54 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ### Phase Summary
 
-_In progress._
+**Outcome (what changed):**
+
+- Added the mobile dashboard over `game.myGames`, including resumable/recent
+  cards, empty states, pull-to-refresh, create/join actions, and status-aware
+  game navigation.
+- Added signed-in create-game, join-by-code, preview, registered join, guest
+  join, app-scheme deep-link, and guest continue-list flows.
+- Added mobile guest identity persistence with SecureStore-backed game tokens,
+  AsyncStorage registry metadata, explicit HTTP/WebSocket cookie transport, and
+  stream-driven guest registry cleanup.
+- Added the live mobile lobby branch with roster/team rendering, native invite
+  sharing, creator-only kick/randomize/start controls, start gating, and
+  public game route access enforced by API/stream participant checks.
+- Completed local API/web/mobile multi-client verification for FR2-FR5,
+  including guest deep-link join, live roster/control propagation, start-gate
+  proof, and relaunch continue-list recovery.
+
+**Key files touched:**
+
+- `apps/mobile/src/app/index.tsx` - dashboard route.
+- `apps/mobile/src/app/create.tsx` - create-game route.
+- `apps/mobile/src/app/join/index.tsx` /
+  `apps/mobile/src/app/join/[code].tsx` - join entry, preview, registered
+  join, guest join, and scheme deep-link handling.
+- `apps/mobile/src/app/game/[id].tsx` - live game route and lobby branch.
+- `apps/mobile/src/auth/guest-store.ts` - guest token and registry storage.
+- `apps/mobile/src/api/client.ts`, `cookies.ts`, `ws.ts` - explicit Better
+  Auth and guest-token cookie transport for HTTP and WebSocket paths.
+- `apps/mobile/src/game/LobbyTeams.tsx` - native lobby roster/control surface.
+
+**Verification:**
+
+- Unit/integration suites for API guest join, mobile dashboard, create, join,
+  guest store/cookies, stream registry behavior, lobby rendering, and transport
+  cookie coverage all passed.
+- Mobile typecheck/lint, root format check, and whitespace checks passed for
+  every Phase 6 implementation task.
+- Simulator/manual evidence captured for scheme deep links and p06-t08
+  multi-client local API/web/mobile lobby verification.
+
+**Notes / Decisions:**
+
+- `/game/[id]` remains public in Expo Router so guest-token participants can
+  cold-start back into a game; API game-player procedures and stream errors
+  remain the access authority.
+- p06-t08 proved start gating by showing disabled/illegal and enabled/legal
+  lobby states. It did not click through into active gameplay; Phase 7 owns the
+  playable active-game surface.
 
 ---
 
@@ -2370,6 +2417,96 @@ _In progress._
 
 ---
 
+### Task p06-t08: Multi-client lobby verification
+
+**Status:** completed
+**Commit:** c75ee97
+**Fix Commit:** 7f875d1
+
+**Outcome:**
+
+- Ran the p06-t08 local scenario with disposable local Postgres, local API,
+  local web, Metro, and the iOS dev client.
+- Verified a web-created remote lobby, mobile guest deep-link preview/join,
+  mobile guest registry persistence, relaunch continue-list display, and return
+  to the guest lobby.
+- Verified live web/mobile lobby propagation for join, team change, kick, and
+  randomize flows.
+- Verified start gating by capturing an illegal/incomplete lobby before the
+  legal layout and a full randomized legal layout where web showed enabled
+  `Start game`.
+- Fixed the scenario-discovered guest stream auth bug: mobile WebSocket streams
+  now attach the game-scoped `sequence_guest` token using active game context,
+  and HTTP cookie headers infer `gameId` from tRPC operation input when
+  available.
+
+**Files changed:**
+
+- `apps/mobile/src/api/client.ts` /
+  `client.test.ts` - game-id inference for HTTP cookie headers.
+- `apps/mobile/src/api/cookies.ts` /
+  `cookies.test.ts` - active game cookie context helpers.
+- `apps/mobile/src/api/ws.ts` /
+  `ws.test.ts` - guest cookie attachment for React Native WebSocket streams.
+- `apps/mobile/src/realtime/use-game-stream.ts` /
+  `use-game-stream.test.tsx` - active game context lifecycle and coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the WebSocket guest-cookie learning.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts src/game/routes/lobby.test.ts`
+- Result: pass, 2 files / 21 tests with disposable local Postgres.
+- Run: `pnpm --filter @sequence/mobile exec jest src/api/client.test.ts src/api/cookies.test.ts src/api/ws.test.ts src/realtime/use-game-stream.test.tsx --runInBand`
+- Result: pass, 4 suites / 25 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Scenario evidence:**
+
+- `/tmp/p06-t08-web-created-lobby.png` - web host created a remote 4-player
+  lobby.
+- `/tmp/p06-t08-web-after-host-team-change.png` - host team change visible on
+  web.
+- `/tmp/p06-t08-mobile-deeplink-preview.png` - mobile deep-link preview with
+  invite code.
+- `/tmp/p06-t08-mobile-lobby-after-guest-join.png` - mobile guest joined and
+  entered the live lobby.
+- `/tmp/p06-t08-web-lobby-after-mobile-guest.png` - web reflects the mobile
+  guest join.
+- `/tmp/p06-t08-mobile-lobby-full-before-randomize.png` and
+  `/tmp/p06-t08-web-lobby-full-before-randomize.png` - full lobby before
+  randomize/start-gate proof.
+- `/tmp/p06-t08-web-after-kick.png` and
+  `/tmp/p06-t08-mobile-after-web-kick.png` - web kick reflected on mobile.
+- `/tmp/p06-t08-web-after-randomize.png` and
+  `/tmp/p06-t08-mobile-after-randomize.png` - randomize reflected across
+  clients; web shows enabled `Start game` for the legal full layout.
+- `/tmp/p06-t08-mobile-relaunch-continue-list.png` - guest relaunch continue
+  list with stored guest games.
+- `/tmp/p06-t08-orchestrator-current.png` - orchestrator-confirmed guest return
+  from continue-list to the live lobby.
+
+**Notes / Decisions:**
+
+- The scenario script exited after tapping guest row text instead of the
+  `Continue` button; the continue-list screenshot shows the correct buttons,
+  and the orchestrator follow-up screenshot confirms return to the lobby.
+- The scenario did not click `Start game`. FR5's Phase 6 mapping requires
+  start gated on legal layout, which the disabled/illegal and enabled/legal
+  evidence covers; active gameplay transition remains Phase 7 scope.
+- The disposable local database was reset by the final API verification suite,
+  but the p06-t08 screenshots remain as the durable scenario evidence.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -2488,7 +2625,8 @@ Chronological log of implementation progress.
 - [x] p06-t05: Guest join + guest store/registry + continue-list - 6c7c5bc / ac2a3ee
 - [x] p06-t06: Scheme deep links - e70d449
 - [x] p06-t07: Lobby screen + controls + share - bddfa59 / 8099ab9
-- [ ] p06-t08: Multi-client lobby verification - next
+- [x] p06-t08: Multi-client lobby verification - c75ee97 / 7f875d1
+- [ ] p07-t01: Board scaffold — SVG board, chip overlays, safe sizing - next
 
 **What changed (high level):**
 
@@ -2583,6 +2721,10 @@ Chronological log of implementation progress.
 - The mobile game route now renders a live lobby branch with team roster
   controls, native invite sharing, creator-only randomize/kick/start actions,
   and public route access that relies on API/stream participant checks.
+- The local API/web/mobile multi-client verification now demonstrates FR2-FR5
+  through guest deep-link join, live lobby propagation, kick/randomize, start
+  gate evidence, and guest relaunch continue-list recovery. The run also fixed
+  the missing guest-token cookie path for mobile WebSocket streams.
 
 ---
 
@@ -2633,6 +2775,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/auth/guest-store.test.ts src/auth/login-screen.test.tsx src/features/join src/api/cookies.test.ts src/test/root-layout.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 6 guest/join/root-layout/stream suites, 34 tests |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/features/join --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `xcrun simctl openurl booted "sequence://join/TESTCODE"` with screenshots `/tmp/p06-t06-sequence-join-testcode-preview.png` and `/tmp/p06-t06-sequence-join-garbage-unknown.png` | yes    | 0      | Scheme route/UI proof used temporary mock API; API-backed preview covered elsewhere |
 | 6     | `pnpm --filter @sequence/mobile exec jest src/game/LobbyTeams.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 lobby suite, 5 tests; includes over-capacity roster regression |
+| 6     | Local API/web/Metro/iOS dev-client p06-t08 scenario; `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts src/game/routes/lobby.test.ts`; `pnpm --filter @sequence/mobile exec jest src/api/client.test.ts src/api/cookies.test.ts src/api/ws.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | FR2-FR5 evidence screenshots `/tmp/p06-t08-web-created-lobby.png`, `/tmp/p06-t08-mobile-deeplink-preview.png`, `/tmp/p06-t08-mobile-lobby-after-guest-join.png`, `/tmp/p06-t08-web-after-randomize.png`, `/tmp/p06-t08-mobile-after-randomize.png`, `/tmp/p06-t08-mobile-relaunch-continue-list.png`, `/tmp/p06-t08-orchestrator-current.png` |
 
 ## Final Summary (for PR/docs)
 

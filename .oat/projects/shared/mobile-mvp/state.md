@@ -1,6 +1,6 @@
 ---
-oat_current_task: p06-t08
-oat_last_commit: 8099ab9
+oat_current_task: p07-t01
+oat_last_commit: 7f875d1
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,19 +27,19 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-03T20:59:53Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-03T21:21:30Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p06-t08
+**Status:** Implementation in progress — current task p07-t01
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-03
 
 ## Current Phase
 
-Implementation - Phase 6 dashboard/create/join/lobby work is in progress; next task p06-t08. The plan has 12 phases / 85 tasks tracing
+Implementation - Phase 7 game-surface work is in progress; next task p07-t01. The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
@@ -51,7 +51,7 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p06-t08)
+- **Implementation:** `implementation.md` (initialized — current task p07-t01)
 
 ## Progress
 
@@ -65,7 +65,8 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 3 tokens, theming, and chrome-kit work complete (8/8)
 - ✓ Phase 4 auth vertical slice complete (7/7)
 - ✓ Phase 5 realtime/client-state work complete (7/7)
-- ⧗ Implementation in progress at p06-t08 (Phase 6 7/8 complete)
+- ✓ Phase 6 dashboard/create/join/lobby work complete (8/8)
+- ⧗ Implementation in progress at p07-t01 (Phase 7 0/6 complete)
 
 ## Blockers
 
@@ -73,5 +74,5 @@ None
 
 ## Next Milestone
 
-Continue Phase 6 dashboard/create/join/lobby work, then continue toward the final-only HiLL
+Continue Phase 7 game-surface work, then continue toward the final-only HiLL
 checkpoint at p12.
