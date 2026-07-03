@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p04-t06
+oat_current_task_id: p04-t07
 oat_generated: false
 ---
 
@@ -29,9 +29,9 @@ oat_generated: false
 | Phase 1 | completed   | 8     | 8/8       |
 | Phase 2 | completed   | 5     | 5/5       |
 | Phase 3 | completed   | 8     | 8/8       |
-| Phase 4 | in_progress | 7     | 5/7       |
+| Phase 4 | in_progress | 7     | 6/7       |
 
-**Total:** 26/85 tasks completed
+**Total:** 27/85 tasks completed
 
 ---
 
@@ -1402,6 +1402,79 @@ oat_generated: false
 
 ---
 
+### Task p04-t06: Session persistence scenario (simulator)
+
+**Status:** completed
+**Commit:** 8d260e3
+
+**Outcome:**
+
+- Verified the mobile auth persistence path on the iPhone 17 Pro simulator
+  against a local API pointed at a disposable Neon branch.
+- Signed up a throwaway user, confirmed the home route rendered the
+  `health.me` email and `health.ping` result, terminated the app, relaunched,
+  and confirmed the session remained authenticated without a spinner-block.
+- Logged out through the mobile UI, confirmed the login route returned, then
+  terminated and relaunched again to verify the cleared session stayed logged
+  out.
+- Fixed the simulator-only runtime redbox from missing Better Auth Expo peer
+  dependencies by installing `expo-network` and `expo-web-browser`, adding the
+  `expo-web-browser` config plugin, and rebuilding the dev client.
+- Deleted the disposable Neon branch after evidence capture.
+
+**Files changed:**
+
+- `apps/mobile/package.json` - installs the Better Auth Expo runtime peers
+  `expo-network` and `expo-web-browser`.
+- `apps/mobile/app.config.ts` - registers the `expo-web-browser` config plugin
+  required by dynamic Expo config.
+- `pnpm-lock.yaml` - resolves the added Expo SDK 57 modules.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captures
+  non-Expo-MCP project lessons from p04-t06.
+- `.oat/projects/shared/mobile-mvp/references/using-expo-mcp-learnings.md` -
+  captures simulator/Argent/Expo MCP lessons and evidence paths from p04-t06.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`
+- Result: pass, 3 suites / 9 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`
+- Result: pass; rebuilt dev client included `ExpoNetwork` and
+  `ExpoWebBrowser` pods. Xcode emitted the existing duplicate `-lc++` and Expo
+  Dev Launcher script dependency warnings only.
+- Run: simulator scenario via local API + Metro LAN dev-client URL.
+- Result: pass. Evidence:
+  `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`,
+  `/tmp/p04-t06-after-logout.png`,
+  `/tmp/p04-t06-after-logout-relaunch.png`,
+  `/tmp/p04-t06-after-peer-fix.json`,
+  `/tmp/p04-t06-after-logout-2.json`, and
+  `/tmp/p04-t06-after-logout-relaunch.json`.
+
+**Notes / Decisions:**
+
+- `packages/api/.env`, root `.env`, `DATABASE_URL_TEST`, a local Postgres
+  daemon, and Docker were unavailable, so the local API used a disposable Neon
+  branch for the simulator auth flow.
+- The disposable Neon branch schema was applied with `drizzle-kit push` against
+  the branch's direct read-write host, then the branch was deleted after the
+  scenario.
+- `@better-auth/expo` imports `expo-network` during auth-client setup and can
+  dynamically import `expo-web-browser` for browser flows; both are installed
+  explicitly in the mobile workspace.
+- `expo start --dev-client --host localhost` listened on IPv6 loopback only
+  during this run; `--host lan` with the Mac's LAN IP was the reliable simulator
+  bundle route.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -1504,7 +1577,8 @@ Chronological log of implementation progress.
 - [x] p04-t03: Cookie-header transport in tRPC client - 4d3e24c
 - [x] p04-t04: Login/signup/logout + protected routing - e6d202a / d97bf0d
 - [x] p04-t05: Session probe + central error policy - a64c521
-- [ ] p04-t06: Session persistence scenario (simulator) - next
+- [x] p04-t06: Session persistence scenario (simulator) - 8d260e3
+- [ ] p04-t07: Phase gate sweep + configuration docs - next
 
 **What changed (high level):**
 
@@ -1551,6 +1625,9 @@ Chronological log of implementation progress.
   matches the API's `/api/auth/*` mount.
 - The home route now probes `health.me`, redirects to login on unauthorized
   probes, and centralizes tRPC error-policy mapping for later game screens.
+- The p04-t06 simulator scenario now proves SecureStore-backed auth persists
+  across app termination/relaunch, that `health.me` works after relaunch, and
+  that logout remains cleared after another relaunch.
 
 ---
 
@@ -1567,6 +1644,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p03-t07       | plan.md / design.md | RSD `html.*` wrappers for chrome-kit and dev playground layout | Layout-sensitive `Button`, `Card`, `Screen`, and dev-route wrappers are native-backed while preserving public APIs | Simulator screenshots showed oversized and stretched RSD native layouts; native primitives matched the intended mobile chrome | `apps/mobile/src/components/Button.tsx`; `apps/mobile/src/components/Card.tsx`; `apps/mobile/src/components/Screen.tsx`; `apps/mobile/src/app/dev/` | p03-t08 continues light/dark story verification across the kit |
 | p03-t08       | plan.md / design.md | RSD `html.*` wrappers for remaining TextField and Badge chrome-kit primitives | `TextField` and `Badge` are native-backed while preserving public APIs | Both-scheme simulator verification showed the native-backed approach is the stable baseline for the full chrome-kit surface | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Badge.tsx` | Continue using native-backed chrome primitives unless a later RSD issue is deliberately re-evaluated |
 | p04-t04       | plan.md         | Auth route tests under `apps/mobile/src/app/(auth)` and root layout test under `apps/mobile/src/app` | Auth and root-route tests live under `apps/mobile/src/auth` and `apps/mobile/src/test` | Expo Router can bundle route-local tests into Metro; this preserves the already proven route-tree rule | `apps/mobile/src/auth/login-screen.test.tsx`; `apps/mobile/src/auth/signup-screen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
+| p04-t06       | plan.md         | Scenario task with no file changes unless fixes land | Installed `expo-network` / `expo-web-browser` and added the `expo-web-browser` config plugin | Simulator proof exposed missing `@better-auth/expo` runtime peers after auth-client initialization | `apps/mobile/package.json`; `apps/mobile/app.config.ts`; `pnpm-lock.yaml` | Keep declared native peers installed and rebuild the dev client after native module changes |
 
 ## Test Results
 
@@ -1584,6 +1662,7 @@ Track test execution during implementation.
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/cookies.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx src/components/TextField.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p04-t04` | yes    | 0      | -        |
 | 4     | `pnpm --filter @sequence/mobile exec jest src/api/error-policy.test.ts src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | -        |
+| 4     | `pnpm --filter @sequence/mobile exec jest src/auth/client.test.ts src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`; local API + Metro LAN simulator scenario with screenshots `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`, `/tmp/p04-t06-after-logout.png`, `/tmp/p04-t06-after-logout-relaunch.png` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
