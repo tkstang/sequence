@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p07-t02
+oat_current_task_id: p07-t03
 oat_generated: false
 ---
 
@@ -32,9 +32,9 @@ oat_generated: false
 | Phase 4 | completed   | 7     | 7/7       |
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
-| Phase 7 | in_progress | 9     | 1/9       |
+| Phase 7 | in_progress | 9     | 2/9       |
 
-**Total:** 44/85 tasks completed
+**Total:** 45/85 tasks completed
 
 ---
 
@@ -2523,6 +2523,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   web app through `react-native-svg` and the Expo Metro SVG transformer.
 - Added a development-only card-grid route for visual sanity checks while
   keeping the dev route guarded by the existing `__DEV__` layout.
+- Added the mobile `GameBoard` grid with memoized card cells, team chip
+  overlays, locked-sequence treatment, and a board-local layout map for later
+  drag hit-testing.
 
 **Verification:**
 
@@ -2541,6 +2544,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Result: pass in the implementing subagent run.
 - Run: `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607`
 - Result: pass in the implementing subagent run.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
+- Result: pass, 2 suites / 9 tests; Watchman emitted the existing recrawl
+  warning only.
 
 **Notes / Decisions:**
 
@@ -2551,6 +2557,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The orchestrator added the follow-up fix commit because board-scale callers
   often allocate fresh `{rank, suit}` objects while representing the same card;
   `CardFace` now skips equal-value SVG rerenders.
+- The orchestrator added the p07-t02 follow-up fix commit because square cells
+  would crop portrait card SVGs and row-local cell `onLayout` values would not
+  support reliable board-level hit-testing. Board cell sizing and layout-map
+  frames now share the card aspect ratio.
 
 ### Task p07-t01: SVG card pipeline
 
@@ -2611,6 +2621,65 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Visual card-grid screenshot proof is deferred to the planned p07-t08
   game-surface playground story sweep because the p07-t01 Metro visual pass did
   not reach the route, while export and native rebuild proof passed.
+
+### Task p07-t02: GameBoard grid + chips + sequences
+
+**Status:** completed
+**Commit:** 136bfb6
+**Fix Commit:** d6a2c5a
+
+**Outcome:**
+
+- Added a 10x10 mobile `GameBoard` driven by `BOARD_MAP` from
+  `@sequence/game-logic`.
+- Added memoized `BoardCell` rendering for card faces, wild corners, team chip
+  overlays, and locked-sequence treatment.
+- Added a pure `BoardLayoutMap` with frame registration, clearing, and
+  hit-testing for later drag-mode work.
+- Registered board-local, card-aspect cell frames from the grid geometry so
+  future drag hit-testing aligns with the rendered board.
+- Added focused GameBoard and layout-map tests for stable cell IDs, all four
+  wild corners, team colors, lock treatment, sequence ownership, render
+  memoization, and frame registration.
+
+**Files changed:**
+
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` - responsive board grid,
+  sequence lookup, board-local frame registration, and cell composition.
+- `apps/mobile/src/game/GameBoard/BoardCell.tsx` - memoized board cell with
+  card face, wild-corner, chip, and lock rendering.
+- `apps/mobile/src/game/GameBoard/layout-map.ts` - pure layout-map and
+  hit-testing helper.
+- `apps/mobile/src/game/GameBoard/GameBoard.test.tsx` /
+  `layout-map.test.ts` - focused board rendering, memoization, and layout-map
+  coverage.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - captured
+  the board-local frame/card-aspect learning.
+
+**Verification:**
+
+- RED run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
+- Result: failed before implementation on missing GameBoard/layout-map modules.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
+- Result: pass, 2 suites / 9 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- `BoardLayoutMap` stores board-local frames. Later drag work should subtract
+  the board origin before calling `hitTest()`.
+- Spotlight, tap targeting, and move submission are intentionally deferred to
+  p07-t03 and p07-t06/p07-t07.
+- Visual board screenshot proof remains part of the planned p07-t08
+  game-surface playground sweep.
 
 ---
 
@@ -2734,7 +2803,8 @@ Chronological log of implementation progress.
 - [x] p06-t07: Lobby screen + controls + share - bddfa59 / 8099ab9
 - [x] p06-t08: Multi-client lobby verification - c75ee97 / 7f875d1
 - [x] p07-t01: SVG card pipeline - fa42027 / 08645c8
-- [ ] p07-t02: GameBoard grid + chips + sequences - next
+- [x] p07-t02: GameBoard grid + chips + sequences - 136bfb6 / d6a2c5a
+- [ ] p07-t03: Spotlight targeting - next
 
 **What changed (high level):**
 
@@ -2836,6 +2906,10 @@ Chronological log of implementation progress.
 - The Phase 7 card asset pipeline now supports all 52 SVG faces on mobile with
   memoized `CardFace` rendering, Metro SVG transformer wiring, and a
   development-only card-grid route.
+- The mobile `GameBoard` now renders the 10x10 Sequence board from
+  `BOARD_MAP`, including wild corners, team chips, locked sequence treatment,
+  memoized per-cell updates, and board-local layout frames for later drag
+  hit-testing.
 
 ---
 
@@ -2889,6 +2963,7 @@ Track test execution during implementation.
 | 6     | `pnpm --filter @sequence/mobile exec jest src/game/LobbyTeams.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 1 lobby suite, 5 tests; includes over-capacity roster regression |
 | 6     | Local API/web/Metro/iOS dev-client p06-t08 scenario; `pnpm --filter @sequence/api exec vitest run src/game/routes/join-game.test.ts src/game/routes/lobby.test.ts`; `pnpm --filter @sequence/mobile exec jest src/api/client.test.ts src/api/cookies.test.ts src/api/ws.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | FR2-FR5 evidence screenshots `/tmp/p06-t08-web-created-lobby.png`, `/tmp/p06-t08-mobile-deeplink-preview.png`, `/tmp/p06-t08-mobile-lobby-after-guest-join.png`, `/tmp/p06-t08-web-after-randomize.png`, `/tmp/p06-t08-mobile-after-randomize.png`, `/tmp/p06-t08-mobile-relaunch-continue-list.png`, `/tmp/p06-t08-orchestrator-current.png` |
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/cards/CardFace.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t01`; `pnpm --filter @sequence/mobile exec expo run:ios --no-bundler --device 3F87B084-DD33-41D5-B4F5-88DA77989607` | yes    | 0      | 55 card-pipeline tests; export and native rebuild passed; card-grid screenshot deferred to p07-t08 |
+| 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 2 GameBoard/layout-map suites, 9 tests; includes per-cell memo probe and board-local frame registration |
 
 ## Final Summary (for PR/docs)
 
