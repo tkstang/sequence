@@ -27,13 +27,15 @@ Run this loop as build -> launch -> screenshot -> drive by testID -> logs.
    - Generated `ios/`, `android/`, `.expo/`, and `expo-env.d.ts` are ignored
      build artifacts and must stay untracked.
 2. Start Metro:
-   - `pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`
+   - `EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`
 3. Launch the installed dev build:
    - Preferred: use the Expo CLI prompt or QR/deep link.
    - Fallback when Expo CLI's Simulator activation path fails:
      `xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
    - Fallback for a deep link into an already-running app:
      `xcrun simctl openurl booted 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
+   - Prefer `launch --initialUrl` over `openurl` for startup; `openurl` can
+     surface the iOS "Open in Sequence Online?" confirmation prompt.
 4. See the app:
    - Expo MCP local tool: `automation_take_screenshot`.
    - Argent tool: `screenshot`.
@@ -62,10 +64,17 @@ Project MCP config lives at `../../.mcp.json`.
 - Local Expo MCP: `expo-mcp` is a mobile dev dependency. Start it against the
   running Metro server when the host does not auto-wire local tools:
   `pnpm --filter @sequence/mobile exec expo-mcp --dev-server-url http://127.0.0.1:8081 --root apps/mobile --platform ios --app-id com.tkstang.sequenceonline`.
+  Omit `--collect-logs` for long-lived MCP server mode; that flag is a
+  one-shot log collector that prints logs and exits.
+  When scripting the local stdio server directly, use newline-delimited
+  JSON-RPC messages.
 - Argent: `.mcp.json` starts `npx -y @swmansion/argent mcp`. Argent needs an
   installed dev build for native screen inspection and profiling; use
   `npx -y @swmansion/argent tools` to list the current tool surface. Browser or
-  Expo Go sessions are not enough for the native/profiler loop.
+  Expo Go sessions are not enough for the native/profiler loop. For native
+  devtools-backed inspection, boot through `boot-device` and start the app with
+  `launch-app` / `restart-app`; `native-describe-screen` can return
+  `restart_required` when the app was launched outside Argent.
 
 ## testID Convention
 
