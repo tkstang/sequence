@@ -487,6 +487,10 @@ for EAS anyway).
 **Structure:** one section per operator concern, each with *Why / When
 (phase) / Prerequisites / Steps / Verify / Troubleshooting*:
 
+0. Local machine setup — Xcode install, license/first-launch, iOS Simulator
+   runtime, CocoaPods/watchman. The one operator prerequisite that precedes
+   Phase 1 (performed before the project starts; documented for future
+   machines).
 1. Expo account + EAS project setup (and optional Expo MCP remote OAuth).
 2. Apple Developer Program enrollment.
 3. App Store Connect app record + bundle identifier.
@@ -801,8 +805,9 @@ existing web gates and visual parity in `/dev`. Rollback is git.
 - **Bundle identifier + display name:** proposal `com.tkstang.sequence` /
   "Sequence" — needs owner confirmation before Phase 12 (changing later is
   painful); recorded in the runbook when decided.
-- **Crash reporting:** deferred entirely in this design; confirm, and if
-  wanted later, file as backlog (Sentry RN is the obvious candidate).
+- **Crash reporting:** RESOLVED (owner, 2026-07-03) — deferred out of v1;
+  tracked as backlog `BL-260703-adopt-sentry-crash-reporting` (Sentry only;
+  no Crashlytics — it would drag in the otherwise-unused Firebase SDK).
 - **Board rotate control:** carried as parity; cheap on native (Reanimated
   rotation) but explicitly cuttable if the game-surface phases run long.
 
