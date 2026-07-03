@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p02-t03
+oat_current_task_id: p02-t04
 oat_generated: false
 ---
 
@@ -27,9 +27,9 @@ oat_generated: false
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
 | Phase 1 | completed   | 8     | 8/8       |
-| Phase 2 | in_progress | 5     | 2/5       |
+| Phase 2 | in_progress | 5     | 3/5       |
 
-**Total:** 10/85 tasks completed
+**Total:** 11/85 tasks completed
 
 ---
 
@@ -518,6 +518,41 @@ oat_generated: false
 
 ### Task p02-t03: apps/mobile/AGENTS.md - the agent loop
 
+**Status:** completed
+**Commit:** 3b3b5c2
+
+**Outcome:**
+
+- Added mobile-specific agent instructions documenting the build, launch,
+  screenshot, testID drive, and log-inspection loop for simulator work.
+- Documented local Expo MCP and Argent tool names, the optional remote Expo MCP
+  OAuth boundary, `simctl` / Orca fallbacks, dev-build requirements, generated
+  artifact guardrails, and mobile import/testID conventions.
+- Added `apps/mobile/CLAUDE.md` as a symlink to `AGENTS.md`.
+
+**Files changed:**
+
+- `apps/mobile/AGENTS.md` - mobile command reference, FR17 agent loop, MCP
+  tool names, fallbacks, testID convention, and guardrails.
+- `apps/mobile/CLAUDE.md` - symlink to the shared mobile agent instructions.
+
+**Verification:**
+
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: manual read-through against the design's Agent Tooling section.
+- Result: pass; every FR17 deliverable has a documented command/tool path,
+  including screenshot, testID drive, logs, Argent inspection, and fallbacks.
+
+**Notes / Decisions:**
+
+- The instructions explicitly keep Expo MCP, Argent, simulator artifacts, and
+  screenshots out of shipped runtime surfaces.
+
+---
+
+### Task p02-t04: Operator runbook scaffold
+
 **Status:** pending
 **Commit:** -
 
@@ -608,7 +643,16 @@ Chronological log of implementation progress.
 - [x] p02-t01: MCP configuration + expo-mcp local tools - 0e51aa5
 - [x] p02-t01 fix: invoke Argent MCP subcommand - 3e5b0c1
 - [x] p02-t02: testID convention + identifier helper - 24b317b
-- [ ] p02-t03: apps/mobile/AGENTS.md - the agent loop - next
+- [x] p02-t03: apps/mobile/AGENTS.md - the agent loop - 3b3b5c2
+- [ ] p02-t04: Operator runbook scaffold - next
+
+**What changed (high level):**
+
+- Phase 2 now has local Expo MCP and Argent configuration plus a committed
+  mobile `AGENTS.md` / `CLAUDE.md` instruction surface for the simulator
+  agent loop.
+- Mobile testIDs now use the shared `testId()` helper and documented
+  `screen.element[.qualifier]` convention.
 
 ---
 
@@ -627,7 +671,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format` | yes    | 0      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format`; `pnpm format:check`; manual p02-t03 read-through against design Agent Tooling section | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
