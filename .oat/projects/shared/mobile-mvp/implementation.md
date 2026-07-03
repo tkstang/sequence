@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p01-t03
+oat_current_task_id: p01-t04
 oat_generated: false
 ---
 
@@ -26,10 +26,10 @@ oat_generated: false
 
 | Phase   | Status      | Tasks | Completed |
 | ------- | ----------- | ----- | --------- |
-| Phase 1 | in_progress | 8     | 2/8       |
+| Phase 1 | in_progress | 8     | 3/8       |
 | Phase 2 | pending     | 5     | 0/5       |
 
-**Total:** 2/85 tasks completed
+**Total:** 3/85 tasks completed
 
 ---
 
@@ -131,6 +131,39 @@ oat_generated: false
 
 ### Task p01-t03: Shared-import spike — game-logic + AppRouter under Metro
 
+**Status:** completed
+**Commit:** dac6545
+
+**Outcome:**
+
+- Added a temporary Expo Router spike route that imports board data from
+  `@sequence/game-logic` and type-checks the `AppRouter` contract import from
+  `@sequence/api`.
+- Confirmed Metro can export the app with the repo's explicit `.ts` package
+  imports without a resolver shim.
+
+**Files changed:**
+
+- `apps/mobile/package.json` - added workspace dependencies on
+  `@sequence/game-logic` and `@sequence/api`.
+- `apps/mobile/src/app/spike.tsx` - temporary import spike route rendering
+  board dimensions and position count.
+- `pnpm-lock.yaml` - linked the new workspace dependencies for mobile.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/mobile-export-spike`
+- Result: pass. iOS bundle exported to `/tmp/mobile-export-spike`; no Metro
+  resolve shim required.
+
+**Notes / Decisions:**
+
+- The spike route remains temporary and is scheduled for removal in p01-t08.
+
+---
+
+### Task p01-t04: jest-expo + Testing Library setup
+
 **Status:** pending
 **Commit:** -
 
@@ -174,7 +207,8 @@ Chronological log of implementation progress.
 
 - [x] p01-t01: Scaffold @sequence/mobile Expo workspace - fe544ee
 - [x] p01-t02: Metro, TypeScript, and lint/format wiring - 2890e84
-- [ ] p01-t03: Shared-import spike — game-logic + AppRouter under Metro - next
+- [x] p01-t03: Shared-import spike — game-logic + AppRouter under Metro - dac6545
+- [ ] p01-t04: jest-expo + Testing Library setup - next
 
 **What changed (high level):**
 
@@ -182,6 +216,8 @@ Chronological log of implementation progress.
   placeholder home route, and lockfile dependencies.
 - Mobile Metro, Babel, TypeScript, lint, and format wiring now pass their scoped
   gates.
+- Metro export now proves mobile can consume `@sequence/game-logic` runtime
+  exports and the `@sequence/api` `AppRouter` type contract.
 
 **Decisions:**
 
@@ -190,8 +226,7 @@ Chronological log of implementation progress.
 
 **Follow-ups / TODO:**
 
-- Add Metro/Babel/TypeScript wiring in p01-t02.
-- Prove shared imports under Metro in p01-t03.
+- Set up jest-expo and the first Testing Library component test in p01-t04.
 
 **Blockers:**
 
