@@ -418,6 +418,7 @@ oat_generated: false
 
 **Status:** completed
 **Commit:** 0e51aa5
+**Fix Commit:** 3e5b0c1
 
 **Outcome:**
 
@@ -452,11 +453,18 @@ oat_generated: false
   `automation_take_screenshot`, `automation_tap`, `collect_app_logs`,
   `expo_router_sitemap`, and `open_devtools`. Screenshot evidence:
   `/tmp/p02-t01-expo-mcp-screenshot.jpg`.
+- Run: Argent MCP stdio `initialize` / `tools/list` with
+  `npx -y @swmansion/argent mcp`.
+- Result: pass; server reported `argent` v0.14.0 and 69 tools, including
+  `screenshot`, `gesture-tap`, `describe`, `native-describe-screen`, and
+  `debugger-log-registry`.
 
 **Notes / Decisions:**
 
 - The root `.mcp.json` already existed for Neon; this task preserved it and
   added only the planned mobile agent-loop servers.
+- The current Argent CLI requires the `mcp` subcommand to start its stdio MCP
+  server, so the committed config uses `npx -y @swmansion/argent mcp`.
 - The first screenshot attempt timed out, then a second attempt reported
   `No booted simulator devices found` after the simulator had shut down. After
   rebooting the iPhone 17 Pro simulator and relaunching the dev build, the MCP
@@ -598,6 +606,7 @@ Chronological log of implementation progress.
 **Session Start:** 13:40 UTC
 
 - [x] p02-t01: MCP configuration + expo-mcp local tools - 0e51aa5
+- [x] p02-t01 fix: invoke Argent MCP subcommand - 3e5b0c1
 - [x] p02-t02: testID convention + identifier helper - 24b317b
 - [ ] p02-t03: apps/mobile/AGENTS.md - the agent loop - next
 
@@ -618,7 +627,7 @@ Track test execution during implementation.
 | Phase | Tests Run | Passed | Failed | Coverage |
 | ----- | --------- | ------ | ------ | -------- |
 | 1     | `pnpm --filter @sequence/mobile exec jest src/api/env.test.ts`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile test && pnpm --filter @sequence/mobile typecheck`; `pnpm format:check`; simulator screenshots `/tmp/p01-t06-boot-home.png`, `/tmp/p01-t07-health-ping.png` | yes    | 0      | -        |
-| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format` | yes    | 0      | -        |
+| 2     | `pnpm --filter @sequence/mobile exec expo-mcp --help`; `pnpm install`; Expo dev server + MCP stdio `tools/list` / `automation_take_screenshot` (`/tmp/p02-t01-expo-mcp-screenshot.jpg`); Argent MCP stdio `tools/list`; RED `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts`; `pnpm --filter @sequence/mobile exec jest src/test/test-ids.test.ts src/test/index.test.tsx`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile format` | yes    | 0      | -        |
 
 ## Final Summary (for PR/docs)
 
