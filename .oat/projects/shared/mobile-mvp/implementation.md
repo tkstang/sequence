@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t03
+oat_current_task_id: p09-t04
 oat_generated: false
 ---
 
@@ -34,9 +34,9 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 2/7       |
+| Phase 9 | in_progress | 7     | 3/7       |
 
-**Total:** 60/85 tasks completed
+**Total:** 61/85 tasks completed
 
 ---
 
@@ -3737,6 +3737,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   show the disconnected player and expiry copy in the connection banner, resume
   automatically from the live stream when status returns to active, and saved
   games render a resumable state with expiry messaging.
+- Finished games now render a mobile GameOver screen with web-parity result
+  titles, winner/concede attribution, local win/loss/unknown outcome copy,
+  winning sequence representation, and rematch/dashboard action testIDs.
 
 **Verification:**
 
@@ -3746,6 +3749,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx --runInBand`
 - Run:
   `TZ=UTC pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
 - Run: `pnpm --filter @sequence/mobile typecheck`
 - Run: `pnpm --filter @sequence/mobile lint`
 - Run: `pnpm format:check`
@@ -3759,6 +3764,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Expiry/date tests compute the expected local `Intl.DateTimeFormat` output
   instead of hardcoding a timezone-specific string; the p09-t02 check was also
   run under `TZ=UTC`.
+- Rematch is intentionally rendered with an inert route callback until p09-t04,
+  which owns mutation wiring and navigation to the new game.
 
 ---
 
@@ -3898,7 +3905,8 @@ Chronological log of implementation progress.
 - [x] p08-t06: Hard-mode e2e verification - 7e06cfc
 - [x] p09-t01: Save & exit + concede controls - e664340 / 7d27bf4
 - [x] p09-t02: Freeze/resume + expiry states - 5d629c8 / d8a3db0
-- [ ] p09-t03: GameOver screen - next
+- [x] p09-t03: GameOver screen - 2037cf6
+- [ ] p09-t04: Rematch flow - next
 
 **What changed (high level):**
 
@@ -4047,6 +4055,10 @@ Chronological log of implementation progress.
   surface the disconnected player plus expiry in the connection banner, and
   restore normal play when the stream view resumes to active. Saved routes now
   render a resumable saved-state screen with expiry copy.
+- Finished mobile game routes now render a dedicated GameOver screen instead
+  of the generic placeholder, covering winner names, concede attribution,
+  no-winner fallback copy, timer-expired copy, winning sequence representation,
+  and dashboard/rematch action testIDs.
 
 ---
 
@@ -4118,6 +4130,7 @@ Track test execution during implementation.
 | 8     | Seeded drag-mode game `c5315deb-9acb-4f8c-b78a-355b0ae95447`; public mutations `game.turnInDeadCard`, `game.makeMove`, `game.chooseSequenceCells`; mobile screenshots `/tmp/p08-t06-mobile-seeded.png`, `/tmp/p08-t06-mobile-pending-choice.png`, `/tmp/p08-t06-mobile-final-win.png`; web screenshot `/tmp/p08-t06-web-final-win.png`; DB assertions; chained-choice seed `716fbe0d-ea9d-453f-bd00-117032eea989` | yes    | 0      | FR7/FR8 hard-mode pass: dead-card turn-in, one-eyed removal, web opponent move, no-card drag contract placement, pending choice, final win, and chained choice verified |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 active-lifecycle/control suites, 19 tests; save-and-exit, concede, versioned payloads, guest save hiding, and active-game lifecycle conflict copy covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx --runInBand`; `TZ=UTC pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 freeze/resume/connection suites, 18 tests; UTC route rerun 15 tests; frozen board visible but disabled, resume restores play, saved state expiry copy, and disconnected-player banner covered |
+| 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 game-over/route suites, 20 tests; finished route renders GameOver; win/loss, concede, no-winner FFA, timer-expired copy, winner names, sequence representation, and dashboard/rematch testIDs covered |
 
 ## Final Summary (for PR/docs)
 
