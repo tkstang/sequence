@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p08-t04
+oat_current_task_id: p08-t05
 oat_generated: false
 ---
 
@@ -33,9 +33,9 @@ oat_generated: false
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
-| Phase 8 | in_progress | 6     | 3/6       |
+| Phase 8 | in_progress | 6     | 4/6       |
 
-**Total:** 55/85 tasks completed
+**Total:** 56/85 tasks completed
 
 ---
 
@@ -3255,6 +3255,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added the sequence-choice sheet for >5-run pending choices, including
   client-side five-cell window selection, board highlighting, chained-choice
   copy, and `chooseSequenceCells` route wiring.
+- Added dead-card turn-in controls for hard-mode drag play, reused the shared
+  rule-violation feedback catalog for rejected turn-ins, and surfaced
+  default-mode `DeadCardSwapped` events as a de-duplicated live toast.
 
 **Verification:**
 
@@ -3300,6 +3303,17 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm format:check`
 - Result: pass.
 - Run: `git diff --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`
+- Result: pass, 3 suites / 29 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check HEAD`
 - Result: pass.
 
 **Notes / Decisions:**
@@ -3501,6 +3515,56 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+### Task p08-t04: Dead-card turn-in + auto-swap surfacing
+
+**Status:** completed
+**Commit:** 6ca7d32
+
+**Outcome:**
+
+- Added `useDeadCardControls()` for versioned `game.turnInDeadCard` mutation
+  submission, pending state, haptics, and shared move-feedback mapping.
+- Wired drag-mode dead-card hand affordances to turn in cards without also
+  submitting/selecting a normal move.
+- Surfaced same-turn rejected turn-ins through the existing
+  `not-a-dead-card` rule-violation message.
+- Surfaced default-mode `DeadCardSwapped` events as an auto-swap toast, keyed
+  by event sequence so rerenders do not duplicate the feedback.
+
+**Files changed:**
+
+- `apps/mobile/src/game/DeadCardControls.tsx` /
+  `DeadCardControls.test.tsx` - dead-card turn-in hook, auto-swap event
+  feedback, and focused tests.
+- `apps/mobile/src/app/game/[id].tsx` /
+  `apps/mobile/src/game/GameRouteScreen.test.tsx` - active-route wiring and
+  versioned mutation coverage.
+- `apps/mobile/src/game/feedback/toasts.ts` /
+  `toasts.test.ts` - default-mode auto-swap feedback constant.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`
+- Result: pass, 3 suites / 29 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check HEAD`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- Auto-swap feedback is scoped to non-drag mode because drag mode exposes the
+  explicit turn-in affordance.
+- Turn-in success remains server authoritative; the hook does not mutate the
+  local hand and waits for the stream/view update.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -3632,7 +3696,8 @@ Chronological log of implementation progress.
 - [x] p08-t01: Drag gesture layer - 0a851b4
 - [x] p08-t02: Drag submit + rejection feedback - 61df269 / a616e36
 - [x] p08-t03: Sequence-choice sheet - e13a789
-- [ ] p08-t04: Dead-card turn-in + auto-swap surfacing - next
+- [x] p08-t04: Dead-card turn-in + auto-swap surfacing - 6ca7d32
+- [ ] p08-t05: Board rotate control - next
 
 **What changed (high level):**
 
@@ -3763,6 +3828,11 @@ Chronological log of implementation progress.
 - The advanced game surface now has a Reanimated/Gesture Handler drag layer
   foundation with board-layout-map hit-testing, hover-confirm state, outside
   release cancellation, and no pre-highlighting.
+- Drag-mode drop submission now uses the server-authoritative no-card move
+  contract, and the route keeps rejected drops selected with shared violation
+  feedback.
+- The active game route now supports pending sequence-choice sheets and
+  dead-card turn-in controls, including default-mode auto-swap feedback.
 
 ---
 
@@ -3829,6 +3899,7 @@ Track test execution during implementation.
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t01`; `git diff --check` | yes    | 0      | 2 drag suites, 5 tests; SDK-compatible gesture dependencies and Reanimated Babel config verified |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/test/root-layout.test.tsx src/game/GameRouteScreen.test.tsx src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler react-native-worklets --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t02-final`; `git diff --check`; `pnpm --filter @sequence/mobile ios`; simulator proof for drag game `18d450fa-1eb9-4c4a-a91c-f1ef8a1996ad` with screenshots `/tmp/sequence-mobile-p08-t02-drag-game.png` and `/tmp/sequence-mobile-p08-t02-drag-after-move.png` | yes    | 0      | 4 focused suites, 15 tests; dev client rebuilt; no-card drag-mode `game.makeMove` placed `16D`, app received subscription events, and screen updated to version 2 |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 sequence-choice/route suites, 13 tests; my-seat pending choice opens the sheet and submits `chooseSequenceCells`; other-seat choice shows frozen banner |
+| 8     | `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 dead-card/route/feedback suites, 29 tests; hard-mode turn-in calls `turnInDeadCard`, same-turn rejection uses `not-a-dead-card`, and default-mode auto-swap emits one toast per event seq |
 
 ## Final Summary (for PR/docs)
 
