@@ -42,25 +42,25 @@ export interface PresenceDeps {
 
 export class PresenceTracker {
   private readonly now: () => number;
-  /** gameId → set of currently-connected seats (in-memory truth). */
-  private readonly connected = new Map<string, Set<number>>();
+  /** gameId → seat → active subscription count (in-memory truth). */
+  private readonly connected = new Map<string, Map<number, number>>();
 
   constructor(private readonly deps: PresenceDeps) {
     this.now = deps.now ?? (() => Date.now());
   }
 
-  private seats(gameId: string): Set<number> {
-    let set = this.connected.get(gameId);
-    if (!set) {
-      set = new Set();
-      this.connected.set(gameId, set);
+  private seats(gameId: string): Map<number, number> {
+    let seats = this.connected.get(gameId);
+    if (!seats) {
+      seats = new Map();
+      this.connected.set(gameId, seats);
     }
-    return set;
+    return seats;
   }
 
   /** Currently-connected seats for a game (test/inspection helper). */
   connectedSeats(gameId: string): number[] {
-    return [...this.seats(gameId)].sort((a, b) => a - b);
+    return [...this.seats(gameId).keys()].sort((a, b) => a - b);
   }
 
   /**
@@ -69,11 +69,17 @@ export class PresenceTracker {
    * is now present.
    */
   async markConnected(gameId: string, seat: number): Promise<void> {
-    this.seats(gameId).add(seat);
+    const seats = this.seats(gameId);
+    seats.set(seat, (seats.get(seat) ?? 0) + 1);
+    const [game] = await this.deps.db
+      .select({ local: games.local })
+      .from(games)
+      .where(eq(games.id, gameId))
+      .limit(1);
     await this.deps.db
       .update(gamePlayers)
       .set({ connected: true, lastSeenAt: new Date(this.now()) })
-      .where(and(eq(gamePlayers.gameId, gameId), eq(gamePlayers.seat, seat)));
+      .where(this.playerPresenceWhere(gameId, seat, game?.local ?? false));
 
     await this.maybeResume(gameId);
   }
@@ -83,18 +89,43 @@ export class PresenceTracker {
    * `active`, freezes it: pause the timer, set the 1h expiry, broadcast.
    */
   async markDisconnected(gameId: string, seat: number): Promise<void> {
-    this.seats(gameId).delete(seat);
-    await this.deps.db
-      .update(gamePlayers)
-      .set({ connected: false })
-      .where(and(eq(gamePlayers.gameId, gameId), eq(gamePlayers.seat, seat)));
+    const seats = this.seats(gameId);
+    const currentCount = seats.get(seat) ?? 0;
+    if (currentCount > 1) {
+      seats.set(seat, currentCount - 1);
+      return;
+    }
 
+    seats.delete(seat);
     const [game] = await this.deps.db
-      .select({ status: games.status, version: games.version })
+      .select({
+        local: games.local,
+        status: games.status,
+        version: games.version,
+      })
       .from(games)
       .where(eq(games.id, gameId))
       .limit(1);
     if (!game) return;
+
+    await this.deps.db
+      .update(gamePlayers)
+      .set({ connected: false })
+      .where(this.playerPresenceWhere(gameId, seat, game.local));
+
+    // A replacement subscription can connect while this disconnect is already
+    // awaiting DB writes. If that happened, restore the DB flag and skip the
+    // freeze; the live connection is authoritative.
+    const reconnected = game.local
+      ? this.seats(gameId).size > 0
+      : this.seats(gameId).has(seat);
+    if (reconnected) {
+      await this.deps.db
+        .update(gamePlayers)
+        .set({ connected: true, lastSeenAt: new Date(this.now()) })
+        .where(this.playerPresenceWhere(gameId, seat, game.local));
+      return;
+    }
 
     // Only an active game freezes on a drop (a saved/frozen game stays put).
     if (game.status !== 'active' || !canTransition('active', 'frozen')) return;
@@ -132,6 +163,12 @@ export class PresenceTracker {
     // leave a paused timer on a still-active game).
     await this.deps.timers.pause(gameId);
     this.publishAppended(gameId, appended, frozenVersion);
+
+    // A replacement subscription can connect after the pre-freeze recheck but
+    // before the freeze transaction commits. In that case markConnected saw an
+    // still-active game and could not resume it, so re-evaluate now that the
+    // freeze is durable.
+    await this.maybeResume(gameId);
   }
 
   /**
@@ -208,6 +245,12 @@ export class PresenceTracker {
     publishAppendedEvents(this.deps.rooms, gameId, appended, version);
   }
 
+  private playerPresenceWhere(gameId: string, seat: number, local: boolean) {
+    return local
+      ? eq(gamePlayers.gameId, gameId)
+      : and(eq(gamePlayers.gameId, gameId), eq(gamePlayers.seat, seat));
+  }
+
   /** Drop all in-memory presence for a game (sweep/teardown). */
   forget(gameId: string): void {
     this.connected.delete(gameId);
@@ -220,8 +263,8 @@ export class PresenceTracker {
  * don't exercise presence (the subscription then just streams events).
  */
 export interface PresenceHook {
-  onConnect(gameId: string, seat: number): void;
-  onDisconnect(gameId: string, seat: number): void;
+  onConnect(gameId: string, seat: number): void | Promise<void>;
+  onDisconnect(gameId: string, seat: number): void | Promise<void>;
 }
 
 let presenceHook: PresenceHook | null = null;

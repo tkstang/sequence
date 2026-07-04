@@ -48,6 +48,15 @@ value. Expo MCP and Argent usage details belong in
   authoritative API/dashboard state over transient connected-count labels for
   active presence transitions, and can launch Playwright with the system Chrome
   channel when the bundled browser cache is absent.
+- Repo `AGENTS.md` candidate: when testing route-level subscriptions through
+  the server-side tRPC caller harness, remember that production server hooks
+  such as `setPresenceHook` are not automatically wired. Tests that need those
+  hooks should install a controlled hook explicitly or exercise the production
+  `buildServer` path.
+- Repo `AGENTS.md` candidate: presence/lifecycle work needs tests for both
+  pre-commit and post-commit reconnect races. A reconnect can arrive after a
+  disconnect's initial replacement check but before the freeze transaction
+  commits; the disconnect path must re-evaluate presence after a durable freeze.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -189,6 +198,28 @@ value. Expo MCP and Argent usage details belong in
   narrow story cards and absolute player-rail status labels overlapping seat
   text. Prefer compact representative fixture data for previews and normal
   layout-flow status rows over absolute overlays inside small repeated cards.
+- Do not run DB-resetting API integration tests against the same database used
+  by a live simulator scenario. During p11-t01, `presence.test.ts` used the
+  configured API test database and truncated users/games while the local API and
+  simulator were still pointed at that same branch, invalidating the seeded
+  mobile auth session and active local games. For simulator matrices, either
+  finish the simulator evidence before DB-resetting tests, point tests at an
+  isolated `DATABASE_URL_TEST`, or reseed the simulator account/game after the
+  test run.
+- Route-level subscription tests that use `h.caller(...).game.onGameEvent(...)`
+  do not instantiate `buildServer`, so production module hooks wired from
+  `server.ts` are absent unless the test sets them itself. During p11-t01, a
+  first regression expected local presence to be updated by the production
+  `PresenceTracker`, but the harness intentionally mounted only the router; the
+  correct route regression installed an async `setPresenceHook` and asserted the
+  first snapshot waited for that hook.
+- Presence freeze/resume has a second race after the early replacement check.
+  A replacement subscription can connect while the disconnect path is already
+  committing the freeze; in that timing, `markConnected` observes the game as
+  still active and cannot resume it. The disconnect path should publish the
+  freeze, then call the normal resume check once the freeze is durable so the
+  existing live presence can immediately append `PlayerReconnected` and restore
+  `active`.
 - Local pass-and-play handoff state should follow the server stream's
   `currentSeat`, with local `revealedSeat`/handoff state only controlling
   whether the hand is veiled. Privacy tests should assert no `CardHand` subtree

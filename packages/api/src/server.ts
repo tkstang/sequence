@@ -202,7 +202,7 @@ export async function buildServer(
   const presence = new PresenceTracker({ db, rooms, timers });
   setPresenceHook({
     onConnect(gameId, seat) {
-      void presence.markConnected(gameId, seat);
+      return presence.markConnected(gameId, seat);
     },
     onDisconnect(gameId, seat) {
       void presence.markDisconnected(gameId, seat);
