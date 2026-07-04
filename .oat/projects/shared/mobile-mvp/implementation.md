@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t06
+oat_current_task_id: p09-t07
 oat_generated: false
 ---
 
@@ -34,9 +34,9 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 5/7       |
+| Phase 9 | in_progress | 7     | 6/7       |
 
-**Total:** 63/85 tasks completed
+**Total:** 64/85 tasks completed
 
 ---
 
@@ -3746,6 +3746,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Local pass-and-play now has a mobile HandoffScreen gate that names the
   incoming player, hides the entire hand tree until reveal, then shows only the
   active local seat's hand as the stream current seat changes.
+- Local saved/resumable games now surface an explicit dashboard `LOCAL` badge,
+  route back into `/game/<id>` from the dashboard, and resumed local active
+  streams enter through the handoff veil when another seat is current.
 
 **Verification:**
 
@@ -3759,6 +3762,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
 - Run:
   `pnpm --filter @sequence/mobile exec jest src/game/HandoffScreen.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/game/ActiveGameControls.test.tsx --runInBand`
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`
 - Run: `pnpm --filter @sequence/mobile typecheck`
 - Run: `pnpm --filter @sequence/mobile lint`
 - Run: `pnpm format:check`
@@ -3777,6 +3784,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Local pass-and-play move authorization remains server-authoritative: the API
   resolves local creator actions to the current server seat, while mobile swaps
   `mySeat`/visible hand only for UI targeting and hand privacy.
+- Resumed local active games initialize the locally revealed seat from
+  `view.mySeat`, not `view.currentSeat`, so a current-seat mismatch shows
+  `HandoffScreen` before exposing the incoming hand.
 
 ---
 
@@ -3919,7 +3929,8 @@ Chronological log of implementation progress.
 - [x] p09-t03: GameOver screen - 2037cf6
 - [x] p09-t04: Rematch flow - b004600
 - [x] p09-t05: HandoffScreen + local pass-and-play - 5de7702
-- [ ] p09-t06: Local save/resume + dashboard integration - next
+- [x] p09-t06: Local save/resume + dashboard integration - ad72c90
+- [ ] p09-t07: Lifecycle matrix verification - next
 
 **What changed (high level):**
 
@@ -4152,6 +4163,7 @@ Track test execution during implementation.
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 game-over/route suites, 20 tests; finished route renders GameOver; win/loss, concede, no-winner FFA, timer-expired copy, winner names, sequence representation, and dashboard/rematch testIDs covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 rematch/game-over route suites, 23 tests; rematch mutation payload, success navigation to returned game route, pending disabled state, dashboard preservation, and conflict copy covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/HandoffScreen.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 local-handoff/route suites, 20 tests; handoff prompt/action, visible-hand helper, full hand-tree veil, outgoing/incoming hand privacy, and revealed current-seat hand covered |
+| 9     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/game/ActiveGameControls.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | Dashboard/control suites 16 tests and route suite 19 tests; local resumables show a `LOCAL` badge, route to `/game/<id>`, local save remains available, and resumed local active games start behind the handoff veil |
 
 ## Final Summary (for PR/docs)
 
