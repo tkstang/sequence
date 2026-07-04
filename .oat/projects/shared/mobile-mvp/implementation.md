@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t01
+oat_current_task_id: p11-t02
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 0/7       |
+| Phase 11 | in_progress | 7     | 1/7       |
 
-**Total:** 72/85 tasks completed
+**Total:** 73/85 tasks completed
 
 ---
 
@@ -3987,6 +3987,128 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+## Phase 11: Hardening
+
+**Status:** in_progress
+**Started:** 2026-07-04
+
+### Phase Summary
+
+**Outcome (so far):**
+
+- NFR2 lifecycle recovery now has fresh simulator and automated coverage for
+  API restart, brief background/foreground recovery, force-quit route recovery,
+  stale-version submit recovery, and stale replay-window snapshot fallback.
+- The mobile client now treats no-timer `PlayerReconnected` events as an active
+  resume signal, clearing frozen expiry state and marking the roster connected.
+- The API presence tracker now counts overlapping subscriptions per seat,
+  handles local-game presence as creator-connection coverage for every seat,
+  awaits presence connection before the first stream snapshot, and rechecks for
+  post-freeze reconnect races before leaving a game frozen.
+- Project-level learnings now capture the DB-reset simulator gotcha, route-test
+  hook wiring gotcha, and presence-race testing pattern for later skill and
+  `AGENTS.md` distillation.
+
+**Verification:**
+
+- Run: local API + Metro LAN + iOS dev-client p11-t01 force-quit/relaunch
+  check.
+- Result: pass after reducer fix; game route recovered to active/no paused in
+  `2743ms` with screenshot `/tmp/p11-t01-after-fix-active.png` and summary
+  `/tmp/p11-t01-after-fix-active-summary.json`.
+- Run: local API kill/restart scenario.
+- Result: pass; disconnect detected in `1299ms`, API restart-to-health
+  `1580ms`, restart-to-recovered `4391ms`, health-to-recovered `2811ms`.
+  Evidence: `/tmp/p11-t01-api-kill-restart-summary.json` and
+  `/tmp/p11-t01-api-kill-restart-recovered.png`.
+- Run: local game first-snapshot presence proof after API route ordering fix.
+- Result: pass; accessibility tree showed both local seats connected on the
+  first refreshed game view. Screenshot:
+  `/tmp/p11-t01-local-presence-await-fixed.png`.
+- Run: brief background/foreground scenario against local API + iOS dev-client.
+- Result: pass after post-freeze reconnect-race fix; foreground-to-active
+  `1830ms`, no `Game paused`, no `Connection lost`, and both seats connected.
+  Evidence: `/tmp/p11-t01-brief-background-summary.json` and
+  `/tmp/p11-t01-brief-background-recovered.png`.
+- Run: `pnpm --filter @sequence/client-state test`.
+- Result: pass, 2 files / 11 tests.
+- Run:
+  `pnpm --filter @sequence/api exec vitest run src/game/presence.test.ts src/game/routes/on-game-event.test.ts src/game/routes/make-move.test.ts`.
+- Result: pass, 3 files / 32 tests. Includes replay-window fallback snapshot,
+  awaitable presence-hook snapshot, overlapping subscription, and post-freeze
+  reconnect-race regressions.
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/components/ConnectionBanner.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx --runInBand`.
+- Result: pass, 4 suites / 38 tests; Jest reported the known Watchman recrawl
+  warning.
+- Run: `pnpm --filter @sequence/api typecheck`;
+  `pnpm --filter @sequence/client-state typecheck`;
+  `pnpm --filter @sequence/mobile typecheck`;
+  `pnpm format:check`; `pnpm lint`; `git diff --check`.
+- Result: pass. `pnpm lint` exits zero with existing warnings, including
+  `unicorn(no-array-sort)` in `presence.ts`; `toSorted` was not compatible with
+  the package's current TypeScript lib target, so the target-compatible `sort`
+  remains.
+
+### Task p11-t01: NFR2 measured scenario matrix
+
+**Status:** completed
+**Commit:** fcfc1f9
+
+**Outcome:**
+
+- Captured NFR2 measured recovery evidence and fixed locally diagnosed
+  lifecycle defects found during the matrix.
+- Added reducer coverage for no-timer `PlayerReconnected` resume.
+- Added API coverage for stale replay-window snapshot fallback, awaitable
+  presence before initial snapshots, overlapping subscription disconnects, local
+  presence semantics, and reconnect races around freeze commits.
+- Recorded broad project learnings adjacent to the Expo MCP-specific learnings
+  log.
+
+**Measured values:**
+
+| Scenario | Result | Measurement / Evidence |
+| -------- | ------ | ---------------------- |
+| Force-quit/relaunch route recovery | pass | Active/no paused route recovered in `2743ms`; `/tmp/p11-t01-after-fix-active-summary.json`, `/tmp/p11-t01-after-fix-active.png` |
+| API kill/restart mid-game | pass | Detection `1299ms`; restart-to-health `1580ms`; restart-to-recovered `4391ms`; health-to-recovered `2811ms`; `/tmp/p11-t01-api-kill-restart-summary.json` |
+| Brief background/foreground | pass | Foreground-to-active `1830ms`; no paused/connection-lost; both seats connected; `/tmp/p11-t01-brief-background-summary.json` |
+| Replay-window stale cursor | pass | API regression proves `lastEventId=1` after 502 events yields snapshot id `502`; prior live p05 evidence remains `/tmp/p05-t07-replay-summary.json` |
+| Stale-version submit recovery | pass | Focused API/mobile tests cover stale move conflict handling and recovery copy: `make-move.test.ts`, `use-move-submit.test.ts`, `GameRouteScreen.test.tsx` |
+
+**Files changed:**
+
+- `packages/client-state/src/game-state.ts` - `PlayerReconnected` now resumes
+  no-timer frozen views to active and clears expiry.
+- `packages/client-state/src/game-state.test.ts` - reducer regression for
+  `PlayerReconnected` without `TimerResumed`.
+- `packages/api/src/game/presence.ts` - overlapping subscription counts,
+  local-game all-seat DB presence, pre-freeze and post-freeze reconnect-race
+  handling.
+- `packages/api/src/game/presence.test.ts` - lifecycle race and local presence
+  regressions.
+- `packages/api/src/game/routes/on-game-event.ts` / `server.ts` - awaitable
+  presence hook before initial snapshot reads.
+- `packages/api/src/game/routes/on-game-event.test.ts` - awaitable hook and
+  stale replay-window fallback regressions.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - durable
+  execution/codebase learnings for end-of-project distillation.
+
+**Notes / Decisions:**
+
+- The simulator/API scenario database was reset by DB-backed integration tests
+  during this task; this is now captured as a durable project learning. The
+  accepted workflow is to finish live simulator evidence before reset-heavy
+  tests or reseed the simulator account/game afterward.
+- The server-side caller harness does not instantiate production `server.ts`
+  hooks. Route-level tests that assert hook ordering should install controlled
+  module hooks explicitly.
+- The brief background failure required two server-side fixes: overlapping
+  subscription counts and a post-freeze resume recheck for reconnects that
+  arrive while the older disconnect is committing the freeze.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -4135,7 +4257,8 @@ Chronological log of implementation progress.
 - [x] p10-t05: A11y labels + testID audit - c7d03f9
 - [x] p10-t06: Both-themes screenshot pass - evidence only, no source changes
 - [x] p10-t07: FR13-FR15 verification - evidence only, no source changes
-- [ ] p11-t01: NFR2 measured scenario matrix - next
+- [x] p11-t01: NFR2 measured scenario matrix - fcfc1f9
+- [ ] p11-t02: Perf pass + NFR3 measurement - next
 
 **What changed (high level):**
 
@@ -4382,6 +4505,7 @@ Track test execution during implementation.
 | 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; p10-t05 selector/accessibility audit covers dashboard, create, join, history, settings, and active-game paths via testID/a11y queries with no coordinate fallback |
 | 10    | p10-t06 local API + Metro LAN + iOS dev-client visual pass; `simctl` light/dark appearance changes; terminate/relaunch theme override persistence check; `file /tmp/p10-t06-*.png`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | FR15 proof passed with dashboard, create, active local game, history, settings, join entry/not-found, dev index, and dev board story screenshots in light/dark. Manual Light override persisted across app terminate/relaunch while simulator appearance stayed dark; 49 mobile suites / 297 tests passed |
 | 10    | p10-t07 local API + Metro LAN + iOS dev-client seeded-history and active-game verification; `file /tmp/p10-t07-history-seeded.png /tmp/p10-t07-active-local-created.png /tmp/p10-t07-launch.png /tmp/p10-t07-create-screen.png`; `pnpm --filter @sequence/mobile exec jest src/features/history src/game/feedback src/features/settings/SettingsScreen.test.tsx src/theme/theme-provider.test.tsx --runInBand` | yes    | 0      | FR13-FR15 parity pass: seeded history rendered 2-1 record, `Parity Opponent 2-1`, 3 games, and local badge; live active game exposed `Your turn`, rail, lifecycle controls, and board affordances; focused tests covered notification and theme behavior, 5 suites / 44 tests |
+| 11    | p11-t01 simulator/API NFR2 matrix; `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/api exec vitest run src/game/presence.test.ts src/game/routes/on-game-event.test.ts src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/components/ConnectionBanner.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/{api,client-state,mobile} typecheck`; `pnpm format:check`; `pnpm lint`; `git diff --check` | yes    | 0      | NFR2 pass: API restart recovered in `4391ms`, brief foreground recovered in `1830ms`, force-quit route recovered in `2743ms`, replay-window fallback snapshot covered after 502 events, and stale-version recovery remained covered by focused API/mobile tests |
 
 ## Final Summary (for PR/docs)
 

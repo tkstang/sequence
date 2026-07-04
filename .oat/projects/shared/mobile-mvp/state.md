@@ -1,6 +1,6 @@
 ---
-oat_current_task: p11-t01
-oat_last_commit: c7d03f9
+oat_current_task: p11-t02
+oat_last_commit: fcfc1f9
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,19 +27,19 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-04T04:18:44Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-04T05:23:04Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p11-t01
+**Status:** Implementation in progress — current task p11-t02
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
-Implementation - Phase 11 hardening work is in progress; next task p11-t01.
+Implementation - Phase 11 hardening work is in progress; next task p11-t02.
 The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
@@ -52,7 +52,7 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p11-t01)
+- **Implementation:** `implementation.md` (initialized — current task p11-t02)
 
 ## Progress
 
@@ -71,7 +71,8 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 8 advanced game-surface work complete (6/6)
 - ✓ Phase 9 lifecycle and local pass-and-play work complete (7/7)
 - ✓ Phase 10 history, notifications, settings, and polish work complete (7/7)
-- ⧗ Implementation in progress at p11-t01 (Phase 11 0/7 complete)
+- ✓ Phase 11 NFR2 recovery matrix complete (1/7)
+- ⧗ Implementation in progress at p11-t02 (Phase 11 1/7 complete)
 
 ## Blockers
 
