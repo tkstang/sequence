@@ -34,6 +34,9 @@ value. Expo MCP and Argent usage details belong in
 - Repo `AGENTS.md` candidate: for game-surface work, pair unit/export gates with
   simulator visual proof because compact layout and native runtime failures have
   repeatedly escaped static checks.
+- Repo `AGENTS.md` candidate: when tests assert formatted dates or times, avoid
+  hardcoding local-time strings; compute the expected label with the same
+  formatter or add a `TZ=UTC` check for expiry/date UI.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -233,6 +236,10 @@ value. Expo MCP and Argent usage details belong in
   web client defaults to `http://localhost:3001`; injecting cookies for
   `127.0.0.1:3001` while visiting `localhost:3000` leaves the page stuck in a
   loading state even though the same cookie value is otherwise valid.
+- Expiry/date UI tests should not pin a local timezone unless the component does.
+  During p09-t02, a saved-game test passed locally with Central-time copy but
+  failed under `TZ=UTC`; compute the expected `Intl.DateTimeFormat` label in the
+  test or run a UTC check when adding date/time assertions.
 
 ## Open Follow-Ups
 
