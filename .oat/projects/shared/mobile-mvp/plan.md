@@ -2393,7 +2393,7 @@ git commit -m "chore(p12-t15): bound mobile dimension token drift"
 | p10     | code     | pending         | -          | -                                                                          |
 | p11     | code     | pending         | -          | -                                                                          |
 | p12     | code     | pending         | -          | -                                                                          |
-| p01-p12 | code     | fixes_added     | 2026-07-04 | reviews/archived/range-review-2026-07-04.md                                |
+| p01-p12 | code     | fixes_completed | 2026-07-04 | reviews/archived/range-review-2026-07-04.md                                |
 | final   | code     | pending         | -          | -                                                                          |
 | spec    | artifact | pending         | -          | -                                                                          |
 | design  | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md                      |
@@ -2429,7 +2429,7 @@ git commit -m "chore(p12-t15): bound mobile dimension token drift"
 
 **Total: 94 tasks**
 
-Ready for review-fix execution, remaining Phase 12 operator work, and final
+Ready for p01-p12 re-review, remaining Phase 12 operator work, and final
 closeout.
 
 ---
