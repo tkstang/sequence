@@ -1,7 +1,10 @@
 ---
 oat_current_task: p12-t01
-oat_last_commit: 19f679c
-oat_blockers: []
+oat_last_commit: 29fff06
+oat_blockers:
+  - task_id: p12-t01
+    reason: 'Operator account/setup required: Expo CLI is not logged in, EAS CLI is not installed, EXPO_TOKEN/App Store Connect API env vars are unset, and pnpm dlx eas-cli is blocked by ignored-build approval.'
+    since: 2026-07-04
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
 oat_parent: null # optional child-only coordination parent slug
@@ -27,20 +30,20 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: '2026-07-03T01:05:50.448Z' # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: '2026-07-04T06:56:46Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: '2026-07-04T07:02:55Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p12-t01
+**Status:** Implementation blocked — current task p12-t01
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
-Implementation - Phase 11 hardening work is complete; next task p12-t01 starts
-the Phase 12 operator pre-flight.
+Implementation - Phase 11 hardening work is complete; p12-t01 started and is
+blocked on required operator account/setup for the Phase 12 pre-flight.
 The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
@@ -79,14 +82,17 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 11 NFR7 phase audit and operator runbook complete (5/7)
 - ✓ Phase 11 documentation parity complete (6/7)
 - ✓ Phase 11 pre-distribution smoke complete (7/7)
-- ⧗ Implementation in progress at p12-t01 (Phase 12 0/6 complete)
+- ⧗ Implementation blocked at p12-t01 (Phase 12 0/6 complete)
 
 ## Blockers
 
-None
+- `p12-t01`: Operator account/setup required. `expo whoami` reports not logged
+  in; `eas` is not installed; `EXPO_TOKEN`, `ASC_API_KEY`, and
+  `APP_STORE_CONNECT_API_KEY` are unset; `pnpm dlx eas-cli@latest --version`
+  stopped on `ERR_PNPM_IGNORED_BUILDS` and requires `pnpm approve-builds`;
+  Apple Developer / App Store Connect team access requires the operator.
 
 ## Next Milestone
 
-Start Phase 12 operator pre-flight from `docs/mobile-operator-runbook.md`
-sections 1-4. This remains on the path to the final-only HiLL checkpoint at
-p12.
+Operator must complete Expo/EAS/Apple/App Store Connect pre-flight from
+`docs/mobile-operator-runbook.md` sections 1-4, then resume p12-t01.

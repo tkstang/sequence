@@ -1,7 +1,10 @@
 ---
 oat_status: in_progress
 oat_ready_for: null
-oat_blockers: []
+oat_blockers:
+  - task_id: p12-t01
+    reason: 'Operator account/setup required: Expo CLI is not logged in, EAS CLI is not installed, EXPO_TOKEN/App Store Connect API env vars are unset, and pnpm dlx eas-cli is blocked by ignored-build approval.'
+    since: 2026-07-04
 oat_last_updated: 2026-07-04
 oat_current_task_id: p12-t01
 oat_generated: false
@@ -4578,6 +4581,57 @@ subscription input lastEventId=505; latest card kind=event seq=505
   probes can create artificial presence disconnect/freeze behavior, especially
   around save/resume.
 
+## Phase 12: TestFlight (Operator Phase)
+
+**Status:** blocked
+**Started:** 2026-07-04
+
+### Phase Summary
+
+**Outcome:**
+
+- Phase 12 started after Phase 11 hardening and pre-distribution smoke passed.
+- p12-t01 cannot proceed autonomously on this shell because the required Expo,
+  EAS, Apple Developer, and App Store Connect operator state is not available.
+
+**Verification / Pre-flight checks:**
+
+- Run: `pnpm --filter @sequence/mobile exec expo whoami`.
+- Result: blocked; Expo CLI reported `Not logged in`.
+- Run:
+  `test -n "$EXPO_TOKEN"` / `test -n "$ASC_API_KEY"` /
+  `test -n "$APP_STORE_CONNECT_API_KEY"` checks.
+- Result: blocked; all checked non-secret environment presence probes are
+  unset.
+- Run: `cd apps/mobile && eas --version && eas whoami --non-interactive`.
+- Result: blocked; `eas` command is not installed on the shell.
+- Run: `cd apps/mobile && pnpm dlx eas-cli@latest --version`.
+- Result: blocked; pnpm downloaded the package but stopped on
+  `ERR_PNPM_IGNORED_BUILDS` for `dtrace-provider@0.8.8` and requires
+  `pnpm approve-builds` operator approval.
+
+### Task p12-t01: Operator pre-flight (runbook §§1–4)
+
+**Status:** blocked
+**Blocker:** Operator account/setup required. Expo CLI is not logged in, EAS CLI
+is not installed, no Expo/App Store Connect automation token is present in the
+shell, `pnpm dlx eas-cli@latest --version` requires ignored-build approval, and
+Apple Developer / App Store Connect membership cannot be verified or created by
+the agent without the operator.
+
+**Next required operator actions:**
+
+1. Log in to Expo for this shell or provide an approved Expo automation path:
+   `pnpm --filter @sequence/mobile exec expo login` or an operator-approved
+   token outside the repo.
+2. Install or approve EAS CLI for the operator shell, then run from
+   `apps/mobile`: `eas whoami`.
+3. Confirm Apple Developer Program team access and App Store Connect app-record
+   authority for bundle id `com.tkstang.sequenceonline`.
+4. Resume p12-t01 so the runbook can record non-secret identifiers only
+   (team name/id, operator role, App Store Connect app URL/id, Expo org, EAS
+   project id).
+
 ---
 
 ## Orchestration Runs
@@ -4735,7 +4789,7 @@ Chronological log of implementation progress.
 - [x] p11-t05: NFR7 phase audit + runbook completeness (FR19) - 4873e3f
 - [x] p11-t06: Documentation updates - 19f679c
 - [x] p11-t07: Pre-distribution smoke flows - evidence only, no source changes
-- [ ] p12-t01: Operator pre-flight (runbook §§1–4) - next
+- [ ] p12-t01: Operator pre-flight (runbook §§1–4) - blocked on operator account/setup
 
 **What changed (high level):**
 
