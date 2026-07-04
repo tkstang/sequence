@@ -1,6 +1,6 @@
 ---
 oat_current_task: p12-t01
-oat_last_commit: 29fff06
+oat_last_commit: 85f03bd
 oat_blockers:
   - task_id: p12-t01
     reason: 'Operator account/setup required: Expo CLI is not logged in, EAS CLI is not installed, EXPO_TOKEN/App Store Connect API env vars are unset, and pnpm dlx eas-cli is blocked by ignored-build approval.'
@@ -30,23 +30,25 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: '2026-07-03T01:05:50.448Z' # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: '2026-07-04T07:02:55Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: '2026-07-04T11:53:07Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation blocked — current task p12-t01
+**Status:** Implementation blocked — current task p12-t01; p01-p12 review fixes queued
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
 Implementation - Phase 11 hardening work is complete; p12-t01 started and is
-blocked on required operator account/setup for the Phase 12 pre-flight.
-The plan has 12 phases / 85 tasks tracing
-all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
-operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
+blocked on required operator account/setup for the Phase 12 pre-flight. The
+p01-p12 independent review has been received and converted into review-fix
+tasks p12-t07 through p12-t15.
+The plan has 12 phases / 94 tasks tracing all 19 FRs + 7 NFRs; Phases 1–11 are
+agent-only with Phase 12 as the single operator phase plus queued review-fix
+tasks. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
 checkpoints is enabled from workflow config.
 
@@ -56,14 +58,14 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p11-t07)
+- **Implementation:** `implementation.md` (in progress — current task p12-t01)
 
 ## Progress
 
 - ✓ Discovery complete (brainstorm-seeded, user-validated decisions)
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (independent artifact review received + resolved)
-- ✓ Plan complete (85 tasks; artifact review passed)
+- ✓ Plan complete (94 tasks after p01-p12 review-fix task conversion)
 - ✓ Deferred follow-ups captured as backlog items (EAS Updates, universal
   links, Maestro e2e, Android support, Xcode 27 MCP re-evaluation, Sentry)
 - ✓ Phase 2 agent tooling complete (5/5)
@@ -82,7 +84,8 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 11 NFR7 phase audit and operator runbook complete (5/7)
 - ✓ Phase 11 documentation parity complete (6/7)
 - ✓ Phase 11 pre-distribution smoke complete (7/7)
-- ⧗ Implementation blocked at p12-t01 (Phase 12 0/6 complete)
+- ✓ p01-p12 independent review received; 9 review-fix tasks queued
+- ⧗ Implementation blocked at p12-t01 (Phase 12 0/15 complete)
 
 ## Blockers
 
@@ -95,4 +98,6 @@ checkpoints is enabled from workflow config.
 ## Next Milestone
 
 Operator must complete Expo/EAS/Apple/App Store Connect pre-flight from
-`docs/mobile-operator-runbook.md` sections 1-4, then resume p12-t01.
+`docs/mobile-operator-runbook.md` sections 1-4, then resume p12-t01. The
+p01-p12 review-fix tasks p12-t07 through p12-t15 are queued in Phase 12 for
+implementation before final closeout.

@@ -40,9 +40,9 @@ oat_generated: false
 | Phase 9  | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
 | Phase 11 | completed   | 7     | 7/7       |
-| Phase 12 | in_progress | 6     | 0/6       |
+| Phase 12 | in_progress | 15    | 0/15      |
 
-**Total:** 79/85 tasks completed
+**Total:** 79/94 tasks completed
 
 ---
 
@@ -4632,6 +4632,68 @@ the agent without the operator.
    (team name/id, operator role, App Store Connect app URL/id, Expo org, EAS
    project id).
 
+### Review Received: p01-p12
+
+**Date:** 2026-07-04
+**Review artifact:** reviews/archived/range-review-2026-07-04.md
+
+**Findings:**
+
+- Critical: 0
+- Important: 3
+- Medium: 4
+- Minor: 2
+
+**New tasks added:** p12-t07, p12-t08, p12-t09, p12-t10, p12-t11,
+p12-t12, p12-t13, p12-t14, p12-t15
+
+**Finding disposition map:**
+
+- I1 converted to p12-t07: align the accepted p11-t01 presence-correctness API
+  deviation in spec, design, and implementation artifacts.
+- I2 converted to p12-t08: fix guest WebSocket credential staleness and make
+  destructive guest cleanup conservative.
+- I3 converted to p12-t09: align spec/design chrome architecture with the
+  accepted native-backed implementation.
+- M1 converted to p12-t10: re-arm the realtime inactivity watchdog for
+  non-live recovery states.
+- M2 converted to p12-t11: make generated web StyleX token output
+  format-stable and add a freshness guard.
+- M3 converted to p12-t12: prevent the AuthedWebSocket close-before-open async
+  leak.
+- M4 converted to p12-t13: align FR12 rematch acceptance to web-parity
+  semantics or explicitly defer a future all-player navigation event.
+- m1 converted to p12-t14: remove or document the vestigial React Strict DOM
+  layer.
+- m2 converted to p12-t15: bound mobile non-color design-token drift with a
+  native mapping or explicit scope documentation.
+
+**Design drift / artifact alignment notes:**
+
+- I1: The review found stale spec/design additive-only API language relative to
+  the accepted p11-t01 presence tracker rewrite. The shipped implementation is
+  accepted because it fixed NFR2 reconnect/freeze races and is covered by API
+  presence tests. p12-t07 will align the lifecycle artifacts and add the
+  durable deviation row.
+- I3: The review found stale RSD `html.*` chrome architecture text. The
+  shipped native-backed chrome is accepted as the implementation source of
+  truth because simulator verification showed it was the stable mobile layout
+  baseline. p12-t09 will align spec/design wording.
+- M4: The review found FR12 acceptance text that over-promises non-initiator
+  rematch navigation relative to web parity. The shipped parity behavior is
+  accepted for MVP unless p12-t13 records an explicit future API/event
+  deferral.
+
+**Next:** Execute review-fix tasks via the `oat-project-implement` skill after
+receive-review bookkeeping. The p12-t01 operator pre-flight blocker remains
+active while the operator completes Expo/EAS/Apple/App Store Connect setup.
+
+After the fix tasks are complete:
+
+- Update the `p01-p12` review row status to `fixes_completed`.
+- Re-run `oat-project-review-provide code p01-p12`, then
+  `oat-project-review-receive` to reach `passed`.
+
 ---
 
 ## Orchestration Runs
@@ -4790,6 +4852,15 @@ Chronological log of implementation progress.
 - [x] p11-t06: Documentation updates - 19f679c
 - [x] p11-t07: Pre-distribution smoke flows - evidence only, no source changes
 - [ ] p12-t01: Operator pre-flight (runbook §§1–4) - blocked on operator account/setup
+- [ ] p12-t07: (review) Align API presence constraint artifacts - queued by p01-p12 review
+- [ ] p12-t08: (review) Fix guest WebSocket credential staleness - queued by p01-p12 review
+- [ ] p12-t09: (review) Align native-backed chrome artifacts - queued by p01-p12 review
+- [ ] p12-t10: (review) Re-arm lifecycle watchdog outside live state - queued by p01-p12 review
+- [ ] p12-t11: (review) Add StyleX token freshness guard - queued by p01-p12 review
+- [ ] p12-t12: (review) Prevent AuthedWebSocket close-before-open leak - queued by p01-p12 review
+- [ ] p12-t13: (review) Align rematch acceptance to parity semantics - queued by p01-p12 review
+- [ ] p12-t14: (review) Resolve vestigial React Strict DOM layer - queued by p01-p12 review
+- [ ] p12-t15: (review) Bound mobile non-color token drift - queued by p01-p12 review
 
 **What changed (high level):**
 
@@ -4976,6 +5047,9 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p10-t05       | plan.md             | Agent drives one flow per screen through testID/a11y tree                                                  | Full mobile Jest exercises dashboard, create, join, history, settings, and active-game selectors through testID/accessibility queries; no simulator coordinate fallback was needed                                                       | This task was an accessibility/testID audit, and the updated route/feature tests provide deterministic selector proof while p10-t06 still owns screenshot proof | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/create/CreateScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/settings/SettingsScreen.test.tsx`; `apps/mobile/src/game/GameRouteScreen.test.tsx` | Use p10-t06 for visual/theming confirmation                                                          |
 | p10-t06       | plan.md             | Agent loop covers every screen plus key game states in light and dark, with source commit if fixes land    | Orchestrator-local simulator pass covered dashboard, create, join, history, settings, active local game, and dev game-surface fixtures; no source fixes landed, so no app code commit was made                                           | The visual pass found no contrast/token misuse, and evidence-only scenario tasks should record proof without manufacturing a source commit                      | `implementation.md`; `references/using-expo-mcp-learnings.md`; `/tmp/p10-t06-*.png`                                                                                                                                                                                                                                                                  | Complete FR13-FR15 scenario acceptance in p10-t07                                                    |
 | p10-t07       | plan.md             | History against seeded local data, notification affordances observed in a live game, and theming scenarios | Seeded history data was verified in the simulator; a live active local game proved the active notification surface; deterministic mobile tests covered turn/event/concede/freeze notification mapping; p10-t06 theme evidence was reused | No source issues were found, and deterministic tests are the durable source for notification mapping after the live event-transition attempt was narrowed       | `/tmp/p10-t07-history-seeded.png`; `/tmp/p10-t07-active-local-created.png`; `apps/mobile/src/game/feedback/turn-notifications.test.ts`; `apps/mobile/src/game/GameRouteScreen.test.tsx`                                                                                                                                                              | Start Phase 11 NFR hardening                                                                         |
+| p01-p12/I1    | spec.md / design.md | API changes were documented as additive auth/config surface only                                           | p11-t01 rewrote presence tracking behavior to fix NFR2 reconnect/freeze races; the implementation is accepted and tested, but the lifecycle artifacts must align                                                                         | The review found artifact drift, not a code defect; p12-t07 will align the constraint wording and durable deviation record                                      | `packages/api/src/game/presence.ts`; `packages/api/src/game/presence.test.ts`; `packages/api/src/game/routes/on-game-event.ts`                                                                                                                                                                                                                       | p12-t07                                                                                              |
+| p01-p12/I3    | spec.md / design.md | Chrome architecture was documented as RSD `html.*` wrappers plus shared tokens                             | Shipped chrome uses native React Native primitives backed by shared tokens; prior p03 deviation rows already accepted this as the stable mobile layout baseline                                                                          | The review found stale artifact wording relative to an accepted implementation decision                                                                         | `apps/mobile/src/components/Button.tsx`; `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/components/Card.tsx`; `apps/mobile/src/components/Badge.tsx`; `apps/mobile/src/components/Screen.tsx`                                                                                                                                          | p12-t09                                                                                              |
+| p01-p12/M4    | spec.md             | FR12 acceptance said rematch navigates all connected players                                               | Mobile matches web parity: the initiator navigates after rematch, while non-initiators can reach the new game from the dashboard unless a future API/event enhancement is added                                                          | The review found an over-broad acceptance criterion; p12-t13 will align the artifact or record an explicit deferral                                             | `packages/api/src/game/routes/rematch.ts`; `apps/mobile/src/app/game/[id].tsx`; `apps/web/src/app/game/[id]/page.tsx`                                                                                                                                                                                                                                | p12-t13                                                                                              |
 
 ## Test Results
 

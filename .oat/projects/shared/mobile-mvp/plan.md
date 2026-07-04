@@ -2,10 +2,10 @@
 oat_status: complete
 oat_ready_for: oat-project-implement
 oat_blockers: []
-oat_last_updated: 2026-07-03
+oat_last_updated: 2026-07-04
 oat_phase: plan
 oat_phase_status: complete
-oat_plan_hill_phases: ["p12"]
+oat_plan_hill_phases: ['p12']
 oat_auto_review_at_hill_checkpoints: true
 oat_plan_parallel_groups: [] # groups of phases that run concurrently in worktrees; [] = fully sequential
 oat_plan_source: spec-driven # spec-driven | quick | imported
@@ -2067,31 +2067,337 @@ git add docs
 git commit -m "docs(p12-t06): deployment docs for mobile; project wrap"
 ```
 
+### Task p12-t07: (review) Align API presence constraint artifacts
+
+**Files:**
+
+- Modify: `spec.md`
+- Modify: `design.md`
+- Modify: `.oat/projects/shared/mobile-mvp/implementation.md`
+
+**Step 1: Understand the issue**
+
+Review finding I1: p11-t01 changed observable API presence behavior beyond the
+original additive-only API constraint. The presence rewrite is accepted because
+it fixed NFR2 reconnect/freeze races and is covered by `presence.test.ts`, but
+the spec/design constraints and Deviations table still conflict with shipped
+behavior.
+
+**Step 2: Implement fix**
+
+Align the lifecycle artifacts: update the spec/design constraint wording from
+"additive auth/config only" to "additive auth/config surface plus
+presence-correctness fixes required by NFR2", and add a Deviations table row
+for p11-t01 identifying `packages/api/src/game/presence.ts` and
+`packages/api/src/game/presence.test.ts` as the source of truth.
+
+**Step 3: Verify**
+
+Run: `rg -n "additive|presence-correctness|p11-t01|presence tracker" .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md`
+Expected: spec, design, and implementation notes consistently describe the
+accepted presence-correctness exception.
+
+**Step 4: Commit**
+
+```bash
+git add .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md
+git commit -m "docs(p12-t07): align presence API constraint artifacts"
+```
+
+### Task p12-t08: (review) Fix guest WebSocket credential staleness
+
+**Files:**
+
+- Modify: `apps/mobile/src/api/ws.ts`
+- Modify: `apps/mobile/src/realtime/use-game-stream.ts`
+- Modify: related mobile realtime/auth tests
+
+**Step 1: Understand the issue**
+
+Review finding I2: the lazy shared WebSocket connection can retain game A's
+guest cookie while game B subscribes, and subscription-level `FORBIDDEN`
+handling can then delete game B's valid guest token.
+
+**Step 2: Implement fix**
+
+Ensure the WebSocket credential matches the active guest game. Prefer closing
+or recreating the lazy wsClient when `setActiveGameCookieGameId` changes the
+active id, or move guest WebSocket auth to connection parameters if that proves
+cleaner. Make destructive guest cleanup conservative: before
+`removeGuestGame(gameId)` on subscription-level `FORBIDDEN`, confirm through an
+HTTP request that the per-game guest identity is genuinely rejected.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/api --runInBand`
+Expected: guest game switching does not reuse a stale game cookie, and
+subscription-level `FORBIDDEN` does not delete a valid token without HTTP
+confirmation.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile/src/api apps/mobile/src/realtime
+git commit -m "fix(p12-t08): prevent stale guest websocket credentials"
+```
+
+### Task p12-t09: (review) Align native-backed chrome artifacts
+
+**Files:**
+
+- Modify: `spec.md`
+- Modify: `design.md`
+
+**Step 1: Understand the issue**
+
+Review finding I3: shipped chrome uses native React Native primitives with
+shared tokens, while spec/design still describe RSD `html.*` chrome as the
+current architecture.
+
+**Step 2: Implement fix**
+
+Update spec constraints and design chrome sections to describe the accepted
+native-backed chrome approach, preserving RSD/deviation history as provenance
+rather than current implementation guidance.
+
+**Step 3: Verify**
+
+Run: `rg -n "React Strict DOM|html\\.\\*|native-backed|shared tokens" .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md`
+Expected: remaining RSD references are historical/provenance or future
+re-evaluation notes; current chrome guidance is native-backed.
+
+**Step 4: Commit**
+
+```bash
+git add .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md
+git commit -m "docs(p12-t09): align chrome architecture artifacts"
+```
+
+### Task p12-t10: (review) Re-arm lifecycle watchdog outside live state
+
+**Files:**
+
+- Modify: `apps/mobile/src/realtime/lifecycle.ts`
+- Modify: `apps/mobile/src/realtime/lifecycle.test.ts`
+
+**Step 1: Understand the issue**
+
+Review finding M1: the 15s inactivity watchdog is armed only by `markLive`.
+`markConnecting`, `markReconnecting`, and `markError` clear it without
+re-arming, so some non-live states have no forced resubscribe ceiling.
+
+**Step 2: Implement fix**
+
+Re-arm the watchdog for non-live recovery states while preserving the quiet-live
+reschedule behavior that prevents false disconnects.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`
+Expected: every non-live recovery state has a bounded forced-resubscribe path,
+and quiet-live behavior remains covered.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile/src/realtime/lifecycle.ts apps/mobile/src/realtime/lifecycle.test.ts apps/mobile/src/realtime/use-game-stream.test.tsx
+git commit -m "fix(p12-t10): bound realtime non-live recovery"
+```
+
+### Task p12-t11: (review) Add StyleX token freshness guard
+
+**Files:**
+
+- Modify: `packages/design-tokens/scripts/write-web-stylex.ts`
+- Modify: relevant design-token tests or root/package scripts
+- Modify: `apps/web/src/styles/tokens.stylex.ts`
+- Modify: `apps/web/src/styles/themes.stylex.ts`
+
+**Step 1: Understand the issue**
+
+Review finding M2: generated web StyleX token files can drift from
+`@sequence/design-tokens`, and the generator's output is currently not
+format-stable.
+
+**Step 2: Implement fix**
+
+Make `generate:web-stylex` emit oxfmt-stable output, then add a freshness guard
+that fails when generated web token files are stale. Prefer a deterministic
+test or script that regenerates and compares `apps/web/src/styles`.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/design-tokens generate:web-stylex && git diff --exit-code apps/web/src/styles`
+Run: `pnpm --filter @sequence/design-tokens test`
+Expected: generation is idempotent after formatting, and the guard catches
+future token drift.
+
+**Step 4: Commit**
+
+```bash
+git add packages/design-tokens apps/web/src/styles package.json
+git commit -m "test(p12-t11): guard generated StyleX token freshness"
+```
+
+### Task p12-t12: (review) Prevent AuthedWebSocket close-before-open leak
+
+**Files:**
+
+- Modify: `apps/mobile/src/api/ws.ts`
+- Modify: related WebSocket tests
+
+**Step 1: Understand the issue**
+
+Review finding M3: `AuthedWebSocket.close()` can no-op during the async
+credential-read gap before the inner socket exists, allowing a socket to open
+after the wrapper was already closed.
+
+**Step 2: Implement fix**
+
+Track pending close intent when `close()` is called before `open()` installs
+the inner socket. If close was requested, skip connecting or immediately close
+the created socket before attaching normal handlers.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile exec jest src/api --runInBand`
+Expected: close-before-open is covered and no untracked authenticated socket can
+survive wrapper closure.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile/src/api
+git commit -m "fix(p12-t12): close websocket during async open race"
+```
+
+### Task p12-t13: (review) Align rematch acceptance to parity semantics
+
+**Files:**
+
+- Modify: `spec.md`
+- Modify: `design.md`
+- Modify: `.oat/projects/shared/mobile-mvp/implementation.md`
+
+**Step 1: Understand the issue**
+
+Review finding M4: FR12 says rematch navigates all connected players, but both
+web and mobile only navigate the initiating client; non-initiators can reach
+the new game from the dashboard.
+
+**Step 2: Implement fix**
+
+Align FR12 acceptance to web parity semantics, or explicitly defer a future
+server rematch event plus both-client navigation enhancement. Record the chosen
+disposition in implementation notes.
+
+**Step 3: Verify**
+
+Run: `rg -n "rematch|FR12|connected players|dashboard" .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md`
+Expected: acceptance criteria no longer promise all-player rematch navigation
+unless a concrete deferred follow-up is recorded.
+
+**Step 4: Commit**
+
+```bash
+git add .oat/projects/shared/mobile-mvp/spec.md .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md
+git commit -m "docs(p12-t13): align rematch acceptance semantics"
+```
+
+### Task p12-t14: (review) Resolve vestigial React Strict DOM layer
+
+**Files:**
+
+- Modify: `apps/mobile/src/theme/vars.css.ts`
+- Modify: `apps/mobile/babel.config.js`
+- Modify: `apps/mobile/package.json`
+- Modify: `pnpm-lock.yaml`
+- Modify: mobile docs if RSD is intentionally retained
+
+**Step 1: Understand the issue**
+
+Review finding m1: after native-backed chrome became the accepted
+implementation, `vars.css.ts`, the `react-strict-dom` dependency, and the Babel
+preset appear vestigial.
+
+**Step 2: Implement fix**
+
+Remove the unused RSD layer if no consumers remain. If retaining it is
+intentional as a future re-evaluation hook, document that intent in the mobile
+README or AGENTS guidance so the next audit has a source of truth.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm format:check`
+Expected: mobile still builds/tests without unused RSD code, or retained RSD is
+explicitly documented.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile pnpm-lock.yaml
+git commit -m "chore(p12-t14): resolve vestigial RSD layer"
+```
+
+### Task p12-t15: (review) Bound mobile non-color token drift
+
+**Files:**
+
+- Modify: `apps/mobile/src/theme`
+- Modify: representative mobile component styles
+- Modify: `packages/design-tokens/README.md` if dimensions are intentionally web-only
+
+**Step 1: Understand the issue**
+
+Review finding m2: mobile consumes palette tokens but hardcodes spacing,
+radius, and typography values, so non-color design tokens can drift from web.
+
+**Step 2: Implement fix**
+
+Either add a native-friendly dimension mapping from `@sequence/design-tokens`
+and migrate representative chrome surfaces, or explicitly document that
+non-color dimensions are web-only for this MVP. Prefer the mapping path when it
+can stay bounded without broad visual churn.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile exec jest src/components --runInBand`
+Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm format:check`
+Expected: token-drift policy is enforced by code or documented with a clear
+scope boundary, and migrated surfaces still pass component tests.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile/src/theme apps/mobile/src/components packages/design-tokens/README.md
+git commit -m "chore(p12-t15): bound mobile dimension token drift"
+```
+
 ---
 
 ## Reviews
 
 {Track reviews here after running the oat-project-review-provide and oat-project-review-receive skills.}
 
-| Scope  | Type     | Status          | Date       | Artifact                                            |
-| ------ | -------- | --------------- | ---------- | --------------------------------------------------- |
-| p01    | code     | pending         | -          | -                                                    |
-| p02    | code     | pending         | -          | -                                                    |
-| p03    | code     | pending         | -          | -                                                    |
-| p04    | code     | pending         | -          | -                                                    |
-| p05    | code     | pending         | -          | -                                                    |
-| p06    | code     | pending         | -          | -                                                    |
-| p07    | code     | pending         | -          | -                                                    |
-| p08    | code     | pending         | -          | -                                                    |
-| p09    | code     | pending         | -          | -                                                    |
-| p10    | code     | pending         | -          | -                                                    |
-| p11    | code     | pending         | -          | -                                                    |
-| p12    | code     | pending         | -          | -                                                    |
-| p01-p12 | code    | received        | 2026-07-04 | reviews/range-review-2026-07-04.md                   |
-| final  | code     | pending         | -          | -                                                    |
-| spec   | artifact | pending         | -          | -                                                    |
-| design | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md |
-| plan   | artifact | passed          | 2026-07-03 | structured (oat-reviewer, 1 fix cycle) + cross-provider codex gate (1 fix) |
+| Scope   | Type     | Status          | Date       | Artifact                                                                   |
+| ------- | -------- | --------------- | ---------- | -------------------------------------------------------------------------- |
+| p01     | code     | pending         | -          | -                                                                          |
+| p02     | code     | pending         | -          | -                                                                          |
+| p03     | code     | pending         | -          | -                                                                          |
+| p04     | code     | pending         | -          | -                                                                          |
+| p05     | code     | pending         | -          | -                                                                          |
+| p06     | code     | pending         | -          | -                                                                          |
+| p07     | code     | pending         | -          | -                                                                          |
+| p08     | code     | pending         | -          | -                                                                          |
+| p09     | code     | pending         | -          | -                                                                          |
+| p10     | code     | pending         | -          | -                                                                          |
+| p11     | code     | pending         | -          | -                                                                          |
+| p12     | code     | pending         | -          | -                                                                          |
+| p01-p12 | code     | fixes_added     | 2026-07-04 | reviews/archived/range-review-2026-07-04.md                                |
+| final   | code     | pending         | -          | -                                                                          |
+| spec    | artifact | pending         | -          | -                                                                          |
+| design  | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md                      |
+| plan    | artifact | passed          | 2026-07-03 | structured (oat-reviewer, 1 fix cycle) + cross-provider codex gate (1 fix) |
 
 **Status values:** `pending` → `received` → `fixes_added` → `fixes_completed` → `passed`
 
@@ -2119,11 +2425,12 @@ git commit -m "docs(p12-t06): deployment docs for mobile; project wrap"
 - Phase 9: 7 tasks — Lifecycle + pass-and-play (save/concede, freeze/resume, game over, rematch, handoff)
 - Phase 10: 7 tasks — History/notifications/settings/polish (FR13–15, a11y/testID audit, themes)
 - Phase 11: 7 tasks — Hardening (NFR matrices, perf, release audit, gates, runbook, docs, smoke)
-- Phase 12: 6 tasks — TestFlight operator phase (pre-flight, EAS, builds, testers, device smoke, wrap)
+- Phase 12: 15 tasks — TestFlight operator phase (pre-flight, EAS, builds, testers, device smoke, wrap) plus review-fix tasks
 
-**Total: 85 tasks**
+**Total: 94 tasks**
 
-Ready for code review and merge.
+Ready for review-fix execution, remaining Phase 12 operator work, and final
+closeout.
 
 ---
 
