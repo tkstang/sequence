@@ -3660,7 +3660,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 ### Task p08-t06: Hard-mode e2e verification
 
 **Status:** completed
-**Commit:** evidence-only
+**Commit:** 7e06cfc
 
 **Outcome:**
 
@@ -3875,7 +3875,7 @@ Chronological log of implementation progress.
 - [x] p08-t03: Sequence-choice sheet - e13a789
 - [x] p08-t04: Dead-card turn-in + auto-swap surfacing - 6ca7d32
 - [x] p08-t05: Board rotate control - b21961a / aaa8f56
-- [x] p08-t06: Hard-mode e2e verification - evidence-only
+- [x] p08-t06: Hard-mode e2e verification - 7e06cfc
 - [ ] p09-t01: Save & exit + concede controls - next
 
 **What changed (high level):**
