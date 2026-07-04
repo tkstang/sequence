@@ -4,7 +4,7 @@ import type {
 } from '@sequence/client-state';
 import type { Card, Position, Team } from '@sequence/game-logic';
 import { BOARD_MAP, BOARD_SIZE, isCorner } from '@sequence/game-logic';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -98,6 +98,13 @@ export function GameBoard({
       { scale: animatedScale.value },
     ],
   }));
+  const onCellPressRef = useRef(onCellPress);
+  onCellPressRef.current = onCellPress;
+  const handleCellPress = useCallback((position: Position) => {
+    onCellPressRef.current?.(position);
+  }, []);
+  const boardCellPress =
+    onCellPress === undefined ? undefined : handleCellPress;
 
   useEffect(() => {
     animatedRotation.value = withTiming(rotation, {
@@ -200,7 +207,7 @@ export function GameBoard({
                     !spotlightTarget
                   }
                   lockedBy={lockedBy}
-                  onPress={onCellPress}
+                  onPress={boardCellPress}
                   onRender={onCellRender}
                   position={position}
                   spotlight={

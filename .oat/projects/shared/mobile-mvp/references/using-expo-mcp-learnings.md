@@ -31,20 +31,25 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
    xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F<lan-ip>%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'
    ```
 
-3. Call `expo-mcp` as a stdio MCP server without `--collect-logs` for tool use:
+3. For app-route proof after the dev client is loaded, open the app scheme with
+   `simctl openurl`, for example `sequence://game/<id>`. Plain
+   `simctl launch --initialUrl sequence://...` can reopen the Expo dev-client
+   launcher instead of the bundled app.
+
+4. Call `expo-mcp` as a stdio MCP server without `--collect-logs` for tool use:
 
    ```bash
    pnpm --filter @sequence/mobile exec expo-mcp --dev-server-url http://127.0.0.1:8081 --root apps/mobile --platform ios --app-id com.tkstang.sequenceonline
    ```
 
-4. Use targeted selectors before screenshots when possible. `automation_find_view`
+5. Use targeted selectors before screenshots when possible. `automation_find_view`
    returns fast structured proof: existence, label, frame, enabled state, and
    hittability for a `testID`.
 
-5. Use screenshots for visual proof and artifact capture. Allow a long timeout;
+6. Use screenshots for visual proof and artifact capture. Allow a long timeout;
    `automation_take_screenshot` can take more than a minute on this host.
 
-6. Use Argent for gaps in Expo MCP, especially native accessibility tree reads,
+7. Use Argent for gaps in Expo MCP, especially native accessibility tree reads,
    screen descriptions, gesture tooling, and debugger/profiler views. For native
    devtools-backed tools, boot through Argent and launch/restart the app through
    Argent at least once so injection is active.
@@ -84,6 +89,10 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   project, but each could leave the simulator shutdown immediately afterward on
   this host. Check `xcrun simctl list devices booted` before the next tool call
   and reboot/relaunch when necessary.
+- For Expo dev-client route proof, load the dev-client URL first and then open
+  the app route. During p11-t02, `simctl launch --initialUrl sequence://game/...`
+  returned to the Expo launcher, while the dev-client URL followed by
+  `simctl openurl booted sequence://game/<id>` landed on the active game.
 - `automation_tap` against `home.ping` did not complete reliably in this run:
   direct invocation returned `Cannot read properties of undefined (reading
   'bundleIdentifier')`; the `pnpm exec` invocation timed out and then returned
@@ -138,6 +147,15 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   For coordinate taps, prefer the left side of the app control or use a
   selector-driven tool when available. When screenshots include the gear,
   record it as a tooling artifact if the app surface itself remains visible.
+- Argent `react-profiler-renders` can report "No render data found" even when
+  the app and debugger component tree are available. For measured perf passes,
+  use the explicit `react-profiler-start` → gesture/tap scenario →
+  `react-profiler-stop` → `react-profiler-analyze` path, then drill with
+  `profiler-commit-query` for specific components.
+- Argent profiler annotations are easiest when you keep the start
+  `startedAtEpochMs` and gesture `timestampMs` values. Pass
+  `offsetMs = timestampMs - startedAtEpochMs` into `react-profiler-analyze` so
+  hot commits line up with the user action.
 
 ## Evidence Captured So Far
 
@@ -176,6 +194,12 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   `/tmp/p10-t06-dev-index-light-final.png`,
   `/tmp/p10-t06-dev-game-board-light.png`, and
   `/tmp/p10-t06-dev-game-board-dark.png`.
+- p11-t02 game-surface perf evidence:
+  `/tmp/p11-t02-react-profiler-report.md` and
+  `/tmp/p11-t02-active-drag-profile.png`. Argent profiler captured 3 React
+  commits over a 21.6s selected-card/drag session; the drag path produced no
+  per-frame React commit cascade, and `profiler-commit-query` found no
+  `BoardCell` renders in the hot commit.
 
 ## Candidate Skill Shape
 
@@ -187,6 +211,9 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
 - Include a troubleshooting matrix for no booted simulator, iOS deep-link
   prompts, slow screenshots, one-shot log collection, and `osascript`
   permission failures.
+- Include a profiling recipe that starts React profiling, records gesture
+  timestamps, analyzes with annotations, and uses commit-query to validate
+  component-specific render scope.
 - Include a "choose the fastest proof" section: use `automation_find_view` for
   selector proof, screenshots for visual proof, logs for runtime proof, and
   Argent tree/debugger tools when Expo MCP lacks native introspection.

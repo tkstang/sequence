@@ -1,6 +1,12 @@
 import type { Card, Position } from '@sequence/game-logic';
 import { BOARD_MAP } from '@sequence/game-logic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   runOnJS,
@@ -120,10 +126,15 @@ export function useDragChip({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const [hoveredPosition, setHoveredPosition] = useState<Position | null>(null);
+  const layoutRevision = useSyncExternalStore(
+    layoutMap.subscribe,
+    layoutMap.getRevision,
+    layoutMap.getRevision,
+  );
 
   useEffect(() => {
     layoutFrames.value = boardLayoutFramesFromMap(layoutMap);
-  }, [layoutFrames, layoutMap]);
+  }, [layoutFrames, layoutMap, layoutRevision]);
 
   const publishHover = useCallback(
     (position: Position | null) => {

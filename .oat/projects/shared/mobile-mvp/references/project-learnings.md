@@ -57,6 +57,12 @@ value. Expo MCP and Argent usage details belong in
   pre-commit and post-commit reconnect races. A reconnect can arrive after a
   disconnect's initial replacement check but before the freeze transaction
   commits; the disconnect path must re-evaluate presence after a durable freeze.
+- Repo `AGENTS.md` candidate: repeated board children should not receive
+  route-inline callbacks directly. Use stable event/ref wrappers when a parent
+  must call the latest handler without invalidating every memoized cell.
+- Repo `AGENTS.md` candidate: mutable layout registries consumed by Reanimated
+  worklets need an explicit revision/subscription contract. React dependency
+  arrays only see object identity, not internal frame mutations.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -165,6 +171,15 @@ value. Expo MCP and Argent usage details belong in
   The Sequence board uses portrait card-aspect cells, so frame registration and
   visual sizing must use the same card aspect ratio to keep future drag
   hit-testing aligned with what the player sees.
+- Mutable mobile board layout maps should publish a revision when registered
+  frames change. In p11-t02, a drag snapshot effect that depended only on the
+  `layoutMap` object identity could miss frame updates caused by layout
+  mutation or rotation; `useSyncExternalStore` over `subscribe/getRevision`
+  gives React a stable way to refresh the UI-thread frame snapshot.
+- Do not pass volatile route-level callbacks straight into every memoized board
+  cell. In p11-t02, an inline `onCellPress` callback from the route invalidated
+  the board tree during selection. A stable `useCallback` wrapper backed by a
+  ref preserves the latest handler while keeping repeated cell props stable.
 - Rotating the mobile board must account for its non-square portrait-card
   geometry. A raw 90-degree transform can push visual cells outside the
   drag-layer touch area and produce negative or overflow layout-map frames;
@@ -307,6 +322,11 @@ value. Expo MCP and Argent usage details belong in
   During p09-t02, a saved-game test passed locally with Central-time copy but
   failed under `TZ=UTC`; compute the expected `Intl.DateTimeFormat` label in the
   test or run a UTC check when adding date/time assertions.
+- For React Native game-surface perf passes, pair profiler output with a
+  deterministic render-count regression. Argent/React DevTools can identify
+  hot commits, but tests such as "only the changed board cell re-renders" and
+  "parent callback identity does not re-render cells" make the memo contract
+  durable across future route changes.
 
 ## Open Follow-Ups
 

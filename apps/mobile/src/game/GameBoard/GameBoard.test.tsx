@@ -140,6 +140,44 @@ describe('GameBoard', () => {
     expect(renders.size).toBe(BOARD_SIZE * BOARD_SIZE);
   });
 
+  it('does not re-render cells when the parent press callback identity changes', async () => {
+    const user = userEvent.setup();
+    const board: BoardFixture = { '1AC': { chip: 1 } };
+    const renders = new Map<Position, number>();
+    const onCellRender = (position: Position) => {
+      renders.set(position, (renders.get(position) ?? 0) + 1);
+    };
+    const firstPress = jest.fn();
+    const nextPress = jest.fn();
+
+    const { getByTestId, rerender } = await render(
+      <GameBoard
+        board={board}
+        onCellPress={firstPress}
+        onCellRender={onCellRender}
+      />,
+    );
+
+    expect(renders.get('1AC')).toBe(1);
+    expect(renders.get('1KC')).toBe(1);
+
+    await rerender(
+      <GameBoard
+        board={board}
+        onCellPress={nextPress}
+        onCellRender={onCellRender}
+      />,
+    );
+
+    expect(renders.get('1AC')).toBe(1);
+    expect(renders.get('1KC')).toBe(1);
+
+    await user.press(getByTestId('board.cell.1AC'));
+
+    expect(firstPress).not.toHaveBeenCalled();
+    expect(nextPress).toHaveBeenCalledWith('1AC');
+  });
+
   it('registers board-local card-aspect cell frames in the board layout map', async () => {
     const layoutMap = createBoardLayoutMap();
     await render(<GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />);
