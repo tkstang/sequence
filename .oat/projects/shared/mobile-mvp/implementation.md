@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t06
+oat_current_task_id: p11-t07
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 5/7       |
+| Phase 11 | in_progress | 7     | 6/7       |
 
-**Total:** 77/85 tasks completed
+**Total:** 78/85 tasks completed
 
 ---
 
@@ -4040,6 +4040,11 @@ subscription input lastEventId=505; latest card kind=event seq=505
   for local machine setup, Expo account/EAS project setup, Apple Developer
   access, App Store Connect bundle/app record creation, EAS credentials,
   TestFlight groups, physical-device verification, and production smoke.
+- Documentation parity is current for the mobile workspace and shared client
+  packages. Root docs, package READMEs, `AGENTS.md`, mobile instructions, the
+  environment template, architecture, development, testing, styling, and
+  configuration docs now describe `apps/mobile`, `@sequence/client-state`, and
+  `@sequence/design-tokens`.
 
 **Verification:**
 
@@ -4152,6 +4157,17 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Result: pass; all required headings are present, no placeholder scaffold text
   remains, required/optional language is present, and no whitespace errors were
   reported.
+- Run: p11-t06 sidecar documentation gap audit over target docs and package
+  surfaces.
+- Result: pass; the audit identified stale web-only boundaries, missing package
+  READMEs, mobile workflow/testing gaps, config-template drift, and stale agent
+  pointers, all resolved in the p11-t06 commit.
+- Run: `pnpm format:check`; relative Markdown link sweep over changed docs;
+  `git diff --check`; stale-phrase grep for pre-mobile wording.
+- Result: pass. The first format check flagged only the two new package
+  READMEs; `pnpm exec oxfmt packages/client-state/README.md packages/design-tokens/README.md`
+  fixed them, and the final format check passed. Link sweep checked 13 Markdown
+  files, whitespace was clean, and the stale-phrase sweep had no hits.
 
 ### Task p11-t01: NFR2 measured scenario matrix
 
@@ -4435,6 +4451,68 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - EAS commands are documented from `apps/mobile`; the monorepo root remains the
   wrong working directory for EAS project linking and credentials.
 
+### Task p11-t06: Documentation updates
+
+**Status:** completed
+**Commit:** 19f679c
+
+**Outcome:**
+
+- Updated docs and root guidance from web/API-only framing to the current web,
+  mobile, API, game-logic, shared client-state, and shared design-token
+  workspace shape.
+- Added package READMEs for `@sequence/client-state` and
+  `@sequence/design-tokens`, covering public exports, ownership boundaries,
+  commands, web StyleX generation, and mobile usage.
+- Updated mobile docs with the Expo SDK 57 simulator loop, LAN Metro path,
+  production `https`/`wss` config checks, shared package dependencies, Jest
+  testing layer, and operator-runbook links.
+- Updated testing docs to reflect the actual root harness: Vitest workspace
+  first, then `@sequence/mobile` Jest via `jest-expo`, with `apps/mobile`
+  intentionally excluded from `vitest.workspace.ts`.
+- Updated `.env.example` to include mobile `EXPO_PUBLIC_*` variables and
+  removed stale web-only MVP wording.
+
+**Files changed:**
+
+- `README.md` / `AGENTS.md` - root docs and agent guidance now include mobile
+  and shared package boundaries.
+- `.env.example` / `docs/configuration.md` - mobile public URL variables and
+  production protocol checks documented.
+- `docs/index.md`, `docs/architecture.md`, `docs/development.md`,
+  `docs/testing.md`, `docs/styling.md`, `docs/api-reference.md` - documentation
+  parity for mobile workflow, shared state, shared tokens, and test layers.
+- `apps/mobile/README.md` / `apps/mobile/AGENTS.md` - current mobile workflow,
+  simulator loop, MCP tooling, and runbook references.
+- `packages/client-state/README.md` / `packages/design-tokens/README.md` - new
+  shared package docs.
+
+**Verification:**
+
+- Run: p11-t06 sidecar read-only documentation gap audit.
+- Result: pass; all concrete gaps from the audit were addressed or superseded
+  by the final source diff.
+- Run: `pnpm format:check`.
+- Result: pass after formatting the two new package READMEs with
+  `pnpm exec oxfmt packages/client-state/README.md packages/design-tokens/README.md`.
+- Run: relative Markdown link sweep over 13 changed Markdown files.
+- Result: pass; all relative link targets exist.
+- Run: stale-phrase grep for `future React Native`, `web MVP`,
+  `three runtime`, `shared by both`, `Full mobile documentation`,
+  `once that runbook exists`, `Vitest workspace only`, `tokens live in apps/web`,
+  and `web-mvp`.
+- Result: pass; no hits.
+- Run: `git diff --check`.
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The docs pass included `README.md` and `.env.example` even though the plan's
+  focused file list was narrower, because both were direct sources of stale
+  web-only setup guidance referenced by the docs.
+- `docs/styling.md` now treats `@sequence/design-tokens` as the source of truth;
+  generated web StyleX files remain committed outputs.
+
 ---
 
 ## Orchestration Runs
@@ -4590,7 +4668,8 @@ Chronological log of implementation progress.
 - [x] p11-t03: Release build audit (NFR4) - fff72a4
 - [x] p11-t04: Gate sweep (NFR6) - c3c2b2c
 - [x] p11-t05: NFR7 phase audit + runbook completeness (FR19) - 4873e3f
-- [ ] p11-t06: Documentation updates - next
+- [x] p11-t06: Documentation updates - 19f679c
+- [ ] p11-t07: Pre-distribution smoke flows - next
 
 **What changed (high level):**
 
@@ -4842,6 +4921,7 @@ Track test execution during implementation.
 | 11    | `NODE_ENV=production pnpm --filter @sequence/mobile exec expo config --type public` expected-failure check; secure production `expo config --json`; production `expo export --platform ios --output-dir /tmp/sequence-mobile-export-p11-t03-current`; Hermes `strings -a` leak scans; production Babel transform proof; source credential audit greps; live local API remote-game redaction proof `/tmp/p11-t03-remote-game-summary.json`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile exec oxfmt --check src app.config.ts babel.config.js metro.config.js`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR4 pass: production config fails closed without secure URLs, secure release config exports, dev-route markers and app telemetry are absent from the Hermes bundle, app console calls are stripped, credentials use SecureStore, and the host client view contains only its own hand |
 | 11    | Clean-shell `pnpm test`; `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; `pnpm build`; clean-shell `pnpm --filter @sequence/web e2e`; `git diff --check`; `pnpm --filter @sequence/web exec playwright install chromium` for missing local browser cache | yes    | 0      | NFR6 pass: DB-backed root tests executed from `packages/api/.env` fallback and passed 63 Vitest files / 411 tests plus 49 mobile suites / 299 tests; Playwright passed 10 desktop/mobile tests from a clean shell; build and static gates passed |
 | 11    | p11-t05 sidecar runbook audit; structural node check for required headings in runbook Sections 0-7; placeholder grep; required/optional label grep; `git diff --check` | yes    | 0      | NFR7/FR19 pass: no required Phase 1-11 operator work, optional Expo MCP OAuth only before Phase 12, Sections 0-7 complete with verification/troubleshooting, and Phase 12 operator checklists documented |
+| 11    | p11-t06 sidecar docs gap audit; `pnpm format:check`; relative Markdown link sweep over changed docs; stale-phrase grep; `git diff --check` | yes    | 0      | Docs parity pass: mobile/shared-package boundaries documented, package READMEs added, mobile workflow/testing/config pointers current, 13 Markdown files link-checked, and stale web-only wording removed |
 
 ## Final Summary (for PR/docs)
 
