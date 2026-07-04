@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t05
+oat_current_task_id: p11-t06
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 4/7       |
+| Phase 11 | in_progress | 7     | 5/7       |
 
-**Total:** 76/85 tasks completed
+**Total:** 77/85 tasks completed
 
 ---
 
@@ -4032,6 +4032,14 @@ subscription input lastEventId=505; latest card kind=event seq=505
   ESM/CJS mismatch, and both API Vitest and web Playwright load
   `packages/api/.env` as a local fallback so DB-backed gates run from a clean
   shell.
+- NFR7 phase audit confirmed Phases 1-11 had no required human operator steps.
+  The only pre-Phase-12 human-adjacent item is optional remote Expo MCP OAuth;
+  the required local loop remains covered by local `expo-mcp`, Argent, and
+  `simctl`.
+- The mobile operator runbook now has complete required-vs-optional guidance
+  for local machine setup, Expo account/EAS project setup, Apple Developer
+  access, App Store Connect bundle/app record creation, EAS credentials,
+  TestFlight groups, physical-device verification, and production smoke.
 
 **Verification:**
 
@@ -4133,6 +4141,17 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `git diff --check`.
 - Result: pass. `pnpm lint` exits zero with the same existing non-fatal
   warnings (`unicorn(no-array-sort)` and `unicorn(consistent-function-scoping)`).
+- Run: p11-t05 runbook audit over plan/design/spec/runbook plus sidecar
+  read-only review.
+- Result: pass; no required operator work found in Phases 1-11, optional
+  remote Expo MCP OAuth remains the only pre-final human-adjacent item, and
+  Phase 12 remains the single operator phase.
+- Run: runbook structural check for Sections 0-7 requiring `Why`, `When`,
+  `Prerequisites`, `Steps`, `Verify`, and `Troubleshooting`; leftover
+  placeholder grep; required/optional label grep; `git diff --check`.
+- Result: pass; all required headings are present, no placeholder scaffold text
+  remains, required/optional language is present, and no whitespace errors were
+  reported.
 
 ### Task p11-t01: NFR2 measured scenario matrix
 
@@ -4365,6 +4384,57 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `pnpm --filter @sequence/web exec playwright install chromium` installed the
   expected Chromium/headless-shell cache before the passing e2e run.
 
+### Task p11-t05: NFR7 phase audit + runbook completeness (FR19)
+
+**Status:** completed
+**Commit:** 4873e3f
+
+**Outcome:**
+
+- Audited the plan, design, spec, implementation record, and sidecar review for
+  operator-dependent work across Phases 1-11.
+- Confirmed NFR7: no required operator task exists before Phase 12. Optional
+  remote Expo MCP OAuth is the only pre-Phase-12 human-adjacent step, and local
+  `expo-mcp`, Argent, and `simctl` cover the required simulator loop.
+- Replaced the placeholder runbook sections for Apple Developer Program, App
+  Store Connect app record / bundle id, EAS credentials, TestFlight groups,
+  physical-device checks, and production smoke with operator-ready checklists.
+- Added a top-level NFR7 phase-audit note to the runbook and made
+  required-vs-optional labels explicit across the operator sections.
+
+**Files changed:**
+
+- `docs/mobile-operator-runbook.md` - complete Phase 12 operator guidance for
+  sections 0-7, including bundle id `com.tkstang.sequenceonline`, app name
+  `Sequence Online`, EAS command location, TestFlight group defaults, deferred
+  NFR2/NFR3 device cases, and two-human production smoke.
+
+**Verification:**
+
+- Run: sidecar read-only runbook audit against `plan.md`, `design.md`,
+  `spec.md`, and `docs/mobile-operator-runbook.md`.
+- Result: pass; sidecar found no required Phase 1-11 operator steps and
+  identified Sections 2-7 as the remaining FR19 completion gaps.
+- Run: structural node check over `docs/mobile-operator-runbook.md` for
+  `Why`, `When`, `Prerequisites`, `Steps`, `Verify`, and `Troubleshooting` in
+  Sections 0-7.
+- Result: pass; all sections contain the required headings.
+- Run:
+  `rg -n "Authored by|Add the exact|Add each|Add final|placeholder|later" docs/mobile-operator-runbook.md`.
+- Result: pass; no placeholder scaffold text remains.
+- Run: `rg -n "Required|Optional|optional" docs/mobile-operator-runbook.md`.
+- Result: pass; required/optional labeling is present for operator sections.
+- Run: `git diff --check`.
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The runbook now documents Phase 12 execution before Phase 12 begins, so the
+  final operator phase can record actual non-secret identifiers and results
+  rather than discover the process from chat history.
+- EAS commands are documented from `apps/mobile`; the monorepo root remains the
+  wrong working directory for EAS project linking and credentials.
+
 ---
 
 ## Orchestration Runs
@@ -4519,7 +4589,8 @@ Chronological log of implementation progress.
 - [x] p11-t02: Perf pass + NFR3 measurement - a2ccf75
 - [x] p11-t03: Release build audit (NFR4) - fff72a4
 - [x] p11-t04: Gate sweep (NFR6) - c3c2b2c
-- [ ] p11-t05: NFR7 phase audit + runbook completeness (FR19) - next
+- [x] p11-t05: NFR7 phase audit + runbook completeness (FR19) - 4873e3f
+- [ ] p11-t06: Documentation updates - next
 
 **What changed (high level):**
 
@@ -4770,6 +4841,7 @@ Track test execution during implementation.
 | 11    | p11-t02 Argent/React profiler selected-card drag session; `profiler-commit-query --component_name BoardCell`; `jq '.p50RoundTripMs' /tmp/p07-t09-deterministic-summary.json`; `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/GameBoard.test.tsx src/game/GameBoard/layout-map.test.ts src/game/drag/use-drag-chip.test.ts src/game/drag/DragLayer.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR3 pass: 3 React commits over `21.6s`, no drag per-frame React cascade, no `BoardCell` hot-commit renders, local move p50 `6.1ms`, 7 mobile suites / 54 tests passed |
 | 11    | `NODE_ENV=production pnpm --filter @sequence/mobile exec expo config --type public` expected-failure check; secure production `expo config --json`; production `expo export --platform ios --output-dir /tmp/sequence-mobile-export-p11-t03-current`; Hermes `strings -a` leak scans; production Babel transform proof; source credential audit greps; live local API remote-game redaction proof `/tmp/p11-t03-remote-game-summary.json`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile exec oxfmt --check src app.config.ts babel.config.js metro.config.js`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR4 pass: production config fails closed without secure URLs, secure release config exports, dev-route markers and app telemetry are absent from the Hermes bundle, app console calls are stripped, credentials use SecureStore, and the host client view contains only its own hand |
 | 11    | Clean-shell `pnpm test`; `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; `pnpm build`; clean-shell `pnpm --filter @sequence/web e2e`; `git diff --check`; `pnpm --filter @sequence/web exec playwright install chromium` for missing local browser cache | yes    | 0      | NFR6 pass: DB-backed root tests executed from `packages/api/.env` fallback and passed 63 Vitest files / 411 tests plus 49 mobile suites / 299 tests; Playwright passed 10 desktop/mobile tests from a clean shell; build and static gates passed |
+| 11    | p11-t05 sidecar runbook audit; structural node check for required headings in runbook Sections 0-7; placeholder grep; required/optional label grep; `git diff --check` | yes    | 0      | NFR7/FR19 pass: no required Phase 1-11 operator work, optional Expo MCP OAuth only before Phase 12, Sections 0-7 complete with verification/troubleshooting, and Phase 12 operator checklists documented |
 
 ## Final Summary (for PR/docs)
 
