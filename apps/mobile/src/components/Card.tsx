@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import {
+  nativeRadius,
+  nativeShadow,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export type CardVariant = 'surface' | 'raised' | 'sunken' | 'accent';
@@ -53,20 +59,15 @@ export function Card({
 
 const styles = StyleSheet.create({
   root: {
-    borderRadius: 8,
+    borderRadius: nativeRadius.md,
     borderStyle: 'solid',
     borderWidth: 1,
-    padding: 16,
+    padding: nativeSpace.lg,
   },
   elevationRaised: {
-    elevation: 3,
-    shadowColor: '#0f172a',
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
+    ...nativeShadow.raised,
   },
   text: {
-    fontSize: 15,
-    lineHeight: 22,
+    ...nativeTypography.bodyCompact,
   },
 });

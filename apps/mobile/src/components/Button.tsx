@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
+import {
+  nativeChromeSize,
+  nativeRadius,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive';
@@ -67,26 +73,26 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: 8,
+    borderRadius: nativeRadius.md,
     borderStyle: 'solid',
     borderWidth: 1,
     display: 'flex',
     justifyContent: 'center',
   },
   sm: {
-    minHeight: 36,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: nativeChromeSize.control.sm,
+    paddingHorizontal: nativeSpace.md,
+    paddingVertical: nativeSpace.sm,
   },
   md: {
-    minHeight: 44,
-    paddingHorizontal: 16,
+    minHeight: nativeChromeSize.control.md,
+    paddingHorizontal: nativeSpace.lg,
     paddingVertical: 10,
   },
   lg: {
-    minHeight: 52,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    minHeight: nativeChromeSize.control.lg,
+    paddingHorizontal: nativeSpace.xl,
+    paddingVertical: nativeSpace.md,
   },
   pressed: {
     opacity: 0.82,
@@ -95,9 +101,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 20,
+    ...nativeTypography.buttonLabel,
     textAlign: 'center',
   },
 });

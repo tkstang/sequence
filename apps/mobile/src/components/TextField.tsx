@@ -1,6 +1,12 @@
 import { StyleSheet, TextInput } from 'react-native';
 import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
 
+import {
+  nativeChromeSize,
+  nativeRadius,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export type TextFieldSize = 'sm' | 'md' | 'lg';
@@ -72,27 +78,26 @@ export function TextField({
 
 const styles = StyleSheet.create({
   root: {
-    borderRadius: 8,
+    borderRadius: nativeRadius.md,
     borderStyle: 'solid',
     borderWidth: 1,
-    fontSize: 16,
-    lineHeight: 20,
+    ...nativeTypography.buttonLabel,
     textAlignVertical: 'center',
   },
   sm: {
-    minHeight: 36,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: nativeChromeSize.control.sm,
+    paddingHorizontal: nativeSpace.md,
+    paddingVertical: nativeSpace.sm,
   },
   md: {
-    minHeight: 44,
+    minHeight: nativeChromeSize.control.md,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   lg: {
-    minHeight: 52,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: nativeChromeSize.control.lg,
+    paddingHorizontal: nativeSpace.lg,
+    paddingVertical: nativeSpace.md,
   },
   disabled: {
     opacity: 0.65,

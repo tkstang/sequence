@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import {
+  nativeChromeSize,
+  nativeRadius,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export type BadgeVariant =
@@ -68,38 +74,34 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: nativeRadius.pill,
     justifyContent: 'center',
   },
   sm: {
-    minHeight: 24,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minHeight: nativeChromeSize.badge.sm,
+    paddingHorizontal: nativeSpace.sm,
+    paddingVertical: nativeSpace.xs,
   },
   md: {
-    minHeight: 28,
+    minHeight: nativeChromeSize.badge.md,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   lg: {
-    minHeight: 32,
-    paddingHorizontal: 12,
+    minHeight: nativeChromeSize.badge.lg,
+    paddingHorizontal: nativeSpace.md,
     paddingVertical: 6,
   },
   label: {
-    fontWeight: '700',
     textAlign: 'center',
   },
   smLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    ...nativeTypography.badgeSmall,
   },
   mdLabel: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...nativeTypography.badgeMedium,
   },
   lgLabel: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...nativeTypography.badgeLarge,
   },
 });

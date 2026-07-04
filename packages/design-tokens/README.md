@@ -53,6 +53,11 @@ Mobile imports `palette` directly for:
   `apps/mobile/src/theme/use-theme.ts`.
 - Native component styles in `apps/mobile/src/components`.
 
+Mobile maps shared spacing, radius, and font-size values to React Native
+numbers in `apps/mobile/src/theme/native-tokens.ts`. Native-only chrome sizing
+and line-height exceptions also live there so component dimensions do not drift
+as scattered literals.
+
 When adding a token, update the shared source here first, then update the web
 generated files and mobile consumers as needed.
 

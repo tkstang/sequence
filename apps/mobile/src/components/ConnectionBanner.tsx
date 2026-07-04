@@ -2,6 +2,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { GameStreamConnectionState } from '../realtime/use-game-stream.ts';
 import { testId } from '../test/test-ids.ts';
+import {
+  nativeRadius,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export interface ConnectionBannerProps {
@@ -101,22 +106,19 @@ export function ConnectionBanner({
 const styles = StyleSheet.create({
   root: {
     alignSelf: 'stretch',
-    borderRadius: 8,
+    borderRadius: nativeRadius.md,
     borderStyle: 'solid',
     borderWidth: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
-    paddingHorizontal: 12,
+    gap: nativeSpace.xxs,
+    paddingHorizontal: nativeSpace.md,
     paddingVertical: 10,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
+    ...nativeTypography.buttonLabel,
   },
   detail: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...nativeTypography.detail,
   },
 });

@@ -2,6 +2,11 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  nativeChromeSize,
+  nativeSpace,
+  nativeTypography,
+} from '../theme/native-tokens.ts';
 import { useTheme } from '../theme/use-theme.ts';
 
 export interface ScreenProps {
@@ -110,8 +115,8 @@ const styles = StyleSheet.create({
   content: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 16,
-    padding: 16,
+    gap: nativeSpace.lg,
+    padding: nativeSpace.lg,
   },
   staticContent: {
     flex: 1,
@@ -123,36 +128,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     display: 'flex',
     flexDirection: 'row',
-    gap: 12,
-    height: 76,
+    gap: nativeSpace.md,
+    height: nativeChromeSize.screenHeader,
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: nativeSpace.lg,
     paddingVertical: 10,
   },
   headerText: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
+    gap: nativeSpace.xxs,
   },
   eyebrow: {
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 16,
+    ...nativeTypography.eyebrow,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...nativeTypography.title,
   },
   bodyText: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...nativeTypography.body,
   },
   headerActions: {
     alignItems: 'center',
     display: 'flex',
     flexDirection: 'row',
-    gap: 8,
+    gap: nativeSpace.sm,
   },
 });
