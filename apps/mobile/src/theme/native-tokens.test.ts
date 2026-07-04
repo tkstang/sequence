@@ -33,6 +33,15 @@ describe('native theme tokens', () => {
       fontWeight: '700',
       lineHeight: 20,
     });
+    expect(nativeTypography.textInput).toEqual({
+      fontSize: 16,
+      lineHeight: 20,
+    });
+    expect(nativeTypography.bannerTitle).toMatchObject({
+      fontSize: 15,
+      fontWeight: '700',
+      lineHeight: 20,
+    });
     expect(nativeShadow.raised).toMatchObject({
       elevation: 3,
       shadowRadius: 24,

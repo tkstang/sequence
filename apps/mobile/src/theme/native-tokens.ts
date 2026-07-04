@@ -75,6 +75,15 @@ export const nativeTypography = {
     fontWeight: nativeFontWeight.bold,
     lineHeight: nativeSpace.xl,
   },
+  textInput: {
+    fontSize: nativeFontSize.md,
+    lineHeight: nativeSpace.xl,
+  },
+  bannerTitle: {
+    fontSize: nativeFontSize.mdMinus,
+    fontWeight: nativeFontWeight.bold,
+    lineHeight: nativeSpace.xl,
+  },
   badgeSmall: {
     fontSize: nativeFontSize.xs,
     fontWeight: nativeFontWeight.bold,

@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   title: {
-    ...nativeTypography.buttonLabel,
+    ...nativeTypography.bannerTitle,
   },
   detail: {
     ...nativeTypography.detail,

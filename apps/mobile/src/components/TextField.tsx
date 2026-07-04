@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     borderRadius: nativeRadius.md,
     borderStyle: 'solid',
     borderWidth: 1,
-    ...nativeTypography.buttonLabel,
+    ...nativeTypography.textInput,
     textAlignVertical: 'center',
   },
   sm: {
