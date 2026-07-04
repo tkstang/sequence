@@ -1,6 +1,6 @@
 ---
-oat_current_task: p08-t01
-oat_last_commit: 65880bd
+oat_current_task: p08-t02
+oat_last_commit: 0a851b4
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,20 +27,20 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-03T23:52:50Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-04T00:06:12Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p08-t01
+**Status:** Implementation in progress — current task p08-t02
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-03
 
 ## Current Phase
 
 Implementation - Phase 8 advanced game-surface work is in progress; next task
-p08-t01. The plan has 12 phases / 85 tasks tracing
+p08-t02. The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
@@ -52,7 +52,7 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (initialized — current task p08-t01)
+- **Implementation:** `implementation.md` (initialized — current task p08-t02)
 
 ## Progress
 
@@ -68,7 +68,7 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 5 realtime/client-state work complete (7/7)
 - ✓ Phase 6 dashboard/create/join/lobby work complete (8/8)
 - ✓ Phase 7 game-surface core tap-mode work complete (9/9)
-- ⧗ Implementation in progress at p08-t01 (Phase 8 0/6 complete)
+- ⧗ Implementation in progress at p08-t02 (Phase 8 1/6 complete)
 
 ## Blockers
 

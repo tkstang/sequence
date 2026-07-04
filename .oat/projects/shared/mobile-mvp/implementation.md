@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-03
-oat_current_task_id: p08-t01
+oat_current_task_id: p08-t02
 oat_generated: false
 ---
 
@@ -33,9 +33,9 @@ oat_generated: false
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
-| Phase 8 | in_progress | 6     | 0/6       |
+| Phase 8 | in_progress | 6     | 1/6       |
 
-**Total:** 52/85 tasks completed
+**Total:** 53/85 tasks completed
 
 ---
 
@@ -3228,6 +3228,109 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+## Phase 8: Game Surface — Advanced Play
+
+**Status:** in_progress
+**Started:** 2026-07-03
+
+### Phase Summary
+
+**Outcome (what changed):**
+
+- Started advanced game-surface work by adding the mobile drag gesture layer
+  foundation for hard-mode play.
+- Added direct Expo-compatible `react-native-gesture-handler` and
+  `react-native-reanimated` dependencies plus the Reanimated Babel plugin.
+- Added a `DragLayer` overlay and `useDragChip()` hook that keep the moving
+  ghost on Reanimated shared values, expose hover-confirm state only while over
+  a board cell, and cancel drops outside the board.
+- Added pure worklet-safe drag hit-testing helpers over the existing board
+  layout-map frames so p08-t02 can wire submission without reworking the
+  gesture foundation.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/drag --runInBand`
+- Result: pass, 2 suites / 5 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler --check`
+- Result: pass; direct dependencies match Expo SDK 57 expected versions.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t01`
+- Result: pass; iOS bundle exported successfully with the Reanimated Babel
+  plugin configured.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The drag layer intentionally does not submit moves or route-wire drag mode;
+  p08-t02 owns `makeMove` integration and rejection feedback.
+- Drag mode intentionally does not pre-highlight legal targets. The new layer
+  only exposes hover-confirm state while the gesture is over a board cell.
+- Adding these native gesture dependencies requires a dev-client rebuild before
+  simulator proof of p08-t02/p08-t06 gesture behavior.
+
+### Task p08-t01: Drag gesture layer
+
+**Status:** completed
+**Commit:** 0a851b4
+
+**Outcome:**
+
+- Added a reusable `DragLayer` component for an absolute gesture overlay and
+  card ghost.
+- Added `useDragChip()` with Reanimated shared values for active state,
+  translation, hover-confirm state, and reset animation.
+- Added pure helper coverage for board layout-frame snapshotting, hit-testing,
+  hover-confirm derivation, and release cancel/drop classification.
+- Added direct Expo-compatible Gesture Handler and Reanimated dependencies plus
+  the Reanimated Babel plugin.
+
+**Files changed:**
+
+- `apps/mobile/src/game/drag/DragLayer.tsx` /
+  `DragLayer.test.tsx` - drag overlay and render/no-pre-highlight coverage.
+- `apps/mobile/src/game/drag/use-drag-chip.ts` /
+  `use-drag-chip.test.ts` - gesture hook, worklet-safe helpers, and pure
+  hit-test/release coverage.
+- `apps/mobile/package.json` / `pnpm-lock.yaml` - direct gesture dependencies.
+- `apps/mobile/babel.config.js` - Reanimated Babel plugin.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/drag --runInBand`
+- Result: pass, 2 suites / 5 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler --check`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t01`
+- Result: pass.
+- Run: `git diff --check`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- `react-native-reanimated@4.5.0` and
+  `react-native-gesture-handler@~2.32.0` are the SDK-compatible direct
+  dependencies; the previously present transitive versions failed Expo's
+  compatibility check.
+- Gesture submission, illegal-drop feedback, and route mode branching remain
+  p08-t02 scope.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -3356,7 +3459,8 @@ Chronological log of implementation progress.
 - [x] p07-t07: Game screen assembly + turn flow - afbd9a0 / 9518c86
 - [x] p07-t08: Playground stories for game components - 5f91046 / fab0c19 / c81b6c9
 - [x] p07-t09: Full tap-mode game verification - 1a1f149 / 65880bd
-- [ ] p08-t01: Drag gesture layer - next
+- [x] p08-t01: Drag gesture layer - 0a851b4
+- [ ] p08-t02: Drag submit + rejection feedback - next
 
 **What changed (high level):**
 
@@ -3484,6 +3588,9 @@ Chronological log of implementation progress.
 - The p07-t09 verification pass fixed lowercase email entry on native auth
   forms and prevented quiet live mobile streams from triggering false
   disconnect/freeze behavior.
+- The advanced game surface now has a Reanimated/Gesture Handler drag layer
+  foundation with board-layout-map hit-testing, hover-confirm state, outside
+  release cancellation, and no pre-highlighting.
 
 ---
 
@@ -3547,6 +3654,7 @@ Track test execution during implementation.
 | 7     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | 5 active-route/hand/board suites, 27 tests; route test lives outside `src/app` |
 | 7     | `git ls-files 'apps/mobile/src/app/**/*.test.*' 'apps/mobile/src/app/*.test.*'`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/dev/stories.test.ts src/game/PlayerRail/PlayerRail.test.tsx src/game/CardHand src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t08-final3`; simulator screenshots `/tmp/p07-t08-game-board.png`, `/tmp/p07-t08-game-hand-fixed.png`, `/tmp/p07-t08-game-rail-fixed.png`, `/tmp/p07-t08-game-board-light.png`, `/tmp/p07-t08-game-hand-light.png`, `/tmp/p07-t08-game-rail-light.png` | yes    | 0      | 7 game-surface suites, 31 tests; Expo export and both-theme story visual sweep passed |
 | 7     | Local API/web/mobile deterministic p07-t09 games `3fc7917c-862d-45a0-90e6-380a7335eb87` and `e6fa8ecf-4839-41a6-b2bf-30b18e64f7ad`; web screenshots `/tmp/p07-t09-web-active.png`, `/tmp/p07-t09-web-final.png`; mobile screenshots `/tmp/p07-t09-mobile-initial.png`, `/tmp/p07-t09-mobile-final.png`, `/tmp/p07-t09-mobile-active.png`; `pnpm --filter @sequence/mobile exec jest src/components/TextField.test.tsx src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t09`; `git diff --check` | yes    | 0      | FR6/FR9 full tap-mode loop passed; stale 409, jack moves, auto-draw, timer UI, locked sequence, and final win verified; p50 samples `6.1ms` and `3.35ms` |
+| 8     | `pnpm --filter @sequence/mobile exec jest src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t01`; `git diff --check` | yes    | 0      | 2 drag suites, 5 tests; SDK-compatible gesture dependencies and Reanimated Babel config verified |
 
 ## Final Summary (for PR/docs)
 
