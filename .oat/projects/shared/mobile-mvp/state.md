@@ -1,5 +1,5 @@
 ---
-oat_current_task: p11-t07
+oat_current_task: p12-t01
 oat_last_commit: 19f679c
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
@@ -25,21 +25,22 @@ oat_workflow_origin: native # native | imported
 oat_docs_updated: null # null | skipped | complete — documentation sync status
 oat_pr_status: null # null | ready | open | closed | merged — actual PR state for the current project
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
-oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
+oat_project_created: '2026-07-03T01:05:50.448Z' # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-04T06:34:28Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: '2026-07-04T06:56:46Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p11-t07
+**Status:** Implementation in progress — current task p12-t01
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
-Implementation - Phase 11 hardening work is in progress; next task p11-t07.
+Implementation - Phase 11 hardening work is complete; next task p12-t01 starts
+the Phase 12 operator pre-flight.
 The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
@@ -77,7 +78,8 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 11 NFR6 full gate sweep complete (4/7)
 - ✓ Phase 11 NFR7 phase audit and operator runbook complete (5/7)
 - ✓ Phase 11 documentation parity complete (6/7)
-- ⧗ Implementation in progress at p11-t07 (Phase 11 6/7 complete)
+- ✓ Phase 11 pre-distribution smoke complete (7/7)
+- ⧗ Implementation in progress at p12-t01 (Phase 12 0/6 complete)
 
 ## Blockers
 
@@ -85,4 +87,6 @@ None
 
 ## Next Milestone
 
-Continue Phase 11 hardening work toward the final-only HiLL checkpoint at p12.
+Start Phase 12 operator pre-flight from `docs/mobile-operator-runbook.md`
+sections 1-4. This remains on the path to the final-only HiLL checkpoint at
+p12.

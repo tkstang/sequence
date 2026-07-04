@@ -70,8 +70,20 @@ value. Expo MCP and Argent usage details belong in
 - Repo `AGENTS.md` candidate: Playwright config should be explicit about its
   module format and env fallback. In this Node/Playwright toolchain, a
   TypeScript config using `module: ESNext` failed before tests with `exports is
-  not defined`; an explicit `.cjs` config plus `packages/api/.env` fallback made
+not defined`; an explicit `.cjs` config plus `packages/api/.env` fallback made
   local DB-backed e2e reproducible.
+- Repo `AGENTS.md` candidate: production smoke harnesses for active games
+  should keep authoritative player WebSocket streams open instead of opening
+  short-lived active-game snapshot probes. Closing a short-lived stream can
+  exercise the real presence freeze path and produce artificial lifecycle
+  conflicts.
+- Repo `AGENTS.md` candidate: direct production Better Auth probes should use
+  the deployed trusted web origin unless the real Expo auth client is driving
+  the request. A bare Node signup with `Origin: sequence://` was rejected in
+  production even though local mobile-origin probes worked.
+- Repo `AGENTS.md` candidate: production throwaway-account smoke should reuse a
+  small account pair across flows and respect the auth route's rate limiter;
+  repeated signup bursts can return `429` and obscure actual game-flow results.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -115,6 +127,11 @@ value. Expo MCP and Argent usage details belong in
   create misleading screenshot labels. Assign one agent exclusive simulator
   ownership for the duration of a scenario, or keep the scenario local and use
   subagents only for read-only review/checklist work.
+- Evidence-only tasks should not manufacture source commits. For p11-t07, the
+  production smoke harness lived in `/tmp`, source behavior passed, and the
+  durable work was the implementation evidence plus learnings. The correct OAT
+  commit is the bookkeeping commit that advances tracking artifacts, not an
+  empty `test(...)` source commit.
 
 ## Codebase Patterns
 
@@ -170,6 +187,36 @@ value. Expo MCP and Argent usage details belong in
   HTTP mutations can infer `gameId` from tRPC operation input, but subscriptions
   need an explicit active game context so the React Native WebSocket constructor
   can attach `sequence_guest` before opening the stream.
+- Direct Node production smoke can use the transitive `ws` package from pnpm's
+  installed store to attach `Cookie` and `Origin` headers to tRPC WebSocket
+  connections. Node's built-in `WebSocket` accepted a third constructor
+  argument syntactically in this run but did not send custom headers in a local
+  upgrade-server probe.
+- Direct production Better Auth signup probes should use the deployed
+  `WEB_ORIGIN` (`https://sequence-online.vercel.app`) unless the actual Expo
+  auth plugin/client is making the request. A bare Node request with
+  `Origin: sequence://` returned `403 INVALID_ORIGIN` against production, while
+  the deployed web origin worked.
+- Production smoke should minimize auth creates. Reuse one throwaway host/guest
+  account pair across create/join/play/save/concede/timer flows; repeated
+  signup attempts hit the production auth-route limiter with `429 Too many
+requests` and can mask unrelated flow status.
+- Active-game smoke harnesses must avoid short-lived subscription probes once
+  production presence hooks are wired. Keep the real seat streams open and
+  maintain client state from initial snapshots plus mutation/stream events.
+  Opening a one-shot active-game snapshot and closing it can trigger
+  `PlayerDisconnected`/freeze behavior, especially around save/resume
+  verification.
+- Save/resume has no public `resume` mutation; the public contract resumes
+  saved games when the full roster reconnects through `game.onGameEvent`.
+  Smoke proof should save, verify the `myGames.resumables` card, reconnect the
+  required streams, then confirm an active snapshot or `PlayerReconnected`
+  event/version.
+- Pending sequence-choice automation should choose a contiguous five-cell
+  window containing the placed chip, not blindly `slice(0, 5)`. The local API
+  harness shortcut can pass for some seeded/random games, but the production
+  random smoke hit `invalid-sequence-choice` until the chooser used the placed
+  cell to select the window.
 - Board-scale card rendering should memoize by semantic card value, not only by
   object identity. Game surfaces often allocate fresh `{rank, suit}` objects
   while representing the same card; `CardFace` should compare `rank`, `suit`,
@@ -279,7 +326,7 @@ value. Expo MCP and Argent usage details belong in
 - After adding an Expo package, run Expo's compatibility check for the exact
   package, not just package-manager install/typecheck. In this project,
   `expo-haptics@~15.0.8` installed and typed but `expo install
-  expo-haptics --check` reported it incompatible with Expo SDK 57; the
+expo-haptics --check` reported it incompatible with Expo SDK 57; the
   compatible spec was `expo-haptics@~57.0.0`.
 - Adding or changing Expo native modules requires a dev-client rebuild before
   simulator proof. JS tests and Metro can pass while the installed native app is
