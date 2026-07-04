@@ -1,6 +1,6 @@
 ---
-oat_current_task: p10-t04
-oat_last_commit: f2b6868
+oat_current_task: p10-t05
+oat_last_commit: f15c7c0
 oat_blockers: []
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -27,20 +27,20 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: "2026-07-03T01:05:50.448Z" # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: "2026-07-04T03:13:15Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: "2026-07-04T03:20:19Z" # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation in progress — current task p10-t04
+**Status:** Implementation in progress — current task p10-t05
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
 Implementation - Phase 10 history, notifications, settings, and polish work is
-in progress; next task p10-t04. The plan has 12 phases / 85 tasks tracing
+in progress; next task p10-t05. The plan has 12 phases / 85 tasks tracing
 all 19 FRs + 7 NFRs; Phases 1–11 are agent-only with Phase 12 as the single
 operator phase. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
@@ -70,7 +70,7 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 7 game-surface core tap-mode work complete (9/9)
 - ✓ Phase 8 advanced game-surface work complete (6/6)
 - ✓ Phase 9 lifecycle and local pass-and-play work complete (7/7)
-- ⧗ Implementation in progress at p10-t04 (Phase 10 3/7 complete)
+- ⧗ Implementation in progress at p10-t05 (Phase 10 4/7 complete)
 
 ## Blockers
 

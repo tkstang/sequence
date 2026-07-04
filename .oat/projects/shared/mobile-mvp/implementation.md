@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p10-t04
+oat_current_task_id: p10-t05
 oat_generated: false
 ---
 
@@ -35,9 +35,9 @@ oat_generated: false
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
-| Phase 10 | in_progress | 7     | 3/7       |
+| Phase 10 | in_progress | 7     | 4/7       |
 
-**Total:** 68/85 tasks completed
+**Total:** 69/85 tasks completed
 
 ---
 
@@ -3840,6 +3840,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
   logout, version display, and a dashboard Settings entry point.
 - Settings tests live outside the Expo Router app tree while the route itself
   stays in `src/app/settings.tsx`.
+- Dashboard, history, and join preview now distinguish generic query failures
+  from empty/not-found states, with retry affordance on invite preview errors.
+- The mobile dev story test now carries the same Reanimated mock used by route
+  tests so full mobile Jest covers the playground story registry.
 
 **Verification:**
 
@@ -3864,6 +3868,14 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm format:check`
 - Run: `git diff --check HEAD`
 - Result: pass; Jest reported the known Watchman recrawl warning.
+- Run: `pnpm --filter @sequence/mobile test`
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Run: `pnpm --filter @sequence/mobile lint`
+- Run: `pnpm format:check`
+- Run: `git diff --check HEAD`
+- Result: pass; Jest reported the known Watchman recrawl warning. Simulator
+  screenshot pass was not run for p10-t04; visual coverage remains scheduled in
+  p10-t06/p10-t07, while this state sweep is covered by component/route tests.
 
 **Notes / Decisions:**
 
@@ -3875,6 +3887,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The plan's `src/app/settings.test.tsx` path was adapted to
   `src/features/settings/SettingsScreen.test.tsx` to preserve the repo's
   established Expo Router test-location rule.
+- p10-t04 screenshot proof was deferred to the existing visual-verification
+  tasks because the changes are state-specific query/error branches with
+  focused test coverage and no new layout primitive.
 
 ---
 
@@ -4022,7 +4037,8 @@ Chronological log of implementation progress.
 - [x] p10-t01: History screens - d181966 / 4750213
 - [x] p10-t02: Notification affordances - 8c0c116
 - [x] p10-t03: Settings screen - f2b6868
-- [ ] p10-t04: Empty/loading/error states pass - next
+- [x] p10-t04: Empty/loading/error states pass - f15c7c0
+- [ ] p10-t05: A11y labels + testID audit - next
 
 **What changed (high level):**
 
@@ -4202,6 +4218,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p07-t07       | plan.md         | Route test under `apps/mobile/src/app/game` | Route test lives at `apps/mobile/src/game/GameRouteScreen.test.tsx` | Expo Router can bundle `.test.*` files under `src/app` during export and pull test-only dependencies into Metro | `apps/mobile/src/game/GameRouteScreen.test.tsx` | Keep mobile route tests outside `apps/mobile/src/app` |
 | p07-t09       | plan.md         | Scenario task with no source files unless fixes land | Two source fixes landed during scenario verification: mobile email TextField prop passthrough and quiet-live realtime watchdog behavior | Device/local-game proof exposed native autocapitalization and false presence disconnect behavior that unit-only verification would not catch | `apps/mobile/src/components/TextField.tsx`; `apps/mobile/src/realtime/lifecycle.ts`; `references/project-learnings.md` | Use scenario tasks to fix locally diagnosable issues before advancing |
 | p10-t03       | plan.md         | Settings route test at `apps/mobile/src/app/settings.test.tsx` | Settings route lives at `apps/mobile/src/app/settings.tsx`; route behavior tests live at `apps/mobile/src/features/settings/SettingsScreen.test.tsx` | Expo Router can bundle route-local tests into Metro/export; this preserves the established route-test location rule | `apps/mobile/src/features/settings/SettingsScreen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
+| p10-t04       | plan.md         | Agent screenshot pass over each screen's loading/empty/error variants | Full mobile Jest covers the changed loading/empty/error branches; simulator screenshots were not run in this task | The changed states are query/error branches rather than new layout primitives, and p10-t06/p10-t07 still own visual/theme and scenario verification | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx` | Complete visual proof in p10-t06/p10-t07 |
 
 ## Test Results
 
@@ -4261,6 +4278,7 @@ Track test execution during implementation.
 | 10    | `pnpm --filter @sequence/mobile exec jest src/features/history src/features/dashboard src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 4 history/dashboard/root suites, 16 tests; `/history` route registered, record/list/head-to-head rendered, nextCursor load-more behavior covered, local games flagged, and dashboard history navigation added |
 | 10    | `pnpm --filter @sequence/mobile exec jest src/game/feedback src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 feedback/route suites, 53 tests; live stream notifications cover turn-to-me, opponent sequence, concede, freeze/disconnect, initial-view suppression, haptics, and all 13 rule-violation catalog mappings |
 | 10    | `pnpm --filter @sequence/mobile exec jest src/features/settings/SettingsScreen.test.tsx src/features/dashboard/DashboardScreen.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 4 settings/dashboard/root suites, 14 tests; signed-in `/settings` route registered, dashboard settings navigation covered, theme mode control persists through ThemeProvider, logout redirects to login, and version display is testable |
+| 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; dashboard, history, and join preview error states no longer collapse into empty/not-found states; simulator screenshots deferred to p10-t06/p10-t07 visual passes |
 
 ## Final Summary (for PR/docs)
 
