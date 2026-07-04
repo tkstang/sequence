@@ -132,6 +132,11 @@ not defined`; an explicit `.cjs` config plus `packages/api/.env` fallback made
   durable work was the implementation evidence plus learnings. The correct OAT
   commit is the bookkeeping commit that advances tracking artifacts, not an
   empty `test(...)` source commit.
+- `oat-project-review-provide` has a stricter confirmation gate than ordinary
+  implementation continuation. After implementing review fixes, the
+  orchestrator can update bookkeeping and mark the review row
+  `fixes_completed`, but it should not launch the next independent review
+  unless the user explicitly requests or confirms that review step.
 
 ## Codebase Patterns
 
