@@ -12,6 +12,7 @@ import {
   userEvent,
   waitFor,
 } from '@testing-library/react-native';
+import * as Haptics from 'expo-haptics';
 
 import type { GameStreamConnectionState } from '../realtime/use-game-stream.ts';
 import { useGameStream } from '../realtime/use-game-stream.ts';
@@ -43,6 +44,19 @@ jest.mock('@tanstack/react-query', () => ({
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: mockGameId }),
   useRouter: () => ({ replace: mockRouterReplace }),
+}));
+
+jest.mock('expo-haptics', () => ({
+  ImpactFeedbackStyle: {
+    Light: 'light',
+  },
+  NotificationFeedbackType: {
+    Error: 'error',
+    Success: 'success',
+    Warning: 'warning',
+  },
+  impactAsync: jest.fn(async () => undefined),
+  notificationAsync: jest.fn(async () => undefined),
 }));
 
 jest.mock('../api/client.ts', () => ({
@@ -227,6 +241,7 @@ beforeEach(() => {
   jest
     .mocked(useMoveSubmit)
     .mockImplementation(() => defaultMoveSubmitResult());
+  jest.mocked(Haptics.notificationAsync).mockClear();
 });
 
 afterEach(() => {
@@ -394,6 +409,62 @@ describe('GameRouteScreen active turn flow', () => {
 
     await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
     expect(mockSubmitMove).not.toHaveBeenCalled();
+  });
+
+  it('notifies when a live stream event advances the turn to me', async () => {
+    mockStreamView = fixtureView('active-not-your-turn', {
+      currentSeat: 1,
+      lastSeq: 4,
+      recentEvents: [],
+    });
+
+    const { getByText, queryByText, rerender } = await render(
+      <GameRouteScreen />,
+    );
+
+    expect(queryByText('Your turn.')).toBeNull();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+
+    mockStreamView = fixtureView('active-your-turn', {
+      currentSeat: 0,
+      lastSeq: 5,
+      recentEvents: [
+        {
+          payload: { round: 2, seat: 0 },
+          seq: 5,
+          type: 'TurnAdvanced',
+          version: 13,
+        },
+      ],
+      version: 13,
+    });
+    await rerender(<GameRouteScreen />);
+
+    await waitFor(() => {
+      expect(getByText('Your turn.')).toBeTruthy();
+    });
+    expect(Haptics.notificationAsync).toHaveBeenCalledWith('success');
+  });
+
+  it('does not notify for already-applied events in the initial stream view', async () => {
+    mockStreamView = fixtureView('active-your-turn', {
+      currentSeat: 0,
+      lastSeq: 5,
+      recentEvents: [
+        {
+          payload: { round: 2, seat: 0 },
+          seq: 5,
+          type: 'TurnAdvanced',
+          version: 13,
+        },
+      ],
+      version: 13,
+    });
+
+    const { queryByText } = await render(<GameRouteScreen />);
+
+    expect(queryByText('Your turn.')).toBeNull();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
   });
 
   it('veils both local hands between pass-and-play turns until the incoming player confirms', async () => {

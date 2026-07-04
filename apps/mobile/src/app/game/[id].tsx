@@ -2,8 +2,9 @@ import type { GameViewState } from '@sequence/client-state';
 import type { Card, Move, Position, Team } from '@sequence/game-logic';
 import { isOneEyedJack } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTRPC } from '../../api/client.ts';
@@ -14,6 +15,11 @@ import { ActiveGameControls } from '../../game/ActiveGameControls.tsx';
 import { CardHand } from '../../game/CardHand/CardHand.tsx';
 import { useDeadCardControls } from '../../game/DeadCardControls.tsx';
 import { DragLayer } from '../../game/drag/DragLayer.tsx';
+import type { GameFeedback } from '../../game/feedback/toasts.ts';
+import {
+  collectTurnNotifications,
+  type StreamEventNotification,
+} from '../../game/feedback/turn-notifications.ts';
 import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
 import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
 import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
@@ -106,6 +112,20 @@ function teamForSeat(view: GameViewState): Team | null {
 
 function disconnectedPlayerName(view: GameViewState): string | null {
   return view.players.find((player) => !player.connected)?.name ?? null;
+}
+
+function hapticType(feedback: GameFeedback): Haptics.NotificationFeedbackType {
+  if (feedback.haptic === 'success') {
+    return Haptics.NotificationFeedbackType.Success;
+  }
+  if (feedback.haptic === 'warning') {
+    return Haptics.NotificationFeedbackType.Warning;
+  }
+  return Haptics.NotificationFeedbackType.Error;
+}
+
+function triggerNotificationFeedback(feedback: GameFeedback): void {
+  void Haptics.notificationAsync(hapticType(feedback)).catch(() => undefined);
 }
 
 function formatExpiry(expiresAt: string | null | undefined) {
@@ -644,6 +664,9 @@ export default function GameRouteScreen() {
   const trpc = useTRPC();
   const { colors } = useTheme();
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [streamNotification, setStreamNotification] =
+    useState<StreamEventNotification | null>(null);
+  const lastNotifiedSeqRef = useRef<number | null>(null);
   const stream = useGameStream(gameId);
 
   const mutationOptions = {
@@ -664,6 +687,32 @@ export default function GameRouteScreen() {
     kick.isPending ||
     randomizeTeams.isPending ||
     start.isPending;
+
+  useEffect(() => {
+    if (!stream.view) {
+      setStreamNotification(null);
+      lastNotifiedSeqRef.current = null;
+      return;
+    }
+
+    if (lastNotifiedSeqRef.current === null) {
+      lastNotifiedSeqRef.current = stream.view.lastSeq;
+      return;
+    }
+
+    const notifications = collectTurnNotifications({
+      lastSeenSeq: lastNotifiedSeqRef.current,
+      view: stream.view,
+    });
+    lastNotifiedSeqRef.current = stream.view.lastSeq;
+
+    if (notifications.length === 0) return;
+
+    for (const notification of notifications) {
+      triggerNotificationFeedback(notification.feedback);
+    }
+    setStreamNotification(notifications[notifications.length - 1] ?? null);
+  }, [stream.view]);
 
   return (
     <Screen
@@ -690,6 +739,26 @@ export default function GameRouteScreen() {
           }
           paused={stream.view?.status === 'frozen'}
         />
+        {streamNotification ? (
+          <View
+            accessibilityLiveRegion="polite"
+            style={[
+              styles.streamNotification,
+              {
+                backgroundColor: colors.surfaceRaised,
+                borderColor: colors.borderStrong,
+              },
+            ]}
+            testID={testId('game', 'notification')}
+          >
+            <Text
+              accessibilityRole="alert"
+              style={[styles.streamNotificationText, { color: colors.text }]}
+            >
+              {streamNotification.feedback.message}
+            </Text>
+          </View>
+        ) : null}
         {gameId.length === 0 ? (
           <Text style={[styles.error, { color: colors.danger }]}>
             Missing game id.
@@ -751,6 +820,17 @@ const styles = StyleSheet.create({
   turnBody: {
     fontSize: 13,
     fontWeight: '700',
+    lineHeight: 18,
+  },
+  streamNotification: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  streamNotificationText: {
+    fontSize: 14,
+    fontWeight: '800',
     lineHeight: 18,
   },
   playSurface: {

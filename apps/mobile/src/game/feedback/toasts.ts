@@ -5,12 +5,23 @@ import {
 
 import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
 
-export type MoveSubmitFeedbackHaptic = 'error' | 'warning';
-export type MoveSubmitFeedbackTone = 'error' | 'info';
+export type GameFeedbackHaptic = 'error' | 'success' | 'warning';
+export type GameFeedbackTone = 'error' | 'info';
 
-export interface MoveSubmitFeedback {
-  haptic: MoveSubmitFeedbackHaptic;
+export interface GameFeedback {
+  haptic: GameFeedbackHaptic;
   message: string;
+  tone: GameFeedbackTone;
+}
+
+export type MoveSubmitFeedbackHaptic = Extract<
+  GameFeedbackHaptic,
+  'error' | 'warning'
+>;
+export type MoveSubmitFeedbackTone = GameFeedbackTone;
+
+export interface MoveSubmitFeedback extends GameFeedback {
+  haptic: MoveSubmitFeedbackHaptic;
   tone: MoveSubmitFeedbackTone;
 }
 
