@@ -19,6 +19,7 @@ import {
 export interface GameBoardProps {
   board: Readonly<Record<Position, SnapshotBoardCell | undefined>>;
   currentTeam?: Team | null;
+  highlightedCells?: readonly Position[];
   layoutMap?: BoardLayoutMap;
   maxWidth?: number;
   onCellPress?: (position: Position) => void;
@@ -38,6 +39,7 @@ const CARD_ASPECT_RATIO = 224.225 / 312.808;
 export function GameBoard({
   board,
   currentTeam,
+  highlightedCells = [],
   layoutMap,
   maxWidth,
   onCellPress,
@@ -66,6 +68,10 @@ export function GameBoard({
     2: colors.teamGreen,
     3: colors.teamRed,
   } as const satisfies Record<Team, string>;
+  const highlightedCellSet = useMemo(
+    () => new Set<Position>(highlightedCells),
+    [highlightedCells],
+  );
 
   useEffect(() => {
     if (!layoutMap) return;
@@ -114,7 +120,9 @@ export function GameBoard({
             const chip =
               cell?.chip ?? (isCorner(position) ? undefined : sequence?.team);
             const lockedBy = cell?.lockedBy ?? sequence?.lockedBy;
-            const spotlightTarget = isSpotlightTarget(spotlight, position);
+            const spotlightTarget =
+              highlightedCellSet.has(position) ||
+              isSpotlightTarget(spotlight, position);
             const spotlightDimmed = isSpotlightDimmed(spotlight, position);
 
             return (

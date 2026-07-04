@@ -9,6 +9,7 @@ export type TestIdScreen =
   | 'home'
   | 'join'
   | 'lobby'
+  | 'sequenceChoice'
   | 'settings';
 
 type TestIdSegment = string | number;

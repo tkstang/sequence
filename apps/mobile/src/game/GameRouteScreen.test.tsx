@@ -22,11 +22,12 @@ var mockGameId = 'game-1';
 var mockStreamView: GameViewState | null = null;
 var mockConnectionState: GameStreamConnectionState = 'live';
 var mockSubmitMove = jest.fn((_move: Move) => false);
+var mockMutate = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   useMutation: jest.fn((options: MutationOptions) => ({
     isPending: false,
-    mutate: jest.fn(),
+    mutate: mockMutate,
     options,
   })),
 }));
@@ -38,6 +39,9 @@ jest.mock('expo-router', () => ({
 jest.mock('../api/client.ts', () => ({
   useTRPC: jest.fn(() => ({
     game: {
+      chooseSequenceCells: {
+        mutationOptions: (options: MutationOptions) => options,
+      },
       kick: { mutationOptions: (options: MutationOptions) => options },
       randomizeTeams: {
         mutationOptions: (options: MutationOptions) => options,
@@ -137,6 +141,7 @@ beforeEach(() => {
   mockStreamView = null;
   mockConnectionState = 'live';
   mockSubmitMove = jest.fn((_move: Move) => false);
+  mockMutate = jest.fn();
   jest.mocked(useMutation).mockClear();
   jest.mocked(useGameStream).mockClear();
   jest
@@ -297,6 +302,42 @@ describe('GameRouteScreen active turn flow', () => {
     });
     expect(getByText('That space is already occupied.')).toBeTruthy();
     expect(queryByTestId('board.cell.15C.chip')).toBeNull();
+  });
+
+  it('submits a pending sequence choice for my seat and highlights the selected cells', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('sequence-choice');
+
+    const { getByTestId } = await render(<GameRouteScreen />);
+
+    expect(getByTestId('sequenceChoice.sheet')).toBeTruthy();
+    expect(getByTestId('hand.card.5C').props.accessibilityState).toMatchObject({
+      disabled: true,
+    });
+    expect(getByTestId('board.cell.19C.spotlight.target')).toBeTruthy();
+
+    await user.press(getByTestId('sequenceChoice.submit'));
+
+    expect(mockMutate).toHaveBeenCalledWith({
+      cells: ['1AC', '1KC', '1QC', '1TC', '19C'],
+      gameId: mockGameId,
+      version: 12,
+    });
+  });
+
+  it('shows a frozen sequence-choice banner without the sheet for another seat', async () => {
+    mockStreamView = fixtureView('sequence-choice', {
+      pendingChoice: {
+        cells: ['23H', '24H', '25H', '26H', '27H', '28H'],
+        placed: '23H',
+        seat: 1,
+      },
+    });
+
+    const { getByTestId, queryByTestId } = await render(<GameRouteScreen />);
+
+    expect(queryByTestId('sequenceChoice.sheet')).toBeNull();
+    expect(getByTestId('sequenceChoice.frozen')).toBeTruthy();
   });
 
   it('keeps the lobby branch intact', async () => {

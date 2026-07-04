@@ -17,6 +17,10 @@ import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
 import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
 import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
 import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
+import {
+  SequenceChoiceSheet,
+  type SequenceChoiceSubmit,
+} from '../../game/SequenceChoiceSheet.tsx';
 import { useMoveSubmit } from '../../game/use-move-submit.ts';
 import { useGameStream } from '../../realtime/use-game-stream.ts';
 import { testId } from '../../test/test-ids.ts';
@@ -85,9 +89,21 @@ function ActiveGameView({
   view: GameViewState;
 }) {
   const { colors } = useTheme();
+  const trpc = useTRPC();
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [choiceError, setChoiceError] = useState<string | null>(null);
+  const [choiceHighlightedCells, setChoiceHighlightedCells] = useState<
+    Position[]
+  >([]);
   const moveSubmit = useMoveSubmit({ gameId, view });
+  const chooseSequenceCells = useMutation(
+    trpc.game.chooseSequenceCells.mutationOptions({
+      onError(error: unknown) {
+        setChoiceError(mutationMessage(error));
+      },
+    }),
+  );
   const boardLayoutMap = useMemo(() => createBoardLayoutMap(), []);
   const currentPlayer = view.players.find(
     (player) => player.seat === view.currentSeat,
@@ -95,8 +111,13 @@ function ActiveGameView({
   const currentTeam = teamForSeat(view);
   const myTurn = view.currentSeat === view.mySeat;
   const dragMode = view.mode === 'drag';
+  const pendingChoice = view.pendingChoice;
+  const choiceForMySeat = pendingChoice?.seat === view.mySeat;
   const selectionDisabled =
-    !myTurn || moveSubmit.selectedCardDisabled || !moveSubmit.canSubmit;
+    pendingChoice !== undefined ||
+    !myTurn ||
+    moveSubmit.selectedCardDisabled ||
+    !moveSubmit.canSubmit;
   const dragEnabled = dragMode && !selectionDisabled;
   const spotlight = useMemo(
     () =>
@@ -119,6 +140,18 @@ function ActiveGameView({
       setSelectedIndex(null);
     }
   }, [selectedCard, selectedIndex, selectionDisabled, view.hand.length]);
+
+  useEffect(() => {
+    if (!pendingChoice) {
+      setChoiceError(null);
+      setChoiceHighlightedCells([]);
+    }
+  }, [pendingChoice]);
+
+  const handleChooseSequence = ({ cells, version }: SequenceChoiceSubmit) => {
+    setChoiceError(null);
+    chooseSequenceCells.mutate({ cells, gameId, version });
+  };
 
   const handleCellPress = async (position: Position) => {
     if (
@@ -156,14 +189,18 @@ function ActiveGameView({
     : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
   const controlsCopy = moveSubmit.submitting
     ? 'Submitting move...'
-    : (moveSubmit.feedback?.message ??
-      (myTurn
-        ? selectedCard
-          ? dragMode
-            ? `Drag ${cardCode(selectedCard)} onto a board cell.`
-            : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
-          : 'Select a card to show legal targets.'
-        : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
+    : choiceForMySeat
+      ? 'Choose which five chips will become the locked sequence.'
+      : pendingChoice
+        ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
+        : (moveSubmit.feedback?.message ??
+          (myTurn
+            ? selectedCard
+              ? dragMode
+                ? `Drag ${cardCode(selectedCard)} onto a board cell.`
+                : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+              : 'Select a card to show legal targets.'
+            : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
 
   return (
     <View style={styles.activeStack} testID={testId('game', 'active')}>
@@ -215,6 +252,7 @@ function ActiveGameView({
           <GameBoard
             board={view.board}
             currentTeam={selectionDisabled ? null : currentTeam}
+            highlightedCells={choiceHighlightedCells}
             layoutMap={boardLayoutMap}
             onCellPress={handleCellPress}
             selectedCard={selectionDisabled || dragMode ? null : selectedCard}
@@ -275,6 +313,18 @@ function ActiveGameView({
           {controlsCopy}
         </Text>
       </View>
+
+      {pendingChoice ? (
+        <SequenceChoiceSheet
+          errorMessage={choiceError}
+          isSubmitting={chooseSequenceCells.isPending}
+          mySeat={view.mySeat}
+          onChoose={handleChooseSequence}
+          onHighlightedCellsChange={setChoiceHighlightedCells}
+          pendingChoice={pendingChoice}
+          version={view.version}
+        />
+      ) : null}
     </View>
   );
 }
@@ -442,6 +492,7 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    position: 'relative',
   },
   turnBanner: {
     borderRadius: 8,
