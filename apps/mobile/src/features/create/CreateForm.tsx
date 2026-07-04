@@ -122,6 +122,7 @@ export function CreateForm({
         <View style={styles.optionRow}>
           {PLAYER_COUNTS.map((count) => (
             <OptionButton
+              accessibilityLabel={`Set player count to ${count}`}
               key={count}
               label={String(count)}
               onPress={() => choosePlayerCount(count)}
@@ -137,6 +138,7 @@ export function CreateForm({
         <View style={styles.optionRow}>
           {PLAY_MODES.map((playMode) => (
             <OptionButton
+              accessibilityLabel={`Set play mode to ${playMode}`}
               key={playMode}
               label={playMode}
               onPress={() => setMode(playMode)}
@@ -145,7 +147,7 @@ export function CreateForm({
             />
           ))}
         </View>
-        <Card variant="sunken">
+        <Card testID={testId('create', 'mode', 'explanation')} variant="sunken">
           <Text style={[styles.explanation, { color: colors.textMuted }]}>
             {MODE_EXPLANATION[mode]}
           </Text>
@@ -157,6 +159,7 @@ export function CreateForm({
         <View style={styles.timerGrid}>
           {timerOptions().map((option) => (
             <OptionButton
+              accessibilityLabel={`Set turn timer to ${option.label}`}
               key={optionId(option.seconds)}
               label={option.label}
               onPress={() => setTimerSeconds(option.seconds)}
@@ -167,7 +170,7 @@ export function CreateForm({
         </View>
       </View>
 
-      <Card variant="raised">
+      <Card testID={testId('create', 'local')} variant="raised">
         <View style={styles.localHeader}>
           <View style={styles.localText}>
             <Text style={[styles.label, { color: colors.text }]}>
@@ -222,6 +225,7 @@ export function CreateForm({
         <Text
           accessibilityRole="alert"
           style={[styles.error, { color: colors.danger }]}
+          testID={testId('create', 'error')}
         >
           {message}
         </Text>
@@ -246,17 +250,25 @@ export function CreateForm({
 }
 
 interface OptionButtonProps {
+  accessibilityLabel: string;
   label: string;
   onPress: () => void;
   selected: boolean;
   testID: string;
 }
 
-function OptionButton({ label, onPress, selected, testID }: OptionButtonProps) {
+function OptionButton({
+  accessibilityLabel,
+  label,
+  onPress,
+  selected,
+  testID,
+}: OptionButtonProps) {
   const { colors } = useTheme();
 
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}

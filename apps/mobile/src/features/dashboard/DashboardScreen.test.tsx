@@ -111,10 +111,15 @@ beforeEach(() => {
 
 describe('DashboardScreen', () => {
   it('renders resumables and recents with status, roster, and result', async () => {
-    const { getByTestId, getByText } = await render(<HomeScreen />);
+    const { getByLabelText, getByTestId, getByText } = await render(
+      <HomeScreen />,
+    );
 
     expect(getByText('Your games')).toBeTruthy();
+    expect(getByLabelText('Create a new game')).toBeTruthy();
+    expect(getByLabelText('Join a game by invite code')).toBeTruthy();
     expect(getByTestId('dashboard.resumable.lobby-1')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.lobby-1.status')).toBeTruthy();
     expect(getByText('LOBBY')).toBeTruthy();
     expect(getByText('vs Maya, Ben')).toBeTruthy();
     expect(getByTestId('dashboard.resumable.saved-1')).toBeTruthy();
@@ -122,6 +127,7 @@ describe('DashboardScreen', () => {
     expect(getByText('LOCAL')).toBeTruthy();
     expect(getByText('SAVED')).toBeTruthy();
     expect(getByTestId('dashboard.recent.finished-1')).toBeTruthy();
+    expect(getByTestId('dashboard.recent.finished-1.result')).toBeTruthy();
     expect(getByText('W')).toBeTruthy();
     expect(getByText('vs Nia')).toBeTruthy();
   });
@@ -150,9 +156,11 @@ describe('DashboardScreen', () => {
 
   it('renders empty states for both sections', async () => {
     mockMyGamesQuery.data = { recents: [], resumables: [] };
-    const { getByText } = await render(<HomeScreen />);
+    const { getByTestId, getByText } = await render(<HomeScreen />);
 
+    expect(getByTestId('dashboard.resumables.empty')).toBeTruthy();
     expect(getByText('No games to resume right now.')).toBeTruthy();
+    expect(getByTestId('dashboard.recents.empty')).toBeTruthy();
     expect(getByText('No finished games yet.')).toBeTruthy();
   });
 

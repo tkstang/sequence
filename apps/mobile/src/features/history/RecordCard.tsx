@@ -23,7 +23,10 @@ export function RecordCard({ isLoading = false, record }: RecordCardProps) {
       </Text>
       <Card testID={testId('history', 'record')}>
         {isLoading ? (
-          <Text style={[styles.empty, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.empty, { color: colors.textMuted }]}
+            testID={testId('history', 'record', 'loading')}
+          >
             Loading...
           </Text>
         ) : (

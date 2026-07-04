@@ -193,8 +193,11 @@ describe('HistoryScreen', () => {
     mockGamesQuery.isPending = true;
     mockGamesQuery.data = undefined;
 
-    const { getAllByText } = await render(<HistoryScreen />);
+    const { getAllByText, getByTestId } = await render(<HistoryScreen />);
 
+    expect(getByTestId('history.record.loading')).toBeTruthy();
+    expect(getByTestId('history.headToHead.loading')).toBeTruthy();
+    expect(getByTestId('history.games.loading')).toBeTruthy();
     expect(getAllByText('Loading...').length).toBeGreaterThanOrEqual(3);
   });
 

@@ -26,11 +26,17 @@ export function HeadToHeadTable({
         Head to head
       </Text>
       {isLoading ? (
-        <Text style={[styles.empty, { color: colors.textMuted }]}>
+        <Text
+          style={[styles.empty, { color: colors.textMuted }]}
+          testID={testId('history', 'headToHead', 'loading')}
+        >
           Loading...
         </Text>
       ) : rows.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.textMuted }]}>
+        <Text
+          style={[styles.empty, { color: colors.textMuted }]}
+          testID={testId('history', 'headToHead', 'empty')}
+        >
           No head-to-head records yet.
         </Text>
       ) : (

@@ -443,6 +443,7 @@ function ActiveGameView({
                   : colors.text,
             },
           ]}
+          testID={testId('game', 'controls', 'message')}
         >
           {controlsCopy}
         </Text>
@@ -760,7 +761,11 @@ export default function GameRouteScreen() {
           </View>
         ) : null}
         {gameId.length === 0 ? (
-          <Text style={[styles.error, { color: colors.danger }]}>
+          <Text
+            accessibilityRole="alert"
+            style={[styles.error, { color: colors.danger }]}
+            testID={testId('game', 'error', 'missingId')}
+          >
             Missing game id.
           </Text>
         ) : stream.view ? (
@@ -778,11 +783,18 @@ export default function GameRouteScreen() {
             view={stream.view}
           />
         ) : stream.connectionState === 'error' ? (
-          <Text style={[styles.error, { color: colors.danger }]}>
+          <Text
+            accessibilityRole="alert"
+            style={[styles.error, { color: colors.danger }]}
+            testID={testId('game', 'error')}
+          >
             Could not load this game.
           </Text>
         ) : (
-          <Text style={[styles.loading, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.loading, { color: colors.textMuted }]}
+            testID={testId('game', 'loading')}
+          >
             Loading game...
           </Text>
         )}

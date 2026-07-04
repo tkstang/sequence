@@ -297,6 +297,7 @@ describe('GameRouteScreen active turn flow', () => {
     expect(getByTestId('hand.dock')).toBeTruthy();
     expect(getByTestId('game.turn.banner')).toBeTruthy();
     expect(getByTestId('game.controls')).toBeTruthy();
+    expect(getByTestId('game.controls.message')).toBeTruthy();
 
     await user.press(getByTestId('hand.card.5C'));
 

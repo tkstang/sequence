@@ -138,7 +138,10 @@ export default function JoinPreviewScreen() {
       testID={testId('join', 'preview', 'screen')}
     >
       {preview.isPending ? (
-        <Text style={[styles.body, { color: colors.textMuted }]}>
+        <Text
+          style={[styles.body, { color: colors.textMuted }]}
+          testID={testId('join', 'preview', 'loading')}
+        >
           Loading game...
         </Text>
       ) : genericPreviewError ? (
@@ -185,6 +188,7 @@ export default function JoinPreviewScreen() {
             <View style={styles.stack}>
               {isSignedIn ? (
                 <Button
+                  accessibilityLabel="Join game"
                   disabled={join.isPending}
                   onPress={() => {
                     void joinAsUser(data);
@@ -211,6 +215,7 @@ export default function JoinPreviewScreen() {
                       value={guestName}
                     />
                     <Button
+                      accessibilityLabel="Continue as guest"
                       disabled={join.isPending}
                       onPress={() => {
                         void joinAsGuest(data);
@@ -229,6 +234,7 @@ export default function JoinPreviewScreen() {
             <Text
               accessibilityRole="alert"
               style={[styles.error, { color: colors.danger }]}
+              testID={testId('join', 'preview', 'joinError')}
             >
               {joinError}
             </Text>

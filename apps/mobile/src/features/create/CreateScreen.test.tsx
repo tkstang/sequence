@@ -65,11 +65,11 @@ beforeEach(() => {
 describe('CreateScreen', () => {
   it('creates a remote game and lands in the lobby route', async () => {
     const user = userEvent.setup();
-    const { getByTestId } = await render(<CreateScreen />);
+    const { getByLabelText, getByTestId } = await render(<CreateScreen />);
 
-    await user.press(getByTestId('create.players.3'));
-    await user.press(getByTestId('create.mode.drag'));
-    await user.press(getByTestId('create.timer.180'));
+    await user.press(getByLabelText('Set player count to 3'));
+    await user.press(getByLabelText('Set play mode to drag'));
+    await user.press(getByLabelText('Set turn timer to 3:00'));
     await user.press(getByTestId('create.submit'));
 
     const mutation = jest.mocked(useMutation).mock.results[0]!.value;
@@ -122,6 +122,7 @@ describe('CreateScreen', () => {
     await user.press(getByTestId('create.submit'));
 
     await waitFor(() => {
+      expect(getByTestId('create.error')).toBeTruthy();
       expect(getByText('Unauthorized')).toBeTruthy();
     });
   });

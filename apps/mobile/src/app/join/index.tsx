@@ -50,6 +50,7 @@ export default function JoinCodeEntryScreen() {
           <Text
             accessibilityRole="alert"
             style={[styles.error, { color: colors.danger }]}
+            testID={testId('join', 'entry', 'error')}
           >
             {error}
           </Text>

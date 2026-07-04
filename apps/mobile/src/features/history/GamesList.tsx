@@ -57,11 +57,17 @@ export function GamesList({
         Completed games
       </Text>
       {isLoading ? (
-        <Text style={[styles.empty, { color: colors.textMuted }]}>
+        <Text
+          style={[styles.empty, { color: colors.textMuted }]}
+          testID={testId('history', 'games', 'loading')}
+        >
           Loading...
         </Text>
       ) : games.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.textMuted }]}>
+        <Text
+          style={[styles.empty, { color: colors.textMuted }]}
+          testID={testId('history', 'games', 'empty')}
+        >
           No finished games yet.
         </Text>
       ) : (

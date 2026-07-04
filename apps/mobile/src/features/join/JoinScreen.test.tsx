@@ -155,6 +155,7 @@ describe('JoinCodeEntryScreen', () => {
 
     await user.press(getByTestId('join.entry.submit'));
 
+    expect(getByTestId('join.entry.error')).toBeTruthy();
     expect(getByText('Enter an invite code.')).toBeTruthy();
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
@@ -174,7 +175,9 @@ describe('JoinPreviewScreen', () => {
   it('renders preview roster and settings from game.preview', async () => {
     mockRouteParams = { code: 'abcd-2345 ef' };
 
-    const { getByText } = await render(<JoinPreviewScreen />);
+    const { getByLabelText, getByTestId, getByText } = await render(
+      <JoinPreviewScreen />,
+    );
 
     expect(jest.mocked(useQuery).mock.calls[0]![0]).toMatchObject({
       enabled: true,
@@ -194,6 +197,8 @@ describe('JoinPreviewScreen', () => {
     expect(getByText('Host')).toBeTruthy();
     expect(getByText('Couch Guest')).toBeTruthy();
     expect(getByText('guest')).toBeTruthy();
+    expect(getByLabelText('Join game')).toBeTruthy();
+    expect(getByTestId('join.preview.join')).toBeTruthy();
   });
 
   it('maps NOT_FOUND to an unknown-code state', async () => {
@@ -352,6 +357,7 @@ describe('JoinPreviewScreen', () => {
     await user.press(getByTestId('join.preview.join'));
 
     await waitFor(() => {
+      expect(getByTestId('join.preview.joinError')).toBeTruthy();
       expect(
         getByText(
           'This game is no longer available to join. Refresh and try again.',

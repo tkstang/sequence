@@ -149,11 +149,19 @@ export function GameCard({ game, kind, onPress }: GameCardProps) {
                 </Badge>
               ) : null}
               {kind === 'resumable' ? (
-                <Badge size="sm" variant={statusVariant(game.status)}>
+                <Badge
+                  size="sm"
+                  testID={testId('dashboard', cardKind, game.gameId, 'status')}
+                  variant={statusVariant(game.status)}
+                >
                   {statusLabel(game.status)}
                 </Badge>
               ) : (
-                <Badge size="sm" variant={resultVariant(game.result)}>
+                <Badge
+                  size="sm"
+                  testID={testId('dashboard', cardKind, game.gameId, 'result')}
+                  variant={resultVariant(game.result)}
+                >
                   {resultLabel(game.result)}
                 </Badge>
               )}

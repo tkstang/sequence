@@ -88,6 +88,7 @@ export default function HomeScreen() {
       >
         <View style={styles.actions}>
           <Button
+            accessibilityLabel="Create a new game"
             onPress={() => router.push('./create')}
             size="lg"
             testID={testId('dashboard', 'create')}
@@ -95,6 +96,7 @@ export default function HomeScreen() {
             Create game
           </Button>
           <Button
+            accessibilityLabel="Join a game by invite code"
             onPress={() => router.push('./join')}
             testID={testId('dashboard', 'join')}
             variant="secondary"
@@ -102,6 +104,7 @@ export default function HomeScreen() {
             Join game
           </Button>
           <Button
+            accessibilityLabel="Open game history"
             onPress={() => router.push('./history')}
             testID={testId('dashboard', 'history')}
             variant="secondary"
@@ -109,6 +112,7 @@ export default function HomeScreen() {
             History
           </Button>
           <Button
+            accessibilityLabel="Open settings"
             onPress={() => router.push('./settings')}
             testID={testId('dashboard', 'settings')}
             variant="secondary"
@@ -135,11 +139,17 @@ export default function HomeScreen() {
                 Your games
               </Text>
               {myGames.isPending ? (
-                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.empty, { color: colors.textMuted }]}
+                  testID={testId('dashboard', 'resumables', 'loading')}
+                >
                   Loading...
                 </Text>
               ) : resumables.length === 0 ? (
-                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.empty, { color: colors.textMuted }]}
+                  testID={testId('dashboard', 'resumables', 'empty')}
+                >
                   No games to resume right now.
                 </Text>
               ) : (
@@ -161,11 +171,17 @@ export default function HomeScreen() {
                 Recent results
               </Text>
               {myGames.isPending ? (
-                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.empty, { color: colors.textMuted }]}
+                  testID={testId('dashboard', 'recents', 'loading')}
+                >
                   Loading...
                 </Text>
               ) : recents.length === 0 ? (
-                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.empty, { color: colors.textMuted }]}
+                  testID={testId('dashboard', 'recents', 'empty')}
+                >
                   No finished games yet.
                 </Text>
               ) : (

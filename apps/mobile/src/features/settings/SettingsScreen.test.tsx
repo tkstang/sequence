@@ -57,16 +57,18 @@ afterEach(() => {
 
 describe('SettingsScreen', () => {
   it('renders theme controls, logout, and the app version', async () => {
-    const { getByTestId, getByText } = await render(
+    const { getByLabelText, getByTestId, getByText } = await render(
       <ThemeProvider>
         <SettingsScreen />
       </ThemeProvider>,
     );
 
     expect(getByTestId('settings.screen')).toBeTruthy();
+    expect(getByTestId('settings.theme.tabs')).toBeTruthy();
     expect(getByTestId('settings.theme.system')).toBeTruthy();
     expect(getByTestId('settings.theme.light')).toBeTruthy();
     expect(getByTestId('settings.theme.dark')).toBeTruthy();
+    expect(getByLabelText('Use system theme')).toBeTruthy();
     expect(getByTestId('settings.logout')).toBeTruthy();
     expect(getByTestId('settings.version')).toBeTruthy();
     expect(getByText('Version 9.8.7')).toBeTruthy();

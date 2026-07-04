@@ -53,7 +53,10 @@ export function HistoryScreen() {
               <Text style={[styles.stateTitle, { color: colors.text }]}>
                 Could not load history
               </Text>
-              <Text style={[styles.stateBody, { color: colors.textMuted }]}>
+              <Text
+                accessibilityRole="alert"
+                style={[styles.stateBody, { color: colors.textMuted }]}
+              >
                 Refresh from the dashboard or try again in a moment.
               </Text>
             </View>

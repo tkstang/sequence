@@ -49,11 +49,13 @@ export function SettingsScreen() {
           <View
             accessibilityRole="tablist"
             style={[styles.segmented, { borderColor: colors.borderStrong }]}
+            testID={testId('settings', 'theme', 'tabs')}
           >
             {THEME_OPTIONS.map((option) => {
               const selected = theme.mode === option.mode;
               return (
                 <Pressable
+                  accessibilityLabel={`Use ${option.label.toLowerCase()} theme`}
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
                   key={option.mode}
