@@ -114,6 +114,10 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
 - After adding Expo native modules, rebuild the dev client before retesting.
   Metro can show JS-level module fixes while the installed app still lacks the
   native module.
+- After adding Worklets/Reanimated/Gesture Handler or changing their native
+  integration, restart Metro with `--clear` after the rebuild. A stale bundle
+  produced a Worklets JSI assertion crash until Metro was restarted and the app
+  loaded a fresh bundle.
 - Argent keyboard input can be flaky in secure fields; if a password submit
   returns a validation error after apparent entry, retap the field, clear the
   partial value, and retype before resubmitting.

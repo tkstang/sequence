@@ -11,6 +11,29 @@ miss, verification mechanics, and implementation gotchas with durable reuse
 value. Expo MCP and Argent usage details belong in
 `using-expo-mcp-learnings.md`; anything broader belongs here.
 
+## End-of-Project Distillation Queue
+
+- OAT workflow instruction candidate: treat dispatch ceilings as maximums, not
+  selected effort levels. Implementer dispatch should choose the lowest
+  sufficient pinned role, bounded by the configured ceiling.
+- OAT workflow instruction candidate: when a subagent returns concerns that are
+  locally diagnosable, the orchestrator should fix, verify, and re-engage the
+  workflow instead of stopping at the concern.
+- OAT subagent prompt candidate: pinned roles currently need self-contained
+  prompts because they cannot be combined with full-history forks in the
+  available multi-agent tool.
+- Repo `AGENTS.md` candidate: keep Expo Router tests out of `apps/mobile/src/app`
+  because route-local test files can be included in Metro/export bundles.
+- Repo `AGENTS.md` candidate: after adding or changing Expo native modules,
+  run the package compatibility check, rebuild the dev client, and restart
+  Metro with a cleared cache before treating simulator proof as meaningful.
+- Repo `AGENTS.md` candidate: for game-surface work, pair unit/export gates with
+  simulator visual proof because compact layout and native runtime failures have
+  repeatedly escaped static checks.
+- Skill candidate: create a general OAT project execution learnings skill from
+  the orchestration, verification, and codebase-pattern notes in this file; keep
+  the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
+
 ## OAT Orchestration
 
 - Keep a companion general learnings log next to any tool-specific learning
@@ -164,6 +187,10 @@ value. Expo MCP and Argent usage details belong in
   simulator proof. JS tests and Metro can pass while the installed native app is
   still missing modules such as `ExpoSecureStore`, `ExpoNetwork`, or
   `ExpoWebBrowser`.
+- After native Worklets/Reanimated/Gesture Handler changes, stale Metro bundles
+  can crash a rebuilt dev client with low-level JSI assertions even when the
+  native build is correct. Restart Metro with `--clear`, relaunch the dev
+  client, and verify a fresh bundle load before diagnosing the native layer.
 - If the local API database is unavailable, a disposable Neon branch is a good
   simulator-auth substitute for mutating local verification. Use the branch's
   direct read-write host for `drizzle-kit push`; pooled hosts can conflict with
