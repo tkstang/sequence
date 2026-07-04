@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p08-t05
+oat_current_task_id: p08-t06
 oat_generated: false
 ---
 
@@ -33,9 +33,9 @@ oat_generated: false
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
-| Phase 8 | in_progress | 6     | 4/6       |
+| Phase 8 | in_progress | 6     | 5/6       |
 
-**Total:** 56/85 tasks completed
+**Total:** 57/85 tasks completed
 
 ---
 
@@ -3258,6 +3258,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Added dead-card turn-in controls for hard-mode drag play, reused the shared
   rule-violation feedback catalog for rejected turn-ins, and surfaced
   default-mode `DeadCardSwapped` events as a de-duplicated live toast.
+- Added the board rotate control with Reanimated rotation, kept rotated
+  layout-map frames aligned with drag hit-testing, and scaled 90/270-degree
+  rotations so the non-square portrait-card board remains inside the drag
+  layer's touch area.
 
 **Verification:**
 
@@ -3306,6 +3310,17 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Result: pass.
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`
 - Result: pass, 3 suites / 29 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check HEAD`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
+- Result: pass, 3 suites / 16 tests; Watchman emitted the existing recrawl
   warning only.
 - Run: `pnpm --filter @sequence/mobile typecheck`
 - Result: pass.
@@ -3565,6 +3580,53 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+### Task p08-t05: Board rotate control
+
+**Status:** completed
+**Commit:** b21961a / aaa8f56
+
+**Outcome:**
+
+- Added an in-board `board.rotate` control that cycles the board through
+  0/90/180/270-degree orientations.
+- Animated board rotation with Reanimated `withTiming`.
+- Registered transformed layout-map frames for each orientation so drag
+  hit-testing follows the visual board.
+- Scaled 90/270-degree rotations to the existing board bounds so the portrait
+  card-aspect board does not produce negative or overflow hit targets.
+
+**Files changed:**
+
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` - rotation control, animated
+  transform, and layout-map frame transformation.
+- `apps/mobile/src/game/GameBoard/GameBoard.test.tsx` - cycle coverage,
+  rotated frame assertions, and rotated hit-test coverage.
+- `apps/mobile/src/game/GameBoard/spotlight.test.ts` - Reanimated mock setup
+  for the updated board dependency.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
+- Result: pass, 3 suites / 16 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check HEAD`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The Sequence board is not square because cells use portrait card aspect
+  ratio. Raw 90-degree rotation can move cells outside the drag layer, so the
+  90/270-degree visual transform and registered frames both scale to fit the
+  existing board bounds.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -3697,7 +3759,8 @@ Chronological log of implementation progress.
 - [x] p08-t02: Drag submit + rejection feedback - 61df269 / a616e36
 - [x] p08-t03: Sequence-choice sheet - e13a789
 - [x] p08-t04: Dead-card turn-in + auto-swap surfacing - 6ca7d32
-- [ ] p08-t05: Board rotate control - next
+- [x] p08-t05: Board rotate control - b21961a / aaa8f56
+- [ ] p08-t06: Hard-mode e2e verification - next
 
 **What changed (high level):**
 
@@ -3833,6 +3896,8 @@ Chronological log of implementation progress.
   feedback.
 - The active game route now supports pending sequence-choice sheets and
   dead-card turn-in controls, including default-mode auto-swap feedback.
+- The mobile board now has a rotate control with Reanimated visual rotation
+  and layout-map-aware transformed hit targets for drag-mode play.
 
 ---
 
@@ -3900,6 +3965,7 @@ Track test execution during implementation.
 | 8     | `pnpm --filter @sequence/mobile exec jest src/test/root-layout.test.tsx src/game/GameRouteScreen.test.tsx src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler react-native-worklets --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t02-final`; `git diff --check`; `pnpm --filter @sequence/mobile ios`; simulator proof for drag game `18d450fa-1eb9-4c4a-a91c-f1ef8a1996ad` with screenshots `/tmp/sequence-mobile-p08-t02-drag-game.png` and `/tmp/sequence-mobile-p08-t02-drag-after-move.png` | yes    | 0      | 4 focused suites, 15 tests; dev client rebuilt; no-card drag-mode `game.makeMove` placed `16D`, app received subscription events, and screen updated to version 2 |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 sequence-choice/route suites, 13 tests; my-seat pending choice opens the sheet and submits `chooseSequenceCells`; other-seat choice shows frozen banner |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 dead-card/route/feedback suites, 29 tests; hard-mode turn-in calls `turnInDeadCard`, same-turn rejection uses `not-a-dead-card`, and default-mode auto-swap emits one toast per event seq |
+| 8     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 GameBoard suites, 16 tests; rotate control cycles 0/90/180/270, transformed frames stay aligned with drag hit-testing, and 90/270 rotations stay within the board touch area |
 
 ## Final Summary (for PR/docs)
 
