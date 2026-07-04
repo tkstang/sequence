@@ -20,6 +20,17 @@ type PendingListener = {
   listener: WebSocketEventHandler;
 };
 
+type PendingClose = {
+  code?: number;
+  reason?: string;
+};
+
+type CredentialScopedWebSocket = {
+  closeForCredentialChange: () => void;
+};
+
+const credentialScopedWebSockets = new Set<CredentialScopedWebSocket>();
+
 type NativeWebSocketConstructor = typeof WebSocket & {
   new (
     url: string | URL,
@@ -32,6 +43,12 @@ function getWebSocketConstructor() {
   return WebSocket as NativeWebSocketConstructor;
 }
 
+export function closeAuthedWebSocketsForCredentialChange(): void {
+  for (const socket of credentialScopedWebSockets) {
+    socket.closeForCredentialChange();
+  }
+}
+
 export function createAuthedWebSocketClass(
   BaseWebSocket: NativeWebSocketConstructor = getWebSocketConstructor(),
 ): typeof WebSocket {
@@ -42,14 +59,19 @@ export function createAuthedWebSocketClass(
     static CLOSED = BaseWebSocket.CLOSED;
 
     private binaryTypeValue: WebSocket['binaryType'] = 'blob';
+    private pendingClose: PendingClose | null = null;
     private readonly pendingListeners: PendingListener[] = [];
     private socket: WebSocket | null = null;
 
     constructor(url: string | URL, protocols?: string | string[]) {
+      credentialScopedWebSockets.add(this);
       void this.open(url, protocols);
     }
 
     get readyState() {
+      if (this.pendingClose && !this.socket) {
+        return BaseWebSocket.CLOSED;
+      }
       return this.socket?.readyState ?? BaseWebSocket.CONNECTING;
     }
 
@@ -108,7 +130,18 @@ export function createAuthedWebSocketClass(
     }
 
     close(code?: number, reason?: string) {
-      this.socket?.close(code, reason);
+      this.pendingClose = { code, reason };
+      credentialScopedWebSockets.delete(this);
+
+      if (!this.socket) {
+        return;
+      }
+
+      this.socket.close(code, reason);
+    }
+
+    closeForCredentialChange() {
+      this.close(1000, 'credential context changed');
     }
 
     dispatchEvent(event: Event) {
@@ -124,10 +157,19 @@ export function createAuthedWebSocketClass(
       const cookie = activeGameId
         ? await buildCookieHeader({ gameId: activeGameId })
         : await buildCookieHeader();
+
+      if (this.pendingClose) {
+        credentialScopedWebSockets.delete(this);
+        return;
+      }
+
       const options = cookie ? { headers: { Cookie: cookie } } : undefined;
       const socket = new BaseWebSocket(url, protocols, options);
 
       socket.binaryType = this.binaryTypeValue;
+      socket.addEventListener('close', () => {
+        credentialScopedWebSockets.delete(this);
+      });
       for (const pending of this.pendingListeners) {
         socket.addEventListener(pending.type, pending.listener);
       }

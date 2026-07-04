@@ -137,6 +137,58 @@ describe('createRealtimeLifecycle', () => {
     expect(resubscribe).toHaveBeenCalledWith('watchdog-timeout');
   });
 
+  it.each([
+    ['connecting', (lifecycle) => lifecycle.markConnecting('transport')],
+    ['reconnecting', (lifecycle) => lifecycle.markReconnecting('transport')],
+    ['error', (lifecycle) => lifecycle.markError('transport')],
+  ] satisfies [
+    string,
+    (lifecycle: ReturnType<typeof createRealtimeLifecycle>) => void,
+  ][])(
+    'resubscribes at the inactivity ceiling while %s',
+    (_label, markState) => {
+      const { appState } = createMockAppState();
+      const resubscribe = jest.fn();
+      const states: string[] = [];
+
+      const lifecycle = createRealtimeLifecycle({
+        appState,
+        getSocketState: () => 'closed',
+        logger: { info: jest.fn() },
+        onConnectionStateChange: (state) => states.push(state),
+        onResubscribe: resubscribe,
+      });
+
+      lifecycle.start();
+      markState(lifecycle);
+      jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS);
+
+      expect(states.at(-1)).toBe('reconnecting');
+      expect(resubscribe).toHaveBeenCalledWith('watchdog-timeout');
+    },
+  );
+
+  it('keeps re-arming the watchdog while recovery remains non-live', () => {
+    const { appState } = createMockAppState();
+    const resubscribe = jest.fn();
+
+    const lifecycle = createRealtimeLifecycle({
+      appState,
+      getSocketState: () => 'closed',
+      logger: { info: jest.fn() },
+      onConnectionStateChange: jest.fn(),
+      onResubscribe: resubscribe,
+    });
+
+    lifecycle.start();
+    lifecycle.markReconnecting('transport-idle');
+    jest.advanceTimersByTime(STREAM_INACTIVITY_WATCHDOG_MS * 2);
+
+    expect(resubscribe).toHaveBeenCalledTimes(2);
+    expect(resubscribe).toHaveBeenNthCalledWith(1, 'watchdog-timeout');
+    expect(resubscribe).toHaveBeenNthCalledWith(2, 'watchdog-timeout');
+  });
+
   it('logs live to reconnecting to live transitions with timestamps', () => {
     const { appState } = createMockAppState();
     const logger = { info: jest.fn() };

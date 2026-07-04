@@ -6,11 +6,12 @@ import {
 import { useSubscription } from '@trpc/tanstack-react-query';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
-import { useTRPC } from '../api/client.ts';
+import { useTRPC, useTRPCClient } from '../api/client.ts';
 import {
   getActiveGameCookieGameId,
   setActiveGameCookieGameId,
 } from '../api/cookies.ts';
+import { closeAuthedWebSocketsForCredentialChange } from '../api/ws.ts';
 import { removeGuestGame, updateGuestGameStatus } from '../auth/guest-store.ts';
 import {
   createRealtimeLifecycle,
@@ -60,6 +61,7 @@ export function useGameStream(
   view: GameViewState | null;
 } {
   const trpc = useTRPC();
+  const trpcClient = useTRPCClient();
   const [view, dispatch] = useReducer(reducer, null);
   const initialLastEventId = options.initialLastEventId ?? null;
   const lastEventIdRef = useRef<number | null>(initialLastEventId);
@@ -102,13 +104,29 @@ export function useGameStream(
   useEffect(() => {
     if (!gameId) return;
 
+    const previousGameId = getActiveGameCookieGameId();
     setActiveGameCookieGameId(gameId);
+    if (previousGameId !== gameId) {
+      closeAuthedWebSocketsForCredentialChange();
+    }
     return () => {
       if (getActiveGameCookieGameId() === gameId) {
         setActiveGameCookieGameId(undefined);
+        closeAuthedWebSocketsForCredentialChange();
       }
     };
   }, [gameId]);
+
+  const removeGuestGameIfAccessRejected = useCallback(async () => {
+    try {
+      await trpcClient.game.access.query({ gameId });
+    } catch (error) {
+      const code = getErrorCode(error);
+      if (code === 'NOT_FOUND' || code === 'FORBIDDEN') {
+        await removeGuestGame(gameId);
+      }
+    }
+  }, [gameId, trpcClient]);
 
   const subscription = useSubscription(
     trpc.game.onGameEvent.subscriptionOptions(
@@ -125,8 +143,12 @@ export function useGameStream(
           socketStateRef.current = 'errored';
           lifecycle.markError('subscription-error');
           const code = getErrorCode(error);
-          if (code === 'NOT_FOUND' || code === 'FORBIDDEN') {
+          if (code === 'NOT_FOUND') {
             void removeGuestGame(gameId);
+            return;
+          }
+          if (code === 'FORBIDDEN') {
+            void removeGuestGameIfAccessRejected();
           }
         },
         onConnectionStateChange: (next) => {

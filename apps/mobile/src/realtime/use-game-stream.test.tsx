@@ -20,6 +20,8 @@ type SubscriptionInput = {
 
 var mockSubscriptionInputs: SubscriptionInput[] = [];
 var mockLatestOptions: SubscriptionOptions | null = null;
+var mockAccessQuery = jest.fn();
+var mockCloseAuthedWebSocketsForCredentialChange = jest.fn();
 var mockRemoveGuestGame = jest.fn();
 var mockUpdateGuestGameStatus = jest.fn();
 var mockActiveGameCookieGameId: string | undefined;
@@ -42,6 +44,13 @@ jest.mock('../api/client.ts', () => ({
       },
     },
   })),
+  useTRPCClient: jest.fn(() => ({
+    game: {
+      access: {
+        query: (...args: unknown[]) => mockAccessQuery(...args),
+      },
+    },
+  })),
 }));
 
 jest.mock('../api/cookies.ts', () => ({
@@ -49,6 +58,11 @@ jest.mock('../api/cookies.ts', () => ({
   setActiveGameCookieGameId: (gameId: string | undefined) => {
     mockActiveGameCookieGameId = gameId;
   },
+}));
+
+jest.mock('../api/ws.ts', () => ({
+  closeAuthedWebSocketsForCredentialChange: () =>
+    mockCloseAuthedWebSocketsForCredentialChange(),
 }));
 
 jest.mock('../lib/logger.ts', () => ({
@@ -78,6 +92,8 @@ async function emit(item: GameStreamItem | { data: GameStreamItem }) {
 beforeEach(() => {
   mockSubscriptionInputs = [];
   mockLatestOptions = null;
+  mockAccessQuery = jest.fn().mockResolvedValue({ gameId: 'game-1' });
+  mockCloseAuthedWebSocketsForCredentialChange = jest.fn();
   mockRemoveGuestGame = jest.fn();
   mockUpdateGuestGameStatus = jest.fn();
   mockActiveGameCookieGameId = undefined;
@@ -165,12 +181,18 @@ describe('useGameStream', () => {
     await waitFor(() => {
       expect(mockActiveGameCookieGameId).toBe('game-1');
     });
+    expect(mockCloseAuthedWebSocketsForCredentialChange).toHaveBeenCalledTimes(
+      1,
+    );
 
     await act(async () => {
       unmount();
     });
 
     expect(mockActiveGameCookieGameId).toBeUndefined();
+    expect(mockCloseAuthedWebSocketsForCredentialChange).toHaveBeenCalledTimes(
+      2,
+    );
   });
 
   it('transitions connection state from connecting to live', async () => {
@@ -226,13 +248,40 @@ describe('useGameStream', () => {
     });
   });
 
-  it('removes the guest registry entry on not-found or forbidden stream errors', async () => {
+  it('removes the guest registry entry immediately on not-found stream errors', async () => {
+    await renderHook(() => useGameStream('game-1'));
+
+    await act(async () => {
+      mockLatestOptions?.onError?.({ data: { code: 'NOT_FOUND' } });
+    });
+
+    expect(mockRemoveGuestGame).toHaveBeenCalledWith('game-1');
+    expect(mockAccessQuery).not.toHaveBeenCalled();
+  });
+
+  it('keeps a guest registry entry when forbidden stream errors pass an HTTP access check', async () => {
     await renderHook(() => useGameStream('game-1'));
 
     await act(async () => {
       mockLatestOptions?.onError?.({ data: { code: 'FORBIDDEN' } });
     });
 
-    expect(mockRemoveGuestGame).toHaveBeenCalledWith('game-1');
+    await waitFor(() => {
+      expect(mockAccessQuery).toHaveBeenCalledWith({ gameId: 'game-1' });
+    });
+    expect(mockRemoveGuestGame).not.toHaveBeenCalled();
+  });
+
+  it('removes a guest registry entry when forbidden stream errors are confirmed over HTTP', async () => {
+    mockAccessQuery.mockRejectedValue({ data: { code: 'FORBIDDEN' } });
+    await renderHook(() => useGameStream('game-1'));
+
+    await act(async () => {
+      mockLatestOptions?.onError?.({ data: { code: 'FORBIDDEN' } });
+    });
+
+    await waitFor(() => {
+      expect(mockRemoveGuestGame).toHaveBeenCalledWith('game-1');
+    });
   });
 });

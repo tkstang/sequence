@@ -97,6 +97,7 @@ export function createRealtimeLifecycle({
       }
       transition('reconnecting', 'watchdog-timeout');
       onResubscribe('watchdog-timeout');
+      scheduleWatchdog();
     }, watchdogMs);
   }
 
@@ -116,25 +117,25 @@ export function createRealtimeLifecycle({
       return;
     }
 
-    clearWatchdog();
     transition('reconnecting', reason);
     onResubscribe(reason);
+    scheduleWatchdog();
   }
 
   return {
     checkLiveness,
     markConnecting(reason) {
-      clearWatchdog();
       transition('connecting', reason);
+      scheduleWatchdog();
     },
     markError(reason) {
-      clearWatchdog();
       transition('error', reason);
+      scheduleWatchdog();
     },
     markLive,
     markReconnecting(reason) {
-      clearWatchdog();
       transition('reconnecting', reason);
+      scheduleWatchdog();
     },
     recordStreamItem() {
       markLive('stream-item');

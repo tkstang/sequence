@@ -12,6 +12,7 @@ import {
 import { buildCookieHeader } from './cookies.ts';
 import { getActiveGameCookieGameId } from './cookies.ts';
 import {
+  closeAuthedWebSocketsForCredentialChange,
   createAuthedWebSocketClass,
   createWebSocketClientOptions,
 } from './ws.ts';
@@ -24,10 +25,16 @@ const mockedGetActiveGameCookieGameId =
   >;
 
 type ConstructedSocket = {
+  close: jest.Mock;
+  dispatchEvent: jest.Mock;
+  listeners: Map<string, SocketEventListener[]>;
   protocols?: string | string[];
+  send: jest.Mock;
   url: string | URL;
   options?: unknown;
 };
+
+type SocketEventListener = (event: Event) => void;
 
 class SpyWebSocket {
   static CONNECTING = 0;
@@ -35,18 +42,53 @@ class SpyWebSocket {
   static CLOSING = 2;
   static CLOSED = 3;
   static instances: ConstructedSocket[] = [];
+  binaryType: WebSocket['binaryType'] = 'blob';
+  bufferedAmount = 0;
+  close = jest.fn((code?: number, reason?: string) => {
+    this.readyState = SpyWebSocket.CLOSED;
+    for (const listener of this.listeners.get('close') ?? []) {
+      listener({ code, reason, type: 'close' } as unknown as Event);
+    }
+  });
+  dispatchEvent = jest.fn(() => true);
+  extensions = '';
+  listeners = new Map<string, SocketEventListener[]>();
+  protocol = '';
+  readyState = SpyWebSocket.CONNECTING;
+  send = jest.fn();
+  url: string | URL;
+  protocols?: string | string[];
+  options?: unknown;
 
   constructor(
     url: string | URL,
     protocols?: string | string[],
     options?: unknown,
   ) {
-    SpyWebSocket.instances.push({ url, protocols, options });
+    this.url = url;
+    this.protocols = protocols;
+    this.options = options;
+    SpyWebSocket.instances.push(this);
+  }
+
+  addEventListener(type: string, listener: SocketEventListener) {
+    const listeners = this.listeners.get(type) ?? [];
+    listeners.push(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: SocketEventListener) {
+    const listeners = this.listeners.get(type) ?? [];
+    this.listeners.set(
+      type,
+      listeners.filter((candidate) => candidate !== listener),
+    );
   }
 }
 
 describe('AuthedWebSocket', () => {
   beforeEach(() => {
+    closeAuthedWebSocketsForCredentialChange();
     mockedBuildCookieHeader.mockReset();
     mockedGetActiveGameCookieGameId.mockReset();
     mockedGetActiveGameCookieGameId.mockReturnValue(undefined);
@@ -68,7 +110,13 @@ describe('AuthedWebSocket', () => {
 
     expect(socket.readyState).toBe(SpyWebSocket.CONNECTING);
     expect(mockedBuildCookieHeader).toHaveBeenCalledWith();
-    expect(SpyWebSocket.instances).toEqual([
+    expect(
+      SpyWebSocket.instances.map(({ url, protocols, options }) => ({
+        url,
+        protocols,
+        options,
+      })),
+    ).toEqual([
       {
         url: 'ws://localhost:3001/trpc',
         protocols: undefined,
@@ -116,13 +164,67 @@ describe('AuthedWebSocket', () => {
     await Promise.resolve();
 
     expect(socket.readyState).toBe(SpyWebSocket.CONNECTING);
-    expect(SpyWebSocket.instances).toEqual([
+    expect(
+      SpyWebSocket.instances.map(({ url, protocols, options }) => ({
+        url,
+        protocols,
+        options,
+      })),
+    ).toEqual([
       {
         url: 'ws://localhost:3001/trpc',
         protocols: undefined,
         options: undefined,
       },
     ]);
+  });
+
+  it('does not create an inner socket after close is requested during async credential loading', async () => {
+    let resolveCookie!: (cookie: string | undefined) => void;
+    mockedBuildCookieHeader.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCookie = resolve;
+        }),
+    );
+    const AuthedWebSocket = createAuthedWebSocketClass(
+      SpyWebSocket as unknown as Parameters<
+        typeof createAuthedWebSocketClass
+      >[0],
+    );
+
+    const socket = new AuthedWebSocket('ws://localhost:3001/trpc');
+    socket.close(4001, 'closing before credentials');
+    resolveCookie('better-auth.session_token=abc123');
+    await Promise.resolve();
+
+    expect(socket.readyState).toBe(SpyWebSocket.CLOSED);
+    expect(SpyWebSocket.instances).toEqual([]);
+  });
+
+  it('closes existing authed sockets when the credential context changes', async () => {
+    mockedBuildCookieHeader.mockResolvedValue(
+      'better-auth.session_token=abc123',
+    );
+    const AuthedWebSocket = createAuthedWebSocketClass(
+      SpyWebSocket as unknown as Parameters<
+        typeof createAuthedWebSocketClass
+      >[0],
+    );
+
+    const socket = new AuthedWebSocket('ws://localhost:3001/trpc');
+    await Promise.resolve();
+
+    const inner = SpyWebSocket.instances.at(-1);
+    expect(socket.readyState).toBe(SpyWebSocket.CONNECTING);
+    expect(inner).toBeTruthy();
+
+    closeAuthedWebSocketsForCredentialChange();
+
+    expect(inner?.close).toHaveBeenCalledWith(
+      1000,
+      'credential context changed',
+    );
   });
 });
 
