@@ -124,6 +124,7 @@ export default function JoinPreviewScreen() {
   const data = preview.data as JoinPreview | undefined;
   const unavailableMessage = data ? getPreviewUnavailableMessage(data) : null;
   const errorCode = preview.isError ? getErrorCode(preview.error) : null;
+  const genericPreviewError = preview.isError && errorCode !== 'NOT_FOUND';
 
   return (
     <Screen
@@ -140,6 +141,26 @@ export default function JoinPreviewScreen() {
         <Text style={[styles.body, { color: colors.textMuted }]}>
           Loading game...
         </Text>
+      ) : genericPreviewError ? (
+        <Card variant="raised" testID={testId('join', 'preview', 'error')}>
+          <View style={styles.stateCard}>
+            <Text style={[styles.stateTitle, { color: colors.text }]}>
+              Could not load invite
+            </Text>
+            <Text style={[styles.body, { color: colors.textMuted }]}>
+              Check your connection and try again.
+            </Text>
+            <Button
+              onPress={() => {
+                void preview.refetch();
+              }}
+              testID={testId('join', 'preview', 'retry')}
+              variant="secondary"
+            >
+              Try again
+            </Button>
+          </View>
+        </Card>
       ) : errorCode === 'NOT_FOUND' || !data ? (
         <Card variant="raised" testID={testId('join', 'preview', 'notFound')}>
           <View style={styles.stateCard}>

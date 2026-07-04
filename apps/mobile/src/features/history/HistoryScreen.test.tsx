@@ -10,6 +10,7 @@ import type {
 
 type MockQueryResult<TData> = {
   data?: TData;
+  isError: boolean;
   isPending: boolean;
 };
 
@@ -17,6 +18,7 @@ type MockInfiniteResult = {
   data?: { pages: HistoryPage[] };
   fetchNextPage: jest.Mock;
   hasNextPage: boolean;
+  isError: boolean;
   isFetchingNextPage: boolean;
   isPending: boolean;
 };
@@ -83,6 +85,7 @@ beforeEach(() => {
   }));
   mockRecordQuery = {
     data: { wins: 7, losses: 3, total: 10 },
+    isError: false,
     isPending: false,
   };
   mockHeadToHeadQuery = {
@@ -95,6 +98,7 @@ beforeEach(() => {
         games: 4,
       },
     ],
+    isError: false,
     isPending: false,
   };
   mockGamesQuery = {
@@ -117,6 +121,7 @@ beforeEach(() => {
     },
     fetchNextPage: jest.fn(),
     hasNextPage: true,
+    isError: false,
     isFetchingNextPage: false,
     isPending: false,
   };
@@ -191,5 +196,20 @@ describe('HistoryScreen', () => {
     const { getAllByText } = await render(<HistoryScreen />);
 
     expect(getAllByText('Loading...').length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('renders an explicit error state when any history query fails', async () => {
+    mockRecordQuery.isError = true;
+    mockRecordQuery.data = undefined;
+
+    const { getByTestId, getByText, queryByTestId } = await render(
+      <HistoryScreen />,
+    );
+
+    expect(getByTestId('history.error')).toBeTruthy();
+    expect(getByText('Could not load history')).toBeTruthy();
+    expect(queryByTestId('history.record')).toBeNull();
+    expect(queryByTestId('history.games')).toBeNull();
+    expect(queryByTestId('history.headToHead')).toBeNull();
   });
 });

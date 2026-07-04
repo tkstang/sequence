@@ -178,6 +178,24 @@ describe('DashboardScreen', () => {
     });
   });
 
+  it('renders a non-auth dashboard load error instead of empty game sections', async () => {
+    mockMyGamesQuery = {
+      ...mockMyGamesQuery,
+      data: undefined,
+      error: { data: { code: 'INTERNAL_SERVER_ERROR' } },
+      isError: true,
+    };
+
+    const { getByTestId, getByText, queryByText } = await render(
+      <HomeScreen />,
+    );
+
+    expect(getByTestId('dashboard.error')).toBeTruthy();
+    expect(getByText('Could not load games')).toBeTruthy();
+    expect(queryByText('No games to resume right now.')).toBeNull();
+    expect(queryByText('No finished games yet.')).toBeNull();
+  });
+
   it('keeps account actions on the settings screen entry point', async () => {
     const user = userEvent.setup();
     const { getByTestId } = await render(<HomeScreen />);

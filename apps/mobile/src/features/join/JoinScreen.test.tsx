@@ -213,6 +213,29 @@ describe('JoinPreviewScreen', () => {
     ).toBeTruthy();
   });
 
+  it('renders generic preview errors separately from unknown invite codes', async () => {
+    const user = userEvent.setup();
+    mockRouteParams = { code: 'ABCD2345EF' };
+    mockQueryResult = {
+      error: { data: { code: 'INTERNAL_SERVER_ERROR' } },
+      isError: true,
+      isPending: false,
+      refetch: jest.fn(),
+    };
+
+    const { getByTestId, getByText, queryByText } = await render(
+      <JoinPreviewScreen />,
+    );
+
+    expect(getByTestId('join.preview.error')).toBeTruthy();
+    expect(getByText('Could not load invite')).toBeTruthy();
+    expect(queryByText('Unknown invite code')).toBeNull();
+
+    await user.press(getByTestId('join.preview.retry'));
+
+    expect(mockQueryResult.refetch).toHaveBeenCalledWith();
+  });
+
   it('joins as a registered user and navigates to the game route', async () => {
     mockRouteParams = { code: 'ABCD2345EF' };
     const user = userEvent.setup();

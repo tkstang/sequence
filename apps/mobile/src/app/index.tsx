@@ -14,6 +14,7 @@ import { useTRPC } from '../api/client.ts';
 import { mapTRPCErrorToPolicy } from '../api/error-policy.ts';
 import { useSession } from '../auth/client.ts';
 import { Button } from '../components/Button.tsx';
+import { Card } from '../components/Card.tsx';
 import { Screen } from '../components/Screen.tsx';
 import {
   GameCard,
@@ -41,6 +42,8 @@ export default function HomeScreen() {
     | undefined;
   const resumables = data?.resumables ?? [];
   const recents = data?.recents ?? [];
+  const dashboardError =
+    myGames.isError && mapTRPCErrorToPolicy(myGames.error) !== 'redirect-login';
 
   useEffect(() => {
     if (
@@ -114,57 +117,72 @@ export default function HomeScreen() {
           </Button>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Your games
-          </Text>
-          {myGames.isPending ? (
-            <Text style={[styles.empty, { color: colors.textMuted }]}>
-              Loading...
-            </Text>
-          ) : resumables.length === 0 ? (
-            <Text style={[styles.empty, { color: colors.textMuted }]}>
-              No games to resume right now.
-            </Text>
-          ) : (
-            <View style={styles.stack}>
-              {resumables.map((game) => (
-                <GameCard
-                  game={game}
-                  key={game.gameId}
-                  kind="resumable"
-                  onPress={openGame}
-                />
-              ))}
+        {dashboardError ? (
+          <Card variant="sunken" testID={testId('dashboard', 'error')}>
+            <View style={styles.stateCard}>
+              <Text style={[styles.stateTitle, { color: colors.text }]}>
+                Could not load games
+              </Text>
+              <Text style={[styles.empty, { color: colors.textMuted }]}>
+                Pull to refresh or try again in a moment.
+              </Text>
             </View>
-          )}
-        </View>
+          </Card>
+        ) : (
+          <>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                Your games
+              </Text>
+              {myGames.isPending ? (
+                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                  Loading...
+                </Text>
+              ) : resumables.length === 0 ? (
+                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                  No games to resume right now.
+                </Text>
+              ) : (
+                <View style={styles.stack}>
+                  {resumables.map((game) => (
+                    <GameCard
+                      game={game}
+                      key={game.gameId}
+                      kind="resumable"
+                      onPress={openGame}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Recent results
-          </Text>
-          {myGames.isPending ? (
-            <Text style={[styles.empty, { color: colors.textMuted }]}>
-              Loading...
-            </Text>
-          ) : recents.length === 0 ? (
-            <Text style={[styles.empty, { color: colors.textMuted }]}>
-              No finished games yet.
-            </Text>
-          ) : (
-            <View style={styles.stack}>
-              {recents.map((game) => (
-                <GameCard
-                  game={game}
-                  key={game.gameId}
-                  kind="recent"
-                  onPress={openGame}
-                />
-              ))}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                Recent results
+              </Text>
+              {myGames.isPending ? (
+                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                  Loading...
+                </Text>
+              ) : recents.length === 0 ? (
+                <Text style={[styles.empty, { color: colors.textMuted }]}>
+                  No finished games yet.
+                </Text>
+              ) : (
+                <View style={styles.stack}>
+                  {recents.map((game) => (
+                    <GameCard
+                      game={game}
+                      key={game.gameId}
+                      kind="recent"
+                      onPress={openGame}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
-          )}
-        </View>
+          </>
+        )}
       </ScrollView>
     </Screen>
   );
@@ -201,5 +219,15 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
+  },
+  stateCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  stateTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    lineHeight: 23,
   },
 });
