@@ -126,9 +126,12 @@ describe('DashboardScreen', () => {
     expect(getByText('vs Nia')).toBeTruthy();
   });
 
-  it('navigates lobby cards to the game route and finished cards to game-over', async () => {
+  it('navigates dashboard actions, lobby cards, and finished cards', async () => {
     const user = userEvent.setup();
     const { getByTestId } = await render(<HomeScreen />);
+
+    await user.press(getByTestId('dashboard.history'));
+    expect(mockRouterPush).toHaveBeenCalledWith('./history');
 
     await user.press(getByTestId('dashboard.resumable.lobby-1'));
     expect(mockRouterPush).toHaveBeenCalledWith('/game/lobby-1');

@@ -112,6 +112,13 @@ export default function HomeScreen() {
           >
             Join game
           </Button>
+          <Button
+            onPress={() => router.push('./history')}
+            testID={testId('dashboard', 'history')}
+            variant="secondary"
+          >
+            History
+          </Button>
         </View>
 
         <View style={styles.section}>
