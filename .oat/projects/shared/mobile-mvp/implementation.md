@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t04
+oat_current_task_id: p09-t05
 oat_generated: false
 ---
 
@@ -34,9 +34,9 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 3/7       |
+| Phase 9 | in_progress | 7     | 4/7       |
 
-**Total:** 61/85 tasks completed
+**Total:** 62/85 tasks completed
 
 ---
 
@@ -3740,6 +3740,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Finished games now render a mobile GameOver screen with web-parity result
   titles, winner/concede attribution, local win/loss/unknown outcome copy,
   winning sequence representation, and rematch/dashboard action testIDs.
+- Rematch on finished games now calls `game.rematch`, disables while pending,
+  navigates to the returned new game route on success, and shows
+  finished-game-specific unavailable/error copy on failure.
 
 **Verification:**
 
@@ -3764,8 +3767,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Expiry/date tests compute the expected local `Intl.DateTimeFormat` output
   instead of hardcoding a timezone-specific string; the p09-t02 check was also
   run under `TZ=UTC`.
-- Rematch is intentionally rendered with an inert route callback until p09-t04,
-  which owns mutation wiring and navigation to the new game.
+- Rematch success uses `router.replace('/game/<newId>')` to land in the newly
+  created rematch lobby/active game returned by the API.
 
 ---
 
@@ -3906,7 +3909,8 @@ Chronological log of implementation progress.
 - [x] p09-t01: Save & exit + concede controls - e664340 / 7d27bf4
 - [x] p09-t02: Freeze/resume + expiry states - 5d629c8 / d8a3db0
 - [x] p09-t03: GameOver screen - 2037cf6
-- [ ] p09-t04: Rematch flow - next
+- [x] p09-t04: Rematch flow - b004600
+- [ ] p09-t05: HandoffScreen + local pass-and-play - next
 
 **What changed (high level):**
 
@@ -4059,6 +4063,9 @@ Chronological log of implementation progress.
   of the generic placeholder, covering winner names, concede attribution,
   no-winner fallback copy, timer-expired copy, winning sequence representation,
   and dashboard/rematch action testIDs.
+- Mobile rematch now invokes the server rematch mutation from GameOver,
+  disables the action while pending, replaces to the returned game route, and
+  surfaces non-finished/conflict failures with rematch-specific copy.
 
 ---
 
@@ -4131,6 +4138,7 @@ Track test execution during implementation.
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 active-lifecycle/control suites, 19 tests; save-and-exit, concede, versioned payloads, guest save hiding, and active-game lifecycle conflict copy covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx --runInBand`; `TZ=UTC pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 freeze/resume/connection suites, 18 tests; UTC route rerun 15 tests; frozen board visible but disabled, resume restores play, saved state expiry copy, and disconnected-player banner covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 game-over/route suites, 20 tests; finished route renders GameOver; win/loss, concede, no-winner FFA, timer-expired copy, winner names, sequence representation, and dashboard/rematch testIDs covered |
+| 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 rematch/game-over route suites, 23 tests; rematch mutation payload, success navigation to returned game route, pending disabled state, dashboard preservation, and conflict copy covered |
 
 ## Final Summary (for PR/docs)
 
