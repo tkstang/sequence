@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t05
+oat_current_task_id: p09-t06
 oat_generated: false
 ---
 
@@ -34,9 +34,9 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 4/7       |
+| Phase 9 | in_progress | 7     | 5/7       |
 
-**Total:** 62/85 tasks completed
+**Total:** 63/85 tasks completed
 
 ---
 
@@ -3743,6 +3743,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Rematch on finished games now calls `game.rematch`, disables while pending,
   navigates to the returned new game route on success, and shows
   finished-game-specific unavailable/error copy on failure.
+- Local pass-and-play now has a mobile HandoffScreen gate that names the
+  incoming player, hides the entire hand tree until reveal, then shows only the
+  active local seat's hand as the stream current seat changes.
 
 **Verification:**
 
@@ -3754,6 +3757,8 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `TZ=UTC pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`
 - Run:
   `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/HandoffScreen.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
 - Run: `pnpm --filter @sequence/mobile typecheck`
 - Run: `pnpm --filter @sequence/mobile lint`
 - Run: `pnpm format:check`
@@ -3769,6 +3774,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
   run under `TZ=UTC`.
 - Rematch success uses `router.replace('/game/<newId>')` to land in the newly
   created rematch lobby/active game returned by the API.
+- Local pass-and-play move authorization remains server-authoritative: the API
+  resolves local creator actions to the current server seat, while mobile swaps
+  `mySeat`/visible hand only for UI targeting and hand privacy.
 
 ---
 
@@ -3910,7 +3918,8 @@ Chronological log of implementation progress.
 - [x] p09-t02: Freeze/resume + expiry states - 5d629c8 / d8a3db0
 - [x] p09-t03: GameOver screen - 2037cf6
 - [x] p09-t04: Rematch flow - b004600
-- [ ] p09-t05: HandoffScreen + local pass-and-play - next
+- [x] p09-t05: HandoffScreen + local pass-and-play - 5de7702
+- [ ] p09-t06: Local save/resume + dashboard integration - next
 
 **What changed (high level):**
 
@@ -4066,6 +4075,9 @@ Chronological log of implementation progress.
 - Mobile rematch now invokes the server rematch mutation from GameOver,
   disables the action while pending, replaces to the returned game route, and
   surfaces non-finished/conflict failures with rematch-specific copy.
+- Mobile local pass-and-play now gates between turns with `HandoffScreen`,
+  veils both outgoing and incoming hands until confirm, and then renders only
+  the incoming/current seat hand from `localHands`.
 
 ---
 
@@ -4139,6 +4151,7 @@ Track test execution during implementation.
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx --runInBand`; `TZ=UTC pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 freeze/resume/connection suites, 18 tests; UTC route rerun 15 tests; frozen board visible but disabled, resume restores play, saved state expiry copy, and disconnected-player banner covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 game-over/route suites, 20 tests; finished route renders GameOver; win/loss, concede, no-winner FFA, timer-expired copy, winner names, sequence representation, and dashboard/rematch testIDs covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 rematch/game-over route suites, 23 tests; rematch mutation payload, success navigation to returned game route, pending disabled state, dashboard preservation, and conflict copy covered |
+| 9     | `pnpm --filter @sequence/mobile exec jest src/game/HandoffScreen.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 local-handoff/route suites, 20 tests; handoff prompt/action, visible-hand helper, full hand-tree veil, outgoing/incoming hand privacy, and revealed current-seat hand covered |
 
 ## Final Summary (for PR/docs)
 
