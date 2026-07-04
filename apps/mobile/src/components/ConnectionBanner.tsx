@@ -6,6 +6,9 @@ import { useTheme } from '../theme/use-theme.ts';
 
 export interface ConnectionBannerProps {
   connectionState: GameStreamConnectionState;
+  disconnectedPlayerName?: string | null;
+  expiresAt?: string | null;
+  paused?: boolean;
 }
 
 const copyByState = {
@@ -26,14 +29,52 @@ const copyByState = {
   { detail: string; title: string }
 >;
 
-export function ConnectionBanner({ connectionState }: ConnectionBannerProps) {
+function freezeDetail(disconnectedPlayerName: string | null | undefined) {
+  if (disconnectedPlayerName && disconnectedPlayerName.length > 0) {
+    return `${disconnectedPlayerName} disconnected. Waiting for everyone to return.`;
+  }
+  return 'A player disconnected. Waiting for everyone to return.';
+}
+
+function formatExpiry(expiresAt: string | null | undefined) {
+  if (!expiresAt) return null;
+  const expires = new Date(expiresAt);
+  if (Number.isNaN(expires.getTime())) return null;
+  const label = new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(expires);
+  return expires.getTime() <= Date.now()
+    ? `Expired ${label}`
+    : `Expires ${label}`;
+}
+
+export function ConnectionBanner({
+  connectionState,
+  disconnectedPlayerName = null,
+  expiresAt = null,
+  paused = false,
+}: ConnectionBannerProps) {
   const { colors } = useTheme();
 
-  if (connectionState === 'live') {
+  const frozen =
+    paused || disconnectedPlayerName !== null || expiresAt !== null;
+
+  if (connectionState === 'live' && !frozen) {
     return null;
   }
 
-  const copy = copyByState[connectionState];
+  const copy = frozen
+    ? {
+        title: 'Game paused',
+        detail: freezeDetail(disconnectedPlayerName),
+        expiry: formatExpiry(expiresAt),
+      }
+    : connectionState === 'live'
+      ? null
+      : { ...copyByState[connectionState], expiry: null };
+
+  if (!copy) return null;
 
   return (
     <View
@@ -48,6 +89,11 @@ export function ConnectionBanner({ connectionState }: ConnectionBannerProps) {
       <Text style={[styles.detail, { color: colors.textMuted }]}>
         {copy.detail}
       </Text>
+      {copy.expiry ? (
+        <Text style={[styles.detail, { color: colors.textMuted }]}>
+          {copy.expiry}
+        </Text>
+      ) : null}
     </View>
   );
 }

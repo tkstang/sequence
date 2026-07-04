@@ -82,6 +82,23 @@ function teamForSeat(view: GameViewState): Team | null {
   );
 }
 
+function disconnectedPlayerName(view: GameViewState): string | null {
+  return view.players.find((player) => !player.connected)?.name ?? null;
+}
+
+function formatExpiry(expiresAt: string | null | undefined) {
+  if (!expiresAt) return null;
+  const expires = new Date(expiresAt);
+  if (Number.isNaN(expires.getTime())) return null;
+  const label = new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(expires);
+  return expires.getTime() <= Date.now()
+    ? `Expired ${label}`
+    : `Expires ${label}`;
+}
+
 function Placeholder({ title, view }: { title: string; view: GameViewState }) {
   const { colors } = useTheme();
 
@@ -102,9 +119,11 @@ function Placeholder({ title, view }: { title: string; view: GameViewState }) {
 
 function ActiveGameView({
   gameId,
+  interactionDisabled = false,
   view,
 }: {
   gameId: string;
+  interactionDisabled?: boolean;
   view: GameViewState;
 }) {
   const { colors } = useTheme();
@@ -139,6 +158,7 @@ function ActiveGameView({
   const choiceForMySeat = pendingChoice?.seat === view.mySeat;
   const lifecyclePending = saveAndExit.isPending || concede.isPending;
   const selectionDisabled =
+    interactionDisabled ||
     pendingChoice !== undefined ||
     !myTurn ||
     lifecyclePending ||
@@ -233,21 +253,23 @@ function ActiveGameView({
     : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
   const controlsCopy = moveSubmit.submitting
     ? 'Submitting move...'
-    : deadCardControls.submitting
-      ? 'Turning in dead card...'
-      : choiceForMySeat
-        ? 'Choose which five chips will become the locked sequence.'
-        : pendingChoice
-          ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
-          : (deadCardControls.feedback?.message ??
-            moveSubmit.feedback?.message ??
-            (myTurn
-              ? selectedCard
-                ? dragMode
-                  ? `Drag ${cardCode(selectedCard)} onto a board cell.`
-                  : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
-                : 'Select a card to show legal targets.'
-              : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
+    : interactionDisabled
+      ? 'Waiting for every player to return before play resumes.'
+      : deadCardControls.submitting
+        ? 'Turning in dead card...'
+        : choiceForMySeat
+          ? 'Choose which five chips will become the locked sequence.'
+          : pendingChoice
+            ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
+            : (deadCardControls.feedback?.message ??
+              moveSubmit.feedback?.message ??
+              (myTurn
+                ? selectedCard
+                  ? dragMode
+                    ? `Drag ${cardCode(selectedCard)} onto a board cell.`
+                    : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+                  : 'Select a card to show legal targets.'
+                : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
 
   return (
     <View style={styles.activeStack} testID={testId('game', 'active')}>
@@ -294,7 +316,7 @@ function ActiveGameView({
       <ActiveGameControls
         errorMessage={lifecycleError}
         gameId={gameId}
-        isPending={lifecyclePending}
+        isPending={lifecyclePending || interactionDisabled}
         local={view.local}
         onConcede={handleConcede}
         onSaveAndExit={handleSaveAndExit}
@@ -399,6 +421,41 @@ function ActiveGameView({
   );
 }
 
+function SavedGameView({ view }: { view: GameViewState }) {
+  const { colors } = useTheme();
+  const expiry = formatExpiry(view.expiresAt);
+
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.saved,
+        { backgroundColor: colors.savedBg, borderColor: colors.savedFg },
+      ]}
+      testID={testId('game', 'saved')}
+    >
+      <Text style={[styles.savedEyebrow, { color: colors.savedFg }]}>
+        Ready to resume
+      </Text>
+      <Text style={[styles.savedTitle, { color: colors.savedFg }]}>
+        Game saved
+      </Text>
+      <Text style={[styles.savedBody, { color: colors.savedFg }]}>
+        Return with the same players and the game will resume from round{' '}
+        {view.round}.
+      </Text>
+      {expiry ? (
+        <Text style={[styles.savedMeta, { color: colors.savedFg }]}>
+          {expiry}
+        </Text>
+      ) : null}
+      <Text style={[styles.savedMeta, { color: colors.savedFg }]}>
+        Version {view.version}
+      </Text>
+    </View>
+  );
+}
+
 function GameStateView({
   gameId,
   isMutating,
@@ -474,9 +531,9 @@ function GameStateView({
     return <Placeholder title="Game finished" view={view} />;
   }
   if (view.status === 'frozen') {
-    return <Placeholder title="Game frozen" view={view} />;
+    return <ActiveGameView gameId={gameId} interactionDisabled view={view} />;
   }
-  return <Placeholder title="Game saved" view={view} />;
+  return <SavedGameView view={view} />;
 }
 
 export default function GameRouteScreen() {
@@ -519,7 +576,18 @@ export default function GameRouteScreen() {
       testID={testId('game', 'screen')}
     >
       <View style={styles.stack}>
-        <ConnectionBanner connectionState={stream.connectionState} />
+        <ConnectionBanner
+          connectionState={stream.connectionState}
+          disconnectedPlayerName={
+            stream.view?.status === 'frozen'
+              ? disconnectedPlayerName(stream.view)
+              : null
+          }
+          expiresAt={
+            stream.view?.status === 'frozen' ? stream.view.expiresAt : null
+          }
+          paused={stream.view?.status === 'frozen'}
+        />
         {gameId.length === 0 ? (
           <Text style={[styles.error, { color: colors.danger }]}>
             Missing game id.
@@ -630,5 +698,34 @@ const styles = StyleSheet.create({
   placeholderMeta: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  saved: {
+    borderRadius: 8,
+    borderWidth: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  savedBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  savedEyebrow: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    textTransform: 'uppercase',
+  },
+  savedMeta: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  savedTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 26,
   },
 });

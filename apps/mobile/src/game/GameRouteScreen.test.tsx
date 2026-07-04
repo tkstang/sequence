@@ -185,6 +185,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  jest.useRealTimers();
 });
 
 describe('GameRouteScreen active turn flow', () => {
@@ -467,6 +468,74 @@ describe('GameRouteScreen active turn flow', () => {
 
     expect(getByTestId('lobby.screen')).toBeTruthy();
     expect(queryByTestId('board.grid')).toBeNull();
+  });
+
+  it('keeps frozen games visible but disables play until the stream resumes', async () => {
+    const user = userEvent.setup();
+    const activeView = fixtureView('active-your-turn');
+    const frozenView = {
+      ...activeView,
+      expiresAt: '2026-07-03T13:00:00.000Z',
+      players: activeView.players.map((player) =>
+        player.seat === 1 ? { ...player, connected: false } : player,
+      ),
+      status: 'frozen' as const,
+    };
+    mockStreamView = frozenView;
+    const [firstFiveClubsTarget] = boardCellsFor('5', 'C');
+    if (!firstFiveClubsTarget) {
+      throw new Error('5C fixture target is missing');
+    }
+
+    const { getByTestId, getByText, queryByTestId, rerender } = await render(
+      <GameRouteScreen />,
+    );
+
+    expect(getByTestId('board.grid')).toBeTruthy();
+    expect(getByText('Game paused')).toBeTruthy();
+    expect(
+      getByText('Riya disconnected. Waiting for everyone to return.'),
+    ).toBeTruthy();
+    expect(getByTestId('hand.card.5C').props.accessibilityState).toMatchObject({
+      disabled: true,
+    });
+
+    await user.press(getByTestId('hand.card.5C'));
+    expect(
+      queryByTestId(`board.cell.${firstFiveClubsTarget}.spotlight.target`),
+    ).toBeNull();
+    await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
+    expect(mockSubmitMove).not.toHaveBeenCalled();
+
+    mockStreamView = { ...activeView, status: 'active' };
+    await rerender(<GameRouteScreen />);
+
+    expect(getByText('Your turn')).toBeTruthy();
+    expect(queryByTestId('game.connection.banner')).toBeNull();
+
+    await user.press(getByTestId('hand.card.5C'));
+    expect(
+      getByTestId(`board.cell.${firstFiveClubsTarget}.spotlight.target`),
+    ).toBeTruthy();
+  });
+
+  it('shows a resumable saved state with expiry messaging', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    mockStreamView = fixtureView('active-your-turn', {
+      expiresAt: '2026-07-05T12:00:00.000Z',
+      status: 'saved',
+    });
+
+    const { getByTestId, getByText, queryByTestId } = await render(
+      <GameRouteScreen />,
+    );
+
+    expect(getByTestId('game.saved')).toBeTruthy();
+    expect(getByText('Game saved')).toBeTruthy();
+    expect(getByText('Ready to resume')).toBeTruthy();
+    expect(getByText('Expires Jul 5, 2026, 7:00 AM')).toBeTruthy();
+    expect(queryByTestId('game.placeholder')).toBeNull();
   });
 
   it('keeps non-active status branches as placeholders', async () => {
