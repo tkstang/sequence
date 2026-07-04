@@ -85,6 +85,7 @@ describe('RootLayout protected routing', () => {
     expect(mockRenderedScreenNames).toEqual([
       'index',
       'create',
+      'history',
       'join/index',
       'join/[code]',
       'game/[id]',
