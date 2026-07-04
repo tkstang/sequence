@@ -6,6 +6,20 @@ import { createElement } from 'react';
 import { StyleSheet } from 'react-native';
 import type { ViewStyle } from 'react-native';
 
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native') as typeof import('react-native');
+
+  return {
+    __esModule: true,
+    default: {
+      View,
+    },
+    useAnimatedStyle: (factory: () => unknown) => factory(),
+    useSharedValue: (value: unknown) => ({ value }),
+    withTiming: (value: unknown) => value,
+  };
+});
+
 import { GameBoard } from './GameBoard.tsx';
 import {
   createBoardSpotlight,

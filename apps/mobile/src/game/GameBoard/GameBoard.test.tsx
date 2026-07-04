@@ -1,9 +1,28 @@
 import { palette } from '@sequence/design-tokens';
 import type { Position, Team } from '@sequence/game-logic';
 import { BOARD_MAP, BOARD_SIZE } from '@sequence/game-logic';
-import { cleanup, render, waitFor } from '@testing-library/react-native';
+import {
+  cleanup,
+  render,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { ViewStyle } from 'react-native';
+
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native') as typeof import('react-native');
+
+  return {
+    __esModule: true,
+    default: {
+      View,
+    },
+    useAnimatedStyle: (factory: () => unknown) => factory(),
+    useSharedValue: (value: unknown) => ({ value }),
+    withTiming: (value: unknown) => value,
+  };
+});
 
 import { GameBoard } from './GameBoard.tsx';
 import { createBoardLayoutMap } from './layout-map.ts';
@@ -138,6 +157,78 @@ describe('GameBoard', () => {
         x: 8,
         y: 53,
       });
+    });
+  });
+
+  it('cycles the board rotate control through all four orientations', async () => {
+    const user = userEvent.setup();
+    const layoutMap = createBoardLayoutMap();
+    const { getByTestId } = await render(
+      <GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />,
+    );
+
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 32,
+        width: 45,
+        x: 348,
+        y: 105,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 264,
+        y: 413,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 32,
+        width: 45,
+        x: -57,
+        y: 329,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+    });
+  });
+
+  it('hit-tests rotated board frames against the layout map', async () => {
+    const user = userEvent.setup();
+    const layoutMap = createBoardLayoutMap();
+    const { getByTestId } = await render(
+      <GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />,
+    );
+
+    await user.press(getByTestId('board.rotate'));
+
+    await waitFor(() => {
+      expect(layoutMap.hitTest({ x: 370, y: 120 })).toBe('1AC');
+      expect(layoutMap.hitTest({ x: 24, y: 24 })).not.toBe('1AC');
     });
   });
 });
