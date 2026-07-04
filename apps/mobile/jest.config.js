@@ -15,9 +15,6 @@ const transpiledPackages = [
   '@react-navigation',
   '@react-navigation/.+',
   'react-native-.+',
-  'react-strict-dom',
-  '@stylexjs',
-  '@stylexjs/.+',
   '@sequence',
   '@sequence/.+',
 ];

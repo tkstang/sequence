@@ -121,9 +121,9 @@ picks it up and `pnpm --filter @sequence/web test` runs it standalone.
 
 Mobile tests live under `apps/mobile/src/**/*.test.{ts,tsx}` and run with Jest
 through the `jest-expo` preset (`apps/mobile/jest.config.js`). The config
-transforms Expo, React Native, React Strict DOM, StyleX, and `@sequence/*`
-workspace packages so route components, hooks, native components, and shared
-client-state consumers can run in Node.
+transforms Expo, React Native, and `@sequence/*` workspace packages so route
+components, hooks, native components, and shared client-state consumers can run
+in Node.
 
 The mobile setup file (`apps/mobile/src/test/setup.ts`) installs React Native
 test globals, mocks native modules, configures Testing Library, and provides the

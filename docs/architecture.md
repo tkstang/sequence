@@ -158,8 +158,8 @@ components in isolation from reusable fixtures (viewport switcher, per-component
 Expand, and a chrome-less `/dev-frame` target). See
 [`development.md`](development.md#dev-ui-playground). The web UI is styled with
 StyleX generated from shared design tokens; see [`styling.md`](styling.md). The
-mobile UI uses React Native primitives, React Strict DOM token variables, and
-the same shared palette.
+mobile UI uses React Native primitives styled from the same shared palette and
+dimension tokens.
 
 ## Current Scaling Limits
 

@@ -5,7 +5,7 @@ Shared design values for the web and mobile clients.
 This package is framework-free TypeScript. It owns color palettes, spacing,
 radius, shadows, typography, and z-index values that both clients consume. The
 web app uses generated StyleX files; the mobile app imports the package
-directly for React Strict DOM variables and native theme values.
+directly for native theme values and component styles.
 
 ## Responsibilities
 
@@ -49,9 +49,9 @@ generated files.
 
 Mobile imports `palette` directly for:
 
-- React Strict DOM variables in `apps/mobile/src/theme/vars.css.ts`.
 - Native theme context values in `apps/mobile/src/theme/theme-provider.tsx` and
   `apps/mobile/src/theme/use-theme.ts`.
+- Native component styles in `apps/mobile/src/components`.
 
 When adding a token, update the shared source here first, then update the web
 generated files and mobile consumers as needed.

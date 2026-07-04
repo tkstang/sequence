@@ -32,10 +32,7 @@ module.exports = function babelConfig(api) {
   plugins.push('react-native-reanimated/plugin');
 
   return {
-    presets: [
-      'babel-preset-expo',
-      ['react-strict-dom/babel-preset', { platform: 'native' }],
-    ],
+    presets: ['babel-preset-expo'],
     plugins,
   };
 };

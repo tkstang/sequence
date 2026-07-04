@@ -1034,8 +1034,6 @@ operator.
 - **Expo SDK 57** (RN 0.86, React 19.2) — pinned; SDK-bundled versions for
   reanimated (4.5), gesture-handler (2.32), react-native-svg, SecureStore,
   AsyncStorage.
-- **react-strict-dom** — pinned exact version (0.0.55 at design time);
-  upgraded deliberately, never `^`.
 - **@trpc/client + @trpc/tanstack-react-query 11.x, @tanstack/react-query
   5.x** — client-side only.
 - **better-auth + @better-auth/expo** — version-locked to the server's

@@ -161,11 +161,10 @@ database.
 
 ## Mobile UI Development
 
-The mobile UI uses Expo Router, React Native primitives, React Strict DOM token
-variables, Reanimated/Gesture Handler for drag interactions, and
-`@sequence/design-tokens` for shared palette values. Game screens consume
-`@sequence/client-state` for the same redacted `GameSnapshotView` projection as
-the web app.
+The mobile UI uses Expo Router, React Native primitives, Reanimated/Gesture
+Handler for drag interactions, and `@sequence/design-tokens` for shared palette
+and dimension values. Game screens consume `@sequence/client-state` for the
+same redacted `GameSnapshotView` projection as the web app.
 
 Route files live under `apps/mobile/src/app`. Keep tests outside that route
 tree, for example under `apps/mobile/src/test`, `apps/mobile/src/game`, or a
