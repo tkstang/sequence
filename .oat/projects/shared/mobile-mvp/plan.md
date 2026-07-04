@@ -2087,6 +2087,7 @@ git commit -m "docs(p12-t06): deployment docs for mobile; project wrap"
 | p10    | code     | pending         | -          | -                                                    |
 | p11    | code     | pending         | -          | -                                                    |
 | p12    | code     | pending         | -          | -                                                    |
+| p01-p12 | code    | received        | 2026-07-04 | reviews/range-review-2026-07-04.md                   |
 | final  | code     | pending         | -          | -                                                    |
 | spec   | artifact | pending         | -          | -                                                    |
 | design | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md |
