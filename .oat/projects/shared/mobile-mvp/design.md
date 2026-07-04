@@ -13,12 +13,12 @@ oat_template: false
 
 This design adds a third runtime boundary to the monorepo: `apps/mobile`, an
 Expo SDK 57 (React Native 0.86, New Architecture) iOS app that reaches full
-feature parity with the web MVP. The approach follows discovery's validated
-Chosen Direction (reaffirmed at design start): **hybrid React Strict DOM** —
-RSD + shared StyleX-compatible tokens style the app chrome (auth, dashboard,
-create/join, lobby shell, history, settings), while the game surface (board,
-hand, chips, drag interactions) is built from plain React Native primitives
-with Reanimated/gesture-handler, styled from the same tokens.
+feature parity with the web MVP. Discovery validated an early hybrid React
+Strict DOM direction, but simulator verification established the accepted
+shipped baseline: native-backed React Native chrome primitives (auth,
+dashboard, create/join, lobby shell, history, settings) and the game surface
+(board, hand, chips, drag interactions) are both styled from shared design
+tokens, with the game surface using Reanimated/gesture-handler where needed.
 
 The architectural center of gravity does not move: `packages/api` remains the
 sole authority for rules, persistence, auth, redaction, timers, and realtime.
@@ -81,21 +81,22 @@ runbook** (FR19) as it is designed, not after the fact.
 
 **Key Components:**
 
-- **`apps/mobile`:** Expo app — expo-router navigation, RSD-styled chrome,
+- **`apps/mobile`:** Expo app — expo-router navigation, native-backed chrome,
   native game surface, auth/session layer, realtime lifecycle manager,
   theming, dev playground (dev-only), agent-loop instrumentation (testIDs).
 - **`packages/design-tokens` (new):** Framework-free raw design values
   (palette with light/dark pairs, spacing, radii, typography, z-index).
-  Consumed by web `tokens.stylex.ts`/`themes.stylex.ts` and by mobile (RSD
-  `css.defineVars` wrapper + game-surface theme hook).
+  Consumed by web `tokens.stylex.ts`/`themes.stylex.ts` and by mobile native
+  theme helpers/components.
 - **`packages/client-state` (new):** `GameSnapshotView`, `GameStreamItem`,
   `applyStreamItem`, status/turn/timer view helpers, and the
   rule-violation-code → user-message catalog. Extracted from
   `apps/web/src/app/game/[id]/components/game-state.ts`; framework-free;
   Vitest-tested. Web is refactored to import it.
-- **`packages/api` (additive changes only):** Better Auth `expo()` plugin,
-  `trustedOrigins` for the app scheme, and an opt-in guest-token return on
-  `game.join`.
+- **`packages/api` (targeted changes):** Better Auth `expo()` plugin,
+  `trustedOrigins` for the app scheme, an opt-in guest-token return on
+  `game.join`, and presence-correctness fixes required by NFR2 recovery and
+  freeze/resume semantics.
 - **Agent tooling config:** project `.mcp.json` (Expo MCP, Argent),
   `expo-mcp` dev dependency (local simulator tools), `apps/mobile/AGENTS.md`.
 - **Operator runbook (new doc):** `docs/mobile-operator-runbook.md` — every
@@ -106,7 +107,7 @@ runbook** (FR19) as it is designed, not after the fact.
 
 ```
 apps/mobile/src
-├── app/                          # expo-router routes (chrome = RSD)
+├── app/                          # expo-router routes (native-backed chrome)
 │   ├── _layout.tsx               # providers: Query/tRPC, Auth, Theme, GestureRoot
 │   ├── (auth)/login.tsx, signup.tsx
 │   ├── index.tsx                 # dashboard
@@ -124,8 +125,8 @@ apps/mobile/src
 │   ├── GameBoard/  CardHand/  PlayerRail/  LobbyTeams/
 │   ├── GameOver/  HandoffScreen/  ActiveGameControls/
 │   └── drag/                     # gesture-handler + Reanimated drag layer
-├── theme/                        # RSD vars wrapper, ThemeProvider, useTheme
-└── components/                   # shared RSD chrome components (Button, …)
+├── theme/                        # ThemeProvider, useTheme, native token helpers
+└── components/                   # shared native-backed chrome components
 ```
 
 ### Data Flow
@@ -256,9 +257,10 @@ export async function removeGuestGame(gameId: string): Promise<void>; // also de
   is the highest-blast-radius unknown, and it is verifiable on the simulator
   (no operator dependency).
 
-### API server changes (`packages/api`) — additive only
+### API server changes (`packages/api`) — native support + presence correctness
 
-**Purpose:** Accept native clients without altering web behavior.
+**Purpose:** Accept native clients and preserve correct presence/recovery
+behavior without regressing web clients.
 
 **Responsibilities / changes:**
 
@@ -269,7 +271,11 @@ export async function removeGuestGame(gameId: string): Promise<void>; // also de
    guest joins, include the signed guest token in the response body
    (`guestToken?: string`) in addition to the httpOnly cookie. Web never
    sends the flag; behavior is unchanged for existing clients.
-3. No other route, schema, or persistence changes.
+3. Presence tracker correctness changes required by NFR2: per-seat
+   subscription accounting, local-game presence updates for every local seat,
+   and reconnect-race handling that prevents false freezes or missed
+   reconnects. These changes intentionally affect observable presence behavior
+   for all clients and are covered by API presence tests.
 
 **Design Decisions:**
 
@@ -280,6 +286,10 @@ export async function removeGuestGame(gameId: string): Promise<void>; // also de
 - CORS needs no change: native requests are not browser-governed; Better
   Auth's origin/CSRF checks are what the `expo()` plugin + `trustedOrigins`
   address.
+- The original additive-only API constraint is narrowed here: auth/config
+  support stays additive, while presence-correctness fixes are accepted because
+  they are necessary to satisfy the mobile realtime contract and preserve
+  server-authoritative lifecycle semantics.
 
 ### Realtime lifecycle manager (`src/realtime/`)
 
@@ -361,7 +371,13 @@ export const palette: {
   light: Record<ColorToken, string>;
   dark: Record<ColorToken, string>;
 };
-export const space, radius, fontSize, fontWeight, lineHeight, zIndex, fontFamily;
+export const space,
+  radius,
+  fontSize,
+  fontWeight,
+  lineHeight,
+  zIndex,
+  fontFamily;
 ```
 
 **Consumers:**
@@ -370,16 +386,15 @@ export const space, radius, fontSize, fontWeight, lineHeight, zIndex, fontFamily
   `prefers-color-scheme` dark defaults) and `themes.stylex.ts` builds
   `createTheme` overrides from `palette.dark` — output CSS must be
   value-identical to today (colors are moved, not changed).
-- Mobile chrome: `src/theme/vars.css.ts` wraps the same values in RSD
-  `css.defineVars` with in-definition `@media (prefers-color-scheme: dark)`
-  dark values.
-- Mobile game surface: `useTheme()` resolves `palette[scheme]` + dimensions
-  for plain-RN styles.
+- Mobile chrome: native-backed components consume shared palette and theme
+  helpers from `src/theme`.
+- Mobile game surface: `useTheme()` resolves `palette[scheme]` + native-ready
+  values for plain-RN styles.
 
 **Design Decisions:**
 
-- Share raw values, not `.stylex.ts` files — sidesteps RSD's bundled-StyleX
-  version skew (0.15.x) vs web StyleX (0.19.x).
+- Share raw values, not `.stylex.ts` files — sidesteps web/native styling
+  implementation differences and keeps token packages framework-free.
 - StyleX must statically evaluate the cross-package import in web's
   `defineVars` files; verified in the token-refactor step (StyleX
   shareable-tokens recipe / `unstable_moduleResolution`). Fallback if the
@@ -394,34 +409,34 @@ export const space, radius, fontSize, fontWeight, lineHeight, zIndex, fontFamily
 
 **Responsibilities:** `ThemeProvider` holds mode (`light`/`dark`/`system`),
 persists to AsyncStorage (`sequence-theme`, matching web's key), applies
-manual override via `Appearance.setColorScheme()` (which RSD's
-`prefers-color-scheme` polyfill and `useColorScheme` both respect), exposes
-`useTheme()` returning `{ mode, scheme, colors }` for the game surface.
+manual override via `Appearance.setColorScheme()` and exposes `useTheme()`
+returning `{ mode, scheme, colors }` for native-backed chrome and the game
+surface.
 
 **Design Decisions:** OS-default with persisted manual override mirrors web
 exactly; AsyncStorage (not SecureStore) because the preference is not a
 secret.
 
-### App chrome (RSD screens + components)
+### App chrome (native-backed screens + components)
 
-**Purpose:** All non-game screens, in the shared StyleX mental model.
+**Purpose:** All non-game screens, in the shared-token mobile chrome model.
 
 **Responsibilities:** login/signup, dashboard (resumables/recents via
 `game.myGames`), create form, join flow (code entry → `game.preview` card →
 join), history (record, paginated list, head-to-head), settings (theme
-toggle, logout), and a small RSD component kit (Button, TextField, Card,
-Badge, Screen scaffold) built once and reused.
+toggle, logout), and a small native-backed component kit (Button, TextField,
+Card, Badge, Screen scaffold) built once and reused.
 
 **Design Decisions:**
 
-- RSD elements (`html.*` + `css.create`) with tokens from `vars.css.ts`;
-  `data-layoutconformance="strict"` set at the root.
-- RSD's native CSS subset suffices here (flexbox layouts; no grid needed in
-  chrome); anything that fights the subset gets a plain-RN escape hatch
-  locally rather than abandoning the approach globally.
-- Fallback (pre-agreed in discovery): if the early RSD spike fails on SDK 57,
-  chrome moves to Unistyles v3 consuming the same tokens; screen structure
-  and the component kit API are styling-agnostic to keep that swap cheap.
+- The accepted implementation uses native React Native primitives with
+  `StyleSheet` and shared token/theme helpers. Public component APIs remain
+  styling-agnostic.
+- The early RSD spike remains useful provenance but is not the current chrome
+  source of truth; simulator verification showed native-backed wrappers were
+  the stable layout baseline for compact mobile screens.
+- If a future styling layer is re-evaluated, it should consume the same raw
+  token package and preserve the current component APIs.
 
 ### Game surface (plain RN: `src/game/`)
 
@@ -435,8 +450,7 @@ inputs):**
   (team-colored circle, lock indicator) + spotlight dim layer. Tap mode:
   when a selected card yields `validTargets`, non-target cells dim (the
   web's spotlight affordance); tapping a target submits. Optional
-  rotate-the-board control (parity). Cell layout is computed (screen width /
-  10) and registered in a shared layout map for drag hit-testing.
+  rotate-the-board control (parity). Cell layout is computed (screen width / 10) and registered in a shared layout map for drag hit-testing.
 - **CardHand:** bottom-docked hand; tap to select (tap mode) or the drag
   source (drag mode); dead cards badged in hard mode with the turn-in
   affordance.
@@ -518,8 +532,8 @@ for EAS anyway).
 
 **Purpose:** FR19 — no operator step lives as tribal knowledge.
 
-**Structure:** one section per operator concern, each with *Why / When
-(phase) / Prerequisites / Steps / Verify / Troubleshooting*:
+**Structure:** one section per operator concern, each with _Why / When
+(phase) / Prerequisites / Steps / Verify / Troubleshooting_:
 
 0. Local machine setup — Xcode install, license/first-launch, iOS Simulator
    runtime, CocoaPods/watchman. The one operator prerequisite that precedes
@@ -537,7 +551,7 @@ for EAS anyway).
 **Design Decisions:** Lives in `docs/` (Operations section, beside
 `deployment.md`, linked from `docs/index.md`) because it is durable repo
 documentation, not project-scoped ephemera; the project may keep phase notes
-pointing into it. Written incrementally — each phase that *discovers* an
+pointing into it. Written incrementally — each phase that _discovers_ an
 operator need appends its section then, so Phase 12 is execution, not
 authoring.
 
@@ -740,34 +754,34 @@ None — no schema or query changes.
 
 ### Requirement-to-Test Mapping
 
-| ID | Verification | Key Scenarios |
-| --- | --- | --- |
-| FR1 | integration + manual | signup/login/logout against local API; force-quit → relaunch stays logged in (simulator); authed query + WS both work |
-| FR2 | manual + unit | preview card renders; guest join seats + plays; force-quit → relaunch: guest home lists the game from the registry and re-enters it with the stored token; registry+token cleaned up on finished/`FORBIDDEN`; `sequence://join/<code>` routes with code prefilled |
-| FR3 | unit + manual | dashboard renders resumables/recents fixtures; navigation per status |
-| FR4 | unit + manual | create form validation (counts/mode/timer/local); remote → lobby, local → active |
-| FR5 | manual + unit | two clients (mobile sim + web) see join/team/kick/randomize live; start gated on legal layout; share sheet |
-| FR6 | unit + manual | board/hand render from fixtures (all cell states); spotlight only on selection; jack plays; live 2-client game; stale version recovers |
-| FR7 | manual + unit | drag ghost tracks smoothly (simulator + profiler); no hints; illegal drop feedback |
-| FR8 | unit + manual | pending-choice sheet (incl. chained runs); dead-card turn-in once/turn; auto-swap surfaced |
-| FR9 | unit + manual | countdown from `turnDeadlineAt` fixture; re-sync after background; server forfeit reflected |
-| FR10 | manual + unit | save→resumables; concede outcomes (2-team, 3-team); freeze/resume banners across disconnect |
-| FR11 | unit + manual | handoff gates hand visibility; local save; aggregates exclusion (server-verified) |
-| FR12 | unit + manual | outcome rendering matrix; rematch → all clients land in new lobby |
-| FR13 | unit + manual | record/list/head-to-head fixtures; pagination |
-| FR14 | unit + manual | event → toast mapping; violation catalog covers all 13 codes |
-| FR15 | unit + manual | system tracking; manual override persists; both-themes screenshot pass |
-| FR16 | unit + manual | web suites green post-refactor; `/dev` playground visual parity; token add propagates to both platforms |
-| FR17 | manual | scripted demo: agent builds, launches, screenshots, taps by testID, reads logs from committed config — no operator involvement |
-| FR18 | manual (operator) | TestFlight install by external tester; production game end-to-end; smoke checklist |
-| FR19 | manual | runbook completeness review against the operator-step inventory; each step has verify instructions |
-| NFR1 | integration + manual | existing server redaction tests remain the guarantee; client store inspected for absence of foreign hands; handoff privacy |
-| NFR2 | manual | simulator scenario matrix with **measured elapsed times** from connection-state logs: killed API socket → detection ≤10s, reconnect+recovery ≤15s after restart; brief background, >replay-window background, force-quit mid-game; device-network cases deferred to the runbook's device checklist |
-| NFR3 | perf + manual | submitting-state renders immediately on move submit (component test); move round-trip log asserts p50 ≤300ms against local API (agent-run sample), production spot-check via Server-Timing; Argent/DevTools profile of drag + event application; device spot-check deferred to runbook checklist |
-| NFR4 | manual | release build audit: no dev routes, no expo-mcp, https/wss only, SecureStore-only credentials |
-| NFR5 | unit + manual | testID convention spot-check; agent tap-by-testID demo |
-| NFR6 | manual | root `typecheck`/`lint`/`format:check`/`test` include mobile and pass |
-| NFR7 | manual | phase audit: every Phase 1-11 task/verification executable agent-only; operator steps consolidated in Phase 12 + runbook |
+| ID   | Verification         | Key Scenarios                                                                                                                                                                                                                                                                                      |
+| ---- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1  | integration + manual | signup/login/logout against local API; force-quit → relaunch stays logged in (simulator); authed query + WS both work                                                                                                                                                                              |
+| FR2  | manual + unit        | preview card renders; guest join seats + plays; force-quit → relaunch: guest home lists the game from the registry and re-enters it with the stored token; registry+token cleaned up on finished/`FORBIDDEN`; `sequence://join/<code>` routes with code prefilled                                  |
+| FR3  | unit + manual        | dashboard renders resumables/recents fixtures; navigation per status                                                                                                                                                                                                                               |
+| FR4  | unit + manual        | create form validation (counts/mode/timer/local); remote → lobby, local → active                                                                                                                                                                                                                   |
+| FR5  | manual + unit        | two clients (mobile sim + web) see join/team/kick/randomize live; start gated on legal layout; share sheet                                                                                                                                                                                         |
+| FR6  | unit + manual        | board/hand render from fixtures (all cell states); spotlight only on selection; jack plays; live 2-client game; stale version recovers                                                                                                                                                             |
+| FR7  | manual + unit        | drag ghost tracks smoothly (simulator + profiler); no hints; illegal drop feedback                                                                                                                                                                                                                 |
+| FR8  | unit + manual        | pending-choice sheet (incl. chained runs); dead-card turn-in once/turn; auto-swap surfaced                                                                                                                                                                                                         |
+| FR9  | unit + manual        | countdown from `turnDeadlineAt` fixture; re-sync after background; server forfeit reflected                                                                                                                                                                                                        |
+| FR10 | manual + unit        | save→resumables; concede outcomes (2-team, 3-team); freeze/resume banners across disconnect                                                                                                                                                                                                        |
+| FR11 | unit + manual        | handoff gates hand visibility; local save; aggregates exclusion (server-verified)                                                                                                                                                                                                                  |
+| FR12 | unit + manual        | outcome rendering matrix; rematch parity: initiator navigates to the new lobby/local active game; other players can reach it from dashboard                                                                                                                                                        |
+| FR13 | unit + manual        | record/list/head-to-head fixtures; pagination                                                                                                                                                                                                                                                      |
+| FR14 | unit + manual        | event → toast mapping; violation catalog covers all 13 codes                                                                                                                                                                                                                                       |
+| FR15 | unit + manual        | system tracking; manual override persists; both-themes screenshot pass                                                                                                                                                                                                                             |
+| FR16 | unit + manual        | web suites green post-refactor; `/dev` playground visual parity; token add propagates to both platforms                                                                                                                                                                                            |
+| FR17 | manual               | scripted demo: agent builds, launches, screenshots, taps by testID, reads logs from committed config — no operator involvement                                                                                                                                                                     |
+| FR18 | manual (operator)    | TestFlight install by external tester; production game end-to-end; smoke checklist                                                                                                                                                                                                                 |
+| FR19 | manual               | runbook completeness review against the operator-step inventory; each step has verify instructions                                                                                                                                                                                                 |
+| NFR1 | integration + manual | existing server redaction tests remain the guarantee; client store inspected for absence of foreign hands; handoff privacy                                                                                                                                                                         |
+| NFR2 | manual               | simulator scenario matrix with **measured elapsed times** from connection-state logs: killed API socket → detection ≤10s, reconnect+recovery ≤15s after restart; brief background, >replay-window background, force-quit mid-game; device-network cases deferred to the runbook's device checklist |
+| NFR3 | perf + manual        | submitting-state renders immediately on move submit (component test); move round-trip log asserts p50 ≤300ms against local API (agent-run sample), production spot-check via Server-Timing; Argent/DevTools profile of drag + event application; device spot-check deferred to runbook checklist   |
+| NFR4 | manual               | release build audit: no dev routes, no expo-mcp, https/wss only, SecureStore-only credentials                                                                                                                                                                                                      |
+| NFR5 | unit + manual        | testID convention spot-check; agent tap-by-testID demo                                                                                                                                                                                                                                             |
+| NFR6 | manual               | root `typecheck`/`lint`/`format:check`/`test` include mobile and pass                                                                                                                                                                                                                              |
+| NFR7 | manual               | phase audit: every Phase 1-11 task/verification executable agent-only; operator steps consolidated in Phase 12 + runbook                                                                                                                                                                           |
 
 ### Unit Tests
 
@@ -902,9 +916,8 @@ involvement.
 **Goal:** Shared design language on both platforms.
 
 **Tasks:** `packages/design-tokens`; web refactor to consume it (visual
-parity check in `/dev`); RSD setup + spike sign-off (`vars.css.ts`,
-`data-layoutconformance`); ThemeProvider; RSD component kit (Button,
-TextField, Card, Screen).
+parity check in `/dev`); RSD spike sign-off as provenance; ThemeProvider;
+native-backed component kit (Button, TextField, Card, Screen).
 
 **Verification:** FR16 criteria; themed kit renders on simulator in both
 schemes; web gates green. (Agent-only.)
@@ -1034,8 +1047,9 @@ operator.
 
 - **@sequence/game-logic** — unchanged; consumed for types, display helpers,
   board map.
-- **@sequence/api** — type-only `AppRouter`; additive server changes (expo
-  plugin, join flag).
+- **@sequence/api** — type-only `AppRouter`; native auth/config support
+  (expo plugin, join flag) plus targeted presence-correctness fixes required
+  by NFR2.
 - **@sequence/client-state, @sequence/design-tokens** — new; web refactored
   to consume both.
 - **apps/web** — two mechanical refactors (tokens, game-state extraction);
@@ -1049,11 +1063,13 @@ operator.
 
 ## Risks and Mitigation
 
-- **RSD on SDK 57 fails the spike:** Probability: Medium | Impact: Medium
-  - **Mitigation:** Spike lands in Phase 3 before any chrome is built;
-    component kit API is styling-agnostic.
-  - **Contingency:** Swap chrome styling to Unistyles v3 over the same
-    tokens (pre-agreed); game surface unaffected.
+- **Future chrome styling layer re-evaluation:** Probability: Low | Impact:
+  Medium
+  - **Mitigation:** Native-backed chrome is the shipped baseline; the early RSD
+    spike is kept as provenance only, and component kit APIs remain
+    styling-agnostic.
+  - **Contingency:** Any future styling layer must consume the same raw tokens;
+    game surface remains unaffected.
 - **Better Auth Expo session persistence misbehaves:** Probability: Medium |
   Impact: High
   - **Mitigation:** Phase 4 is a dedicated vertical slice; versions pinned;

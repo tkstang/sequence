@@ -43,8 +43,9 @@ feedback loop the web app has via its dev playground and Playwright.
 Scope boundaries: iOS is the only verified platform in v1 (Android stays
 structurally supported but untested); TestFlight via EAS is the finish line
 and is isolated in the final phase; the API remains the authority for all
-game rules, persistence, and auth — its only changes are additive auth/config
-surface for native clients.
+game rules, persistence, and auth. Native-client API work is limited to the
+additive auth/config surface plus presence-correctness fixes required to meet
+the mobile realtime recovery contract.
 
 ## Goals
 
@@ -225,8 +226,9 @@ surface for native clients.
   settings.
 - **Acceptance Criteria:**
   - Outcome screen matches web semantics for 2-team and 3-team games
-  - Rematch navigates all connected players to the new game's lobby (or
-    active state for local)
+  - Rematch matches web parity: the initiating client navigates to the new
+    game's lobby (or active state for local), and other connected players can
+    reach the new game from the dashboard
 - **Priority:** P0
 
 **FR13: History**
@@ -397,16 +399,18 @@ surface for native clients.
 - The rules engine stays framework-free; no React/RN imports are added to it.
 - The API remains the authority for auth, persistence, move validation,
   version guards, redaction, timers, and realtime; API changes are limited to
-  additive auth/config surface for native clients.
+  additive auth/config surface for native clients plus presence-correctness
+  fixes required by NFR2 recovery and freeze/resume semantics.
 - The web app must not visually or functionally regress from the shared-token
   refactor; all existing gates stay green.
 - Monorepo conventions hold: Node 24, pnpm, explicit `.ts`/`.tsx` import
   extensions with `import type` (`verbatimModuleSyntax`); the mobile bundler
   must resolve the existing convention.
 - Expo SDK 57 / New Architecture; dependencies stay on SDK-bundled versions.
-- Styling follows the hybrid direction chosen in discovery: React Strict DOM
-  + shared StyleX-compatible tokens for app chrome; plain RN primitives for
-  the game surface. No Tailwind/NativeWind.
+- Styling follows the accepted mobile implementation direction: native-backed
+  React Native chrome primitives and the game surface both consume shared
+  design tokens. React Strict DOM remains historical spike/provenance, not the
+  shipped chrome baseline. No Tailwind/NativeWind.
 - Dev-only surfaces must be excluded from release builds.
 - iOS-first: no Android-specific work beyond what Expo provides structurally.
 - Autonomy-first execution: operator-dependent steps and verification are
@@ -422,8 +426,8 @@ surface for native clients.
 - Better Auth (server) and its Expo client integration.
 - Expo SDK 57 toolchain (dev builds, CNG/prebuild), EAS Build for the final
   phase, Apple Developer Program membership (final phase).
-- React Strict DOM for chrome styling; SDK-bundled Reanimated and
-  gesture-handler for the game surface.
+- Native-backed React Native primitives for chrome styling; SDK-bundled
+  Reanimated and gesture-handler for the game surface.
 - Official Expo MCP server (remote + local dev tools) and Argent for the
   agent loop.
 - Existing SVG card assets from the web app.
@@ -443,9 +447,9 @@ stores session/guest credentials in secure storage and attaches them to HTTP
 and WebSocket transports; a realtime lifecycle layer that reconciles the
 subscription with app backgrounding and mobile network churn; and a game
 surface built from native primitives for gesture-driven play. App chrome
-(auth, dashboard, lobby, settings, history) uses React Strict DOM with the
-shared tokens; the game surface uses plain React Native components styled
-from the same tokens.
+(auth, dashboard, lobby, settings, history) uses native-backed React Native
+components styled from shared tokens; the game surface uses plain React Native
+components styled from the same tokens.
 
 Agent tooling is a first-class deliverable: committed MCP configuration and
 workspace agent instructions give coding agents a build → run → screenshot →
@@ -462,8 +466,9 @@ drive → inspect loop on iOS Simulators from day one.
   attachment for HTTP and WS.
 - Realtime lifecycle layer — subscription management across app state and
   network transitions.
-- API auth extension — server-side Better Auth native-client support and
-  trusted origins (additive only).
+- API auth/realtime extension — server-side Better Auth native-client support,
+  trusted origins, and targeted presence-correctness fixes required by the
+  mobile recovery contract.
 - Agent tooling configuration — MCP servers, identifiers convention, and
   workspace agent instructions.
 
@@ -499,34 +504,34 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 
 ## Requirement Index
 
-| ID | Description | Priority | Verification | Planned Tasks |
-| --- | --- | --- | --- | --- |
-| FR1 | Email/password auth with persistent sessions | P0 | integration + manual: session across restart | p04-t01, p04-t02, p04-t03, p04-t04, p04-t05, p04-t06 |
-| FR2 | Guest invite join with durable game-scoped identity | P0 | manual + unit: join/preview flows | p06-t01, p06-t04, p06-t05, p06-t06, p06-t08 |
-| FR3 | Dashboard of resumable/recent games | P0 | unit + manual: myGames rendering | p06-t02 |
-| FR4 | Game creation incl. local mode | P0 | unit + manual: create flows | p06-t03 |
-| FR5 | Live lobby with team/creator controls | P0 | manual: multi-client lobby; unit: components | p06-t07, p06-t08 |
-| FR6 | Realtime tap-mode gameplay | P0 | unit + manual: board/hand components, live game | p07-t01, p07-t02, p07-t03, p07-t04, p07-t06, p07-t07, p07-t09 |
-| FR7 | Drag mode with validation feedback | P0 | manual + unit: drag interaction | p08-t01, p08-t02, p08-t06 |
-| FR8 | Sequence choice, dead-card turn-in, auto-swap | P0 | unit + manual: special flows | p08-t03, p08-t04, p08-t06 |
-| FR9 | Synchronized turn timers | P0 | unit + manual: deadline sync | p07-t05, p07-t09 |
-| FR10 | Save/concede/freeze/resume lifecycle | P0 | manual + unit: lifecycle states | p09-t01, p09-t02, p09-t07 |
-| FR11 | Local pass-and-play with handoff | P0 | unit + manual: handoff gating | p09-t05, p09-t06, p09-t07 |
-| FR12 | Game over and rematch | P0 | unit + manual: outcome + rematch | p09-t03, p09-t04, p09-t07 |
-| FR13 | History record/list/head-to-head | P1 | unit + manual: history screens | p10-t01, p10-t07 |
-| FR14 | In-app notification affordances | P1 | unit + manual: event feedback | p10-t02, p10-t07 |
-| FR15 | Light/dark theming from shared tokens | P1 | unit + manual: theme switching | p03-t04, p10-t03, p10-t06, p10-t07 |
-| FR16 | Shared design tokens, no web regression | P0 | unit + manual: web gates + playground parity | p03-t01, p03-t02, p03-t08 |
-| FR17 | Agentic tooling loop | P0 | manual: demonstrated agent loop | p02-t01, p02-t02, p02-t03, p02-t05 |
-| FR18 | TestFlight distribution | P0 | manual: external install + production smoke | p12-t01, p12-t02, p12-t03, p12-t04, p12-t05 |
-| FR19 | Operator runbook documentation | P0 | manual: runbook completeness review | p02-t04, p04-t07, p11-t05, p12-t05 |
-| NFR1 | Hand privacy on device | P0 | integration + manual: redaction and handoff | p09-t05, p11-t03 |
-| NFR2 | Reconnect/lifecycle robustness | P0 | manual: scenario matrix | p05-t03, p05-t05, p05-t07, p11-t01 |
-| NFR3 | Interaction performance | P1 | perf + manual: device spot checks | p07-t06, p11-t02 |
-| NFR4 | Client security posture | P0 | manual: release build audit | p11-t03 |
-| NFR5 | Testability identifiers | P1 | unit + manual: identifier convention | p02-t02, p10-t05 |
-| NFR6 | Quality gates cover mobile | P0 | manual: root gates | p01-t05, p11-t04 |
-| NFR7 | Autonomous executability of pre-final phases | P0 | manual: phase audit for operator-free execution | p11-t05 |
+| ID   | Description                                         | Priority | Verification                                    | Planned Tasks                                                 |
+| ---- | --------------------------------------------------- | -------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| FR1  | Email/password auth with persistent sessions        | P0       | integration + manual: session across restart    | p04-t01, p04-t02, p04-t03, p04-t04, p04-t05, p04-t06          |
+| FR2  | Guest invite join with durable game-scoped identity | P0       | manual + unit: join/preview flows               | p06-t01, p06-t04, p06-t05, p06-t06, p06-t08                   |
+| FR3  | Dashboard of resumable/recent games                 | P0       | unit + manual: myGames rendering                | p06-t02                                                       |
+| FR4  | Game creation incl. local mode                      | P0       | unit + manual: create flows                     | p06-t03                                                       |
+| FR5  | Live lobby with team/creator controls               | P0       | manual: multi-client lobby; unit: components    | p06-t07, p06-t08                                              |
+| FR6  | Realtime tap-mode gameplay                          | P0       | unit + manual: board/hand components, live game | p07-t01, p07-t02, p07-t03, p07-t04, p07-t06, p07-t07, p07-t09 |
+| FR7  | Drag mode with validation feedback                  | P0       | manual + unit: drag interaction                 | p08-t01, p08-t02, p08-t06                                     |
+| FR8  | Sequence choice, dead-card turn-in, auto-swap       | P0       | unit + manual: special flows                    | p08-t03, p08-t04, p08-t06                                     |
+| FR9  | Synchronized turn timers                            | P0       | unit + manual: deadline sync                    | p07-t05, p07-t09                                              |
+| FR10 | Save/concede/freeze/resume lifecycle                | P0       | manual + unit: lifecycle states                 | p09-t01, p09-t02, p09-t07                                     |
+| FR11 | Local pass-and-play with handoff                    | P0       | unit + manual: handoff gating                   | p09-t05, p09-t06, p09-t07                                     |
+| FR12 | Game over and rematch                               | P0       | unit + manual: outcome + rematch                | p09-t03, p09-t04, p09-t07                                     |
+| FR13 | History record/list/head-to-head                    | P1       | unit + manual: history screens                  | p10-t01, p10-t07                                              |
+| FR14 | In-app notification affordances                     | P1       | unit + manual: event feedback                   | p10-t02, p10-t07                                              |
+| FR15 | Light/dark theming from shared tokens               | P1       | unit + manual: theme switching                  | p03-t04, p10-t03, p10-t06, p10-t07                            |
+| FR16 | Shared design tokens, no web regression             | P0       | unit + manual: web gates + playground parity    | p03-t01, p03-t02, p03-t08                                     |
+| FR17 | Agentic tooling loop                                | P0       | manual: demonstrated agent loop                 | p02-t01, p02-t02, p02-t03, p02-t05                            |
+| FR18 | TestFlight distribution                             | P0       | manual: external install + production smoke     | p12-t01, p12-t02, p12-t03, p12-t04, p12-t05                   |
+| FR19 | Operator runbook documentation                      | P0       | manual: runbook completeness review             | p02-t04, p04-t07, p11-t05, p12-t05                            |
+| NFR1 | Hand privacy on device                              | P0       | integration + manual: redaction and handoff     | p09-t05, p11-t03                                              |
+| NFR2 | Reconnect/lifecycle robustness                      | P0       | manual: scenario matrix                         | p05-t03, p05-t05, p05-t07, p11-t01                            |
+| NFR3 | Interaction performance                             | P1       | perf + manual: device spot checks               | p07-t06, p11-t02                                              |
+| NFR4 | Client security posture                             | P0       | manual: release build audit                     | p11-t03                                                       |
+| NFR5 | Testability identifiers                             | P1       | unit + manual: identifier convention            | p02-t02, p10-t05                                              |
+| NFR6 | Quality gates cover mobile                          | P0       | manual: root gates                              | p01-t05, p11-t04                                              |
+| NFR7 | Autonomous executability of pre-final phases        | P0       | manual: phase audit for operator-free execution | p11-t05                                                       |
 
 **Notes:**
 
@@ -550,8 +555,8 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 ## Assumptions
 
 - Expo SDK 57 remains current through the project; no mid-project SDK jump.
-- React Strict DOM works on SDK 57 (peer-satisfied; validated by early spike)
-  with the Unistyles fallback pre-agreed for chrome if it blocks.
+- The early React Strict DOM spike remains valid provenance, but native-backed
+  chrome is the accepted shipped baseline.
 - Better Auth server/client stay version-locked and the Expo integration
   supports the separate-API topology.
 - Apple Developer Program membership is available when the final phase
@@ -560,12 +565,13 @@ _Design-related open questions are tracked in the [Open Questions](#open-questio
 
 ## Risks
 
-- **React Strict DOM maturity:** 0.0.x dependency with a 2026 publish stall
-  and native CSS gaps.
-  - **Likelihood:** Medium
+- **Future chrome styling re-evaluation:** A future attempt to reintroduce
+  React Strict DOM or another styling layer could repeat native layout
+  instability.
+  - **Likelihood:** Low
   - **Impact:** Medium
-  - **Mitigation:** Hybrid containment; early spike; shared raw tokens; agreed
-    Unistyles fallback for chrome.
+  - **Mitigation:** Keep chrome component APIs styling-agnostic and preserve
+    shared raw tokens as the source of truth.
 - **Better Auth native rough edges:** Secure-storage and cookie-format issues
   are documented in the ecosystem; guest flow is bespoke.
   - **Likelihood:** Medium
