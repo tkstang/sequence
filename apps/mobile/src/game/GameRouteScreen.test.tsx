@@ -543,11 +543,20 @@ describe('GameRouteScreen active turn flow', () => {
     expect(queryByTestId('game.placeholder')).toBeNull();
   });
 
-  it('keeps non-active status branches as placeholders', async () => {
+  it('renders the finished game-over screen and dashboard action', async () => {
+    const user = userEvent.setup();
     mockStreamView = fixtureView('game-over');
-    const { getByTestId, getByText } = await render(<GameRouteScreen />);
+    const { getByTestId, getByText, queryByTestId } = await render(
+      <GameRouteScreen />,
+    );
 
-    expect(getByTestId('game.placeholder')).toBeTruthy();
-    expect(getByText('Game finished')).toBeTruthy();
+    expect(getByTestId('game.over')).toBeTruthy();
+    expect(getByText('Team 1 wins')).toBeTruthy();
+    expect(getByText('Your team won.')).toBeTruthy();
+    expect(queryByTestId('game.placeholder')).toBeNull();
+
+    await user.press(getByTestId('game.over.dashboard'));
+
+    expect(mockRouterReplace).toHaveBeenCalledWith('/');
   });
 });

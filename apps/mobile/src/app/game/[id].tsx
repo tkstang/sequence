@@ -17,6 +17,7 @@ import { DragLayer } from '../../game/drag/DragLayer.tsx';
 import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
 import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
 import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
+import { GameOver } from '../../game/GameOver.tsx';
 import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
 import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
 import {
@@ -478,6 +479,7 @@ function GameStateView({
   view: GameViewState;
 }) {
   const { colors } = useTheme();
+  const router = useRouter();
 
   if (view.status === 'lobby') {
     if (!isLobbyPlayerCount(view.playerCount)) {
@@ -528,7 +530,19 @@ function GameStateView({
     return <ActiveGameView gameId={gameId} view={view} />;
   }
   if (view.status === 'finished') {
-    return <Placeholder title="Game finished" view={view} />;
+    return (
+      <GameOver
+        concededTeam={view.concededTeam}
+        endReason={view.endReason}
+        mySeat={view.mySeat}
+        myTeam={teamForSeat(view)}
+        onDashboard={() => router.replace('/' as Href)}
+        onRematch={() => {}}
+        players={view.players}
+        sequences={view.sequences}
+        winnerTeam={view.winnerTeam}
+      />
+    );
   }
   if (view.status === 'frozen') {
     return <ActiveGameView gameId={gameId} interactionDisabled view={view} />;
