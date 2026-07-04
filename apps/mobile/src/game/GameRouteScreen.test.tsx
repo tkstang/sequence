@@ -522,8 +522,13 @@ describe('GameRouteScreen active turn flow', () => {
   it('shows a resumable saved state with expiry messaging', async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    const expiresAt = '2026-07-05T12:00:00.000Z';
+    const expectedExpiry = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(expiresAt));
     mockStreamView = fixtureView('active-your-turn', {
-      expiresAt: '2026-07-05T12:00:00.000Z',
+      expiresAt,
       status: 'saved',
     });
 
@@ -534,7 +539,7 @@ describe('GameRouteScreen active turn flow', () => {
     expect(getByTestId('game.saved')).toBeTruthy();
     expect(getByText('Game saved')).toBeTruthy();
     expect(getByText('Ready to resume')).toBeTruthy();
-    expect(getByText('Expires Jul 5, 2026, 7:00 AM')).toBeTruthy();
+    expect(getByText(`Expires ${expectedExpiry}`)).toBeTruthy();
     expect(queryByTestId('game.placeholder')).toBeNull();
   });
 
