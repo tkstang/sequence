@@ -178,4 +178,40 @@ describe('GameOver', () => {
     expect(getByText('Timer expired.')).toBeTruthy();
     expect(getByText('Your team lost.')).toBeTruthy();
   });
+
+  it('disables rematch and surfaces rematch errors while preserving dashboard', async () => {
+    const onRematch = jest.fn();
+    const onDashboard = jest.fn();
+    const view = fixtureView();
+
+    const { getByTestId, getByText } = await render(
+      <GameOver
+        concededTeam={view.concededTeam}
+        endReason={view.endReason}
+        errorMessage="Rematch unavailable. This game is not finished yet."
+        isRematching
+        mySeat={view.mySeat}
+        myTeam={1}
+        onDashboard={onDashboard}
+        onRematch={onRematch}
+        players={view.players}
+        sequences={view.sequences}
+        winnerTeam={view.winnerTeam}
+      />,
+    );
+
+    expect(
+      getByTestId('game.over.rematch').props.accessibilityState,
+    ).toMatchObject({ disabled: true });
+    expect(
+      getByText('Rematch unavailable. This game is not finished yet.'),
+    ).toBeTruthy();
+
+    const user = userEvent.setup();
+    await user.press(getByTestId('game.over.rematch'));
+    await user.press(getByTestId('game.over.dashboard'));
+
+    expect(onRematch).not.toHaveBeenCalled();
+    expect(onDashboard).toHaveBeenCalledTimes(1);
+  });
 });

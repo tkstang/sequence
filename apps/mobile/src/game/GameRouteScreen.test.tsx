@@ -58,6 +58,9 @@ jest.mock('../api/client.ts', () => ({
       randomizeTeams: {
         mutationOptions: (options: MutationOptions) => options,
       },
+      rematch: {
+        mutationOptions: (options: MutationOptions) => options,
+      },
       saveAndExit: {
         mutationOptions: (options: MutationOptions) => options,
       },
@@ -558,5 +561,42 @@ describe('GameRouteScreen active turn flow', () => {
     await user.press(getByTestId('game.over.dashboard'));
 
     expect(mockRouterReplace).toHaveBeenCalledWith('/');
+  });
+
+  it('starts a rematch from a finished game and navigates to the returned route', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('game-over');
+    mockMutateAsync.mockResolvedValue({
+      gameId: 'rematch-game-2',
+      inviteCode: 'REMATCH2',
+      rematchOf: mockGameId,
+      status: 'lobby',
+    });
+
+    const { getByTestId } = await render(<GameRouteScreen />);
+
+    await user.press(getByTestId('game.over.rematch'));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({ gameId: mockGameId });
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('/game/rematch-game-2');
+    });
+  });
+
+  it('shows finished-game rematch copy when rematch is no longer available', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('game-over');
+    mockMutateAsync.mockRejectedValue({ data: { code: 'CONFLICT' } });
+
+    const { getByTestId, getByText } = await render(<GameRouteScreen />);
+
+    await user.press(getByTestId('game.over.rematch'));
+
+    await waitFor(() => {
+      expect(
+        getByText('Rematch unavailable. This game is not finished yet.'),
+      ).toBeTruthy();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import { useTheme } from '../theme/use-theme.ts';
 export interface GameOverProps {
   concededTeam?: Team | null;
   endReason?: string | null;
+  errorMessage?: string | null;
   isRematching?: boolean;
   mySeat: number;
   myTeam?: Team | null;
@@ -63,6 +64,7 @@ function playerNamesForTeam(
 export function GameOver({
   concededTeam = null,
   endReason = null,
+  errorMessage = null,
   isRematching = false,
   mySeat,
   myTeam = null,
@@ -164,6 +166,16 @@ export function GameOver({
           Dashboard
         </Button>
       </View>
+
+      {errorMessage ? (
+        <Text
+          accessibilityRole="alert"
+          style={[styles.error, { color: colors.danger }]}
+          testID={testId('game', 'over', 'error')}
+        >
+          {errorMessage}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -195,6 +207,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     lineHeight: 16,
     textTransform: 'uppercase',
+  },
+  error: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   header: {
     display: 'flex',

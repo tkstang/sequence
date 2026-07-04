@@ -71,6 +71,23 @@ function lifecycleMutationMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Could not update game.';
 }
 
+function rematchMutationMessage(error: unknown): string {
+  const policy = mapTRPCErrorToPolicy(error);
+  if (policy === 'not-participant') {
+    return 'You are not allowed to rematch this game.';
+  }
+  if (policy === 'refetch-feedback') {
+    return 'Rematch unavailable. This game is not finished yet.';
+  }
+  if (policy === 'backoff-toast') {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (policy === 'redirect-login') {
+    return 'Sign in or rejoin this game to rematch.';
+  }
+  return error instanceof Error ? error.message : 'Could not start a rematch.';
+}
+
 function cardCode(card: Card): string {
   return `${card.rank}${card.suit}`;
 }
@@ -479,7 +496,19 @@ function GameStateView({
   view: GameViewState;
 }) {
   const { colors } = useTheme();
+  const trpc = useTRPC();
   const router = useRouter();
+  const [rematchError, setRematchError] = useState<string | null>(null);
+  const rematch = useMutation(trpc.game.rematch.mutationOptions());
+  const handleRematch = async () => {
+    setRematchError(null);
+    try {
+      const result = await rematch.mutateAsync({ gameId });
+      router.replace(`/game/${result.gameId}` as Href);
+    } catch (error) {
+      setRematchError(rematchMutationMessage(error));
+    }
+  };
 
   if (view.status === 'lobby') {
     if (!isLobbyPlayerCount(view.playerCount)) {
@@ -534,10 +563,12 @@ function GameStateView({
       <GameOver
         concededTeam={view.concededTeam}
         endReason={view.endReason}
+        errorMessage={rematchError}
+        isRematching={rematch.isPending}
         mySeat={view.mySeat}
         myTeam={teamForSeat(view)}
         onDashboard={() => router.replace('/' as Href)}
-        onRematch={() => {}}
+        onRematch={handleRematch}
         players={view.players}
         sequences={view.sequences}
         winnerTeam={view.winnerTeam}
