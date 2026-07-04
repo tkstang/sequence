@@ -67,6 +67,11 @@ value. Expo MCP and Argent usage details belong in
   guarded dev routes. A `__DEV__` layout redirect protects runtime access but
   does not prove the modules are absent from Hermes; exclude dev routes from
   the production router context and verify the exported bundle.
+- Repo `AGENTS.md` candidate: Playwright config should be explicit about its
+  module format and env fallback. In this Node/Playwright toolchain, a
+  TypeScript config using `module: ESNext` failed before tests with `exports is
+  not defined`; an explicit `.cjs` config plus `packages/api/.env` fallback made
+  local DB-backed e2e reproducible.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -336,6 +341,11 @@ value. Expo MCP and Argent usage details belong in
   proved that the guarded `/dev` route files still appeared in the Hermes bundle
   until Metro resolved `expo-router/_ctx` to a production-only `require.context`
   that excludes `./dev/*`.
+- For full gate sweeps, verify that optional DB-backed gates actually see
+  `DATABASE_URL_TEST` rather than silently skipping. During p11-t04, root tests
+  and Playwright both needed explicit `packages/api/.env` fallback loading so a
+  clean shell without root `.env` could run DB-backed API integration and web
+  e2e gates instead of silently skipping or requiring manual env exports.
 
 ## Open Follow-Ups
 

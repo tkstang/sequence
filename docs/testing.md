@@ -83,9 +83,9 @@ interleave. Two mechanisms enforce serialization:
   harness and released on `close()`, makes files run one-at-a-time at the DB
   level regardless of scheduling (`packages/api/src/test/db-lock.ts:29`).
 
-The api config also loads the gitignored root `.env` so workers see
-`DATABASE_URL_TEST` and `BETTER_AUTH_SECRET`, and raises timeouts to absorb Neon
-round-trips and `drizzle-kit push`.
+The api config loads the gitignored root `.env` first and `packages/api/.env` as
+a fallback so workers see `DATABASE_URL_TEST` and `BETTER_AUTH_SECRET`, and
+raises timeouts to absorb Neon round-trips and `drizzle-kit push`.
 
 ## `@sequence/web` component/route tests
 
@@ -101,19 +101,19 @@ picks it up and `pnpm --filter @sequence/web test` runs it standalone.
 
 The browser-level e2e specs live in `apps/web/e2e/` (full game, pass-and-play,
 reconnect, rematch) and run with `pnpm --filter @sequence/web e2e`. The config
-(`apps/web/playwright.config.ts`) loads the root `.env` and gates everything on
-`DATABASE_URL_TEST`.
+(`apps/web/playwright.config.cjs`) loads the root `.env` first, then
+`packages/api/.env` as a fallback, and gates everything on `DATABASE_URL_TEST`.
 
 The matrix is one worker (`workers: 1`, `fullyParallel: false`) across two
 projects:
 
 - `desktop-chromium` — Desktop Chrome at `1280x900`
-  (`apps/web/playwright.config.ts:28`).
+  (`apps/web/playwright.config.cjs:27`).
 - `mobile-375` — a Pixel 5 profile at `375x812`
-  (`apps/web/playwright.config.ts:35`).
+  (`apps/web/playwright.config.cjs:34`).
 
 The `webServer` block is conditional on `hasTestDb`
-(`apps/web/playwright.config.ts:43`). When `DATABASE_URL_TEST` is present,
+(`apps/web/playwright.config.cjs:40`). When `DATABASE_URL_TEST` is present,
 Playwright starts two servers:
 
 - API on `http://127.0.0.1:3001` (run with `NODE_ENV=test`, the test branch as
@@ -141,10 +141,12 @@ and any direct DB seeding the specs perform.
 - the Playwright `webServer` is not defined, so the API and web servers never
   start, and the specs skip.
 
-When it is **present**, both layers run against that branch. Point it at a
-disposable Neon test branch — the global setup pushes the live schema onto it and
-the harness/e2e helpers truncate and seed it freely, so a throwaway branch keeps
-that destructive churn off any shared or production database. Never point
+When it is **present**, both layers run against that branch. Root `.env` is the
+canonical shared location; `packages/api/.env` is also loaded by the API Vitest
+config and by Playwright as a local fallback. Point `DATABASE_URL_TEST` at a
+disposable Neon test branch — the global setup pushes the live schema onto it
+and the harness/e2e helpers truncate and seed it freely, so a throwaway branch
+keeps that destructive churn off any shared or production database. Never point
 `DATABASE_URL_TEST` at production. See `configuration.md` for the variable and
 `development.md` for the workflow.
 
