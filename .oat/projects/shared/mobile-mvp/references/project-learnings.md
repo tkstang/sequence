@@ -37,6 +37,9 @@ value. Expo MCP and Argent usage details belong in
 - Repo `AGENTS.md` candidate: when tests assert formatted dates or times, avoid
   hardcoding local-time strings; compute the expected label with the same
   formatter or add a `TZ=UTC` check for expiry/date UI.
+- Repo `AGENTS.md` candidate: local pass-and-play privacy tests should assert
+  the full hand tree is absent during handoff (`hand.dock` and card testIDs),
+  not just that individual card labels are missing.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -168,6 +171,11 @@ value. Expo MCP and Argent usage details belong in
   narrow story cards and absolute player-rail status labels overlapping seat
   text. Prefer compact representative fixture data for previews and normal
   layout-flow status rows over absolute overlays inside small repeated cards.
+- Local pass-and-play handoff state should follow the server stream's
+  `currentSeat`, with local `revealedSeat`/handoff state only controlling
+  whether the hand is veiled. Privacy tests should assert no `CardHand` subtree
+  renders during the veil; public last-move copy may mention the played card,
+  so hand privacy should be checked through hand testIDs and card-face absence.
 
 ## Verification Mechanics
 
