@@ -63,6 +63,10 @@ value. Expo MCP and Argent usage details belong in
 - Repo `AGENTS.md` candidate: mutable layout registries consumed by Reanimated
   worklets need an explicit revision/subscription contract. React dependency
   arrays only see object identity, not internal frame mutations.
+- Repo `AGENTS.md` candidate: Expo Router production builds can still bundle
+  guarded dev routes. A `__DEV__` layout redirect protects runtime access but
+  does not prove the modules are absent from Hermes; exclude dev routes from
+  the production router context and verify the exported bundle.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -327,6 +331,11 @@ value. Expo MCP and Argent usage details belong in
   hot commits, but tests such as "only the changed board cell re-renders" and
   "parent callback identity does not re-render cells" make the memo contract
   durable across future route changes.
+- For release-audit checks, treat "route is not reachable" and "route is not in
+  the production bundle" as separate claims. During p11-t03, `expo export`
+  proved that the guarded `/dev` route files still appeared in the Hermes bundle
+  until Metro resolved `expo-router/_ctx` to a production-only `require.context`
+  that excludes `./dev/*`.
 
 ## Open Follow-Ups
 

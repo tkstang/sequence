@@ -156,6 +156,20 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   `startedAtEpochMs` and gesture `timestampMs` values. Pass
   `offsetMs = timestampMs - startedAtEpochMs` into `react-profiler-analyze` so
   hot commits line up with the user action.
+- Hermes bundle scans are noisy if run as raw binary greps. For release audits,
+  export to a scratch directory, identify the `.hbc` bundle, then run
+  `strings -a <bundle> | rg -o "<target-pattern>" | sort -u` so the evidence is
+  a concise list of exact matched markers.
+- A generic `console.error` string can remain in dependency code even after app
+  console calls are stripped. Pair bundle marker checks for app-specific strings
+  such as `game.move.round_trip` with a narrow Babel transform proof for the
+  production console-strip plugin before claiming app telemetry is absent.
+- If Argent is configured only through Codex MCP (`npx -y @swmansion/argent
+  mcp`), do not assume a local `argent` binary exists in the workspace. On this
+  host, `pnpm --filter @sequence/mobile exec argent --help` failed with
+  `Command "argent" not found`, and `pnpm dlx @swmansion/argent --help` hit
+  pnpm ignored-builds friction; use the configured MCP when available or fall
+  back to direct Expo/API/runtime probes without adding dependencies.
 
 ## Evidence Captured So Far
 
@@ -200,6 +214,14 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   commits over a 21.6s selected-card/drag session; the drag path produced no
   per-frame React commit cascade, and `profiler-commit-query` found no
   `BoardCell` renders in the hot commit.
+- p11-t03 release-audit evidence:
+  `/tmp/sequence-mobile-export-p11-t03-final` and
+  `/tmp/p11-t03-remote-game-summary.json`. The final production export reduced
+  the iOS Hermes bundle to the app routes expected for release; string scans
+  found no dev-route markers, `expo-mcp`, localhost endpoints, raw auth-token
+  keys, or app move-telemetry marker. The remote-game proof confirmed the
+  host's `GameSnapshotView` contained only seat 0's hand and no `localHands` or
+  exact seat 1 hand array.
 
 ## Candidate Skill Shape
 
