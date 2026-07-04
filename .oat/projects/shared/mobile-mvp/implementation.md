@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t04
+oat_current_task_id: p11-t05
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 3/7       |
+| Phase 11 | in_progress | 7     | 4/7       |
 
-**Total:** 75/85 tasks completed
+**Total:** 76/85 tasks completed
 
 ---
 
@@ -4026,6 +4026,12 @@ subscription input lastEventId=505; latest card kind=event seq=505
   redaction: Better Auth session and raw guest tokens stay in SecureStore, and
   the host's remote `GameSnapshotView` contained only seat 0's hand with no
   `localHands` or exact opponent-hand array.
+- NFR6 gate sweep is green across root typecheck, lint, format check, tests,
+  build, and DB-backed web Playwright e2e. The sweep fixed two gate-runner
+  issues: Playwright config now uses explicit CommonJS to avoid the TS loader
+  ESM/CJS mismatch, and both API Vitest and web Playwright load
+  `packages/api/.env` as a local fallback so DB-backed gates run from a clean
+  shell.
 
 **Verification:**
 
@@ -4113,6 +4119,20 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `62959319-7538-4ebd-9b82-46cf2c817bde`, host seat 0, host hand matching DB,
   no `localHands`, and no exact seat 1 hand array in the server snapshot or
   client `GameSnapshotView`.
+- Run: clean-shell root `pnpm test`.
+- Result: pass; the API Vitest config loaded `packages/api/.env`, Drizzle
+  schema push reported no changes, 63 Vitest files / 411 tests passed with
+  DB-backed API integration active, and mobile Jest passed 49 suites / 299
+  tests.
+- Run: `pnpm --filter @sequence/web e2e` from a clean shell with no exported
+  `DATABASE_URL_TEST`.
+- Result: pass after Playwright cache install; Playwright loaded
+  `packages/api/.env` fallback, started its own API/web servers, and ran 10
+  tests across `desktop-chromium` and `mobile-375`.
+- Run: `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; `pnpm build`;
+  `git diff --check`.
+- Result: pass. `pnpm lint` exits zero with the same existing non-fatal
+  warnings (`unicorn(no-array-sort)` and `unicorn(consistent-function-scoping)`).
 
 ### Task p11-t01: NFR2 measured scenario matrix
 
@@ -4288,6 +4308,63 @@ subscription input lastEventId=505; latest card kind=event seq=505
   ignored-build friction. The redaction proof used direct API/DB/runtime probes
   instead of adding tooling dependencies.
 
+### Task p11-t04: Gate sweep (NFR6)
+
+**Status:** completed
+**Commit:** c3c2b2c
+
+**Outcome:**
+
+- Ran the full NFR6 gate sweep, including root static gates, DB-backed root
+  tests, root build, and web Playwright e2e.
+- Fixed the Playwright config loader failure by renaming the web Playwright
+  config from TypeScript ESM-style config to explicit CommonJS
+  `playwright.config.cjs`.
+- Fixed local DB-backed gate discovery so both API Vitest and web Playwright
+  load root `.env` first, then `packages/api/.env` as a fallback. This lets
+  clean-shell root tests and web e2e run DB-backed suites without manual env
+  exports.
+- Installed the expected Playwright Chromium cache locally after the first
+  successful config load exposed a missing browser binary.
+- Updated testing docs and project learnings with the gate-runner fallout.
+
+**Verification:**
+
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| `pnpm typecheck` | pass | All recursive package typechecks completed. |
+| `pnpm lint` | pass | Exited 0 with existing warnings only: two `unicorn(no-array-sort)`, three test `consistent-function-scoping`, and `scripts/optimize-cards.mjs` helper scoping. |
+| `pnpm format:check` | pass | `oxfmt` checked 355 files. |
+| `pnpm test` | pass | Clean-shell run loaded `packages/api/.env`, pushed schema with no changes, passed 63 Vitest files / 411 tests and 49 mobile Jest suites / 299 tests. |
+| `pnpm build` | pass | Recursive build completed; `@sequence/web` Next build generated 10 static/dynamic routes successfully. |
+| `pnpm --filter @sequence/web e2e` | pass | Clean-shell run with no exported `DATABASE_URL_TEST` passed 10 Playwright tests across desktop and mobile projects. |
+| `git diff --check` | pass | No whitespace errors. |
+
+**Files changed:**
+
+- `apps/web/playwright.config.cjs` - explicit CommonJS Playwright config and
+  root/package-local env fallback.
+- `apps/web/playwright.config.ts` - removed in favor of `.cjs`.
+- `packages/api/vitest.config.ts` - explicit root `.env` plus
+  `packages/api/.env` fallback for workspace-runner DB-backed tests.
+- `apps/web/README.md` / `docs/testing.md` - testing docs now describe the env
+  fallback and `.cjs` config path.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - durable
+  p11-t04 gate-sweep learnings.
+
+**Notes / Decisions:**
+
+- The first Playwright run failed before tests with
+  `ReferenceError: exports is not defined in ES module scope`; the `.cjs`
+  config makes the module format unambiguous for Playwright 1.60 on this Node
+  setup.
+- A clean-shell `pnpm test` initially passed while skipping API integration.
+  The final clean-shell run confirms the DB-backed API suites execute when
+  `packages/api/.env` is present.
+- Playwright browser binaries are machine-local cache state, not repo files.
+  `pnpm --filter @sequence/web exec playwright install chromium` installed the
+  expected Chromium/headless-shell cache before the passing e2e run.
+
 ---
 
 ## Orchestration Runs
@@ -4441,7 +4518,8 @@ Chronological log of implementation progress.
 - [x] p11-t01: NFR2 measured scenario matrix - fcfc1f9
 - [x] p11-t02: Perf pass + NFR3 measurement - a2ccf75
 - [x] p11-t03: Release build audit (NFR4) - fff72a4
-- [ ] p11-t04: Gate sweep (NFR6) - next
+- [x] p11-t04: Gate sweep (NFR6) - c3c2b2c
+- [ ] p11-t05: NFR7 phase audit + runbook completeness (FR19) - next
 
 **What changed (high level):**
 
@@ -4691,6 +4769,7 @@ Track test execution during implementation.
 | 11    | p11-t01 simulator/API NFR2 matrix; `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/api exec vitest run src/game/presence.test.ts src/game/routes/on-game-event.test.ts src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/components/ConnectionBanner.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/{api,client-state,mobile} typecheck`; `pnpm format:check`; `pnpm lint`; `git diff --check` | yes    | 0      | NFR2 pass: API restart recovered in `4391ms`, brief foreground recovered in `1830ms`, force-quit route recovered in `2743ms`, replay-window fallback snapshot covered after 502 events, and stale-version recovery remained covered by focused API/mobile tests |
 | 11    | p11-t02 Argent/React profiler selected-card drag session; `profiler-commit-query --component_name BoardCell`; `jq '.p50RoundTripMs' /tmp/p07-t09-deterministic-summary.json`; `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/GameBoard.test.tsx src/game/GameBoard/layout-map.test.ts src/game/drag/use-drag-chip.test.ts src/game/drag/DragLayer.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR3 pass: 3 React commits over `21.6s`, no drag per-frame React cascade, no `BoardCell` hot-commit renders, local move p50 `6.1ms`, 7 mobile suites / 54 tests passed |
 | 11    | `NODE_ENV=production pnpm --filter @sequence/mobile exec expo config --type public` expected-failure check; secure production `expo config --json`; production `expo export --platform ios --output-dir /tmp/sequence-mobile-export-p11-t03-current`; Hermes `strings -a` leak scans; production Babel transform proof; source credential audit greps; live local API remote-game redaction proof `/tmp/p11-t03-remote-game-summary.json`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile exec oxfmt --check src app.config.ts babel.config.js metro.config.js`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR4 pass: production config fails closed without secure URLs, secure release config exports, dev-route markers and app telemetry are absent from the Hermes bundle, app console calls are stripped, credentials use SecureStore, and the host client view contains only its own hand |
+| 11    | Clean-shell `pnpm test`; `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; `pnpm build`; clean-shell `pnpm --filter @sequence/web e2e`; `git diff --check`; `pnpm --filter @sequence/web exec playwright install chromium` for missing local browser cache | yes    | 0      | NFR6 pass: DB-backed root tests executed from `packages/api/.env` fallback and passed 63 Vitest files / 411 tests plus 49 mobile suites / 299 tests; Playwright passed 10 desktop/mobile tests from a clean shell; build and static gates passed |
 
 ## Final Summary (for PR/docs)
 
