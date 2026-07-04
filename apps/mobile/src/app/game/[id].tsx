@@ -211,22 +211,24 @@ function ActiveGameView({
         style={styles.playSurface}
         testID={testId('game', 'play', 'surface')}
       >
-        <GameBoard
-          board={view.board}
-          currentTeam={selectionDisabled ? null : currentTeam}
-          layoutMap={boardLayoutMap}
-          onCellPress={handleCellPress}
-          selectedCard={selectionDisabled || dragMode ? null : selectedCard}
-          sequences={view.sequences}
-        />
-        {dragMode ? (
-          <DragLayer
-            card={dragEnabled ? selectedCard : null}
-            enabled={dragEnabled}
+        <View style={styles.boardSurface}>
+          <GameBoard
+            board={view.board}
+            currentTeam={selectionDisabled ? null : currentTeam}
             layoutMap={boardLayoutMap}
-            onDrop={handleDragDrop}
+            onCellPress={handleCellPress}
+            selectedCard={selectionDisabled || dragMode ? null : selectedCard}
+            sequences={view.sequences}
           />
-        ) : null}
+          {dragMode ? (
+            <DragLayer
+              card={dragEnabled ? selectedCard : null}
+              enabled={dragEnabled}
+              layoutMap={boardLayoutMap}
+              onDrop={handleDragDrop}
+            />
+          ) : null}
+        </View>
         <CardHand
           board={view.board}
           disabled={selectionDisabled}
@@ -465,6 +467,9 @@ const styles = StyleSheet.create({
     display: 'flex',
     minHeight: 600,
     paddingBottom: 146,
+    position: 'relative',
+  },
+  boardSurface: {
     position: 'relative',
   },
   controls: {

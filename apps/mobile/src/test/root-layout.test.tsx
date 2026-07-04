@@ -69,6 +69,7 @@ describe('RootLayout protected routing', () => {
       '(auth)/signup',
       'join/index',
       'join/[code]',
+      'game/[id]',
     ]);
   });
 
@@ -86,6 +87,7 @@ describe('RootLayout protected routing', () => {
       'create',
       'join/index',
       'join/[code]',
+      'game/[id]',
     ]);
   });
 });

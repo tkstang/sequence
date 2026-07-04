@@ -61,6 +61,16 @@ jest.mock('react-native/Libraries/TurboModule/TurboModuleRegistry', () => {
       addListener: jest.fn(),
       removeListeners: jest.fn(),
     },
+    RNGestureHandlerModule: {
+      attachGestureHandler: jest.fn(),
+      createGestureHandler: jest.fn(),
+      dropGestureHandler: jest.fn(),
+      flushOperations: jest.fn(),
+      handleClearJSResponder: jest.fn(),
+      handleSetJSResponder: jest.fn(),
+      install: jest.fn(() => true),
+      updateGestureHandler: jest.fn(),
+    },
     SettingsManager: {
       deleteValues: jest.fn(),
       getConstants: () => ({ settings: {} }),
