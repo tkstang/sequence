@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p08-t03
+oat_current_task_id: p08-t04
 oat_generated: false
 ---
 
@@ -33,9 +33,9 @@ oat_generated: false
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
-| Phase 8 | in_progress | 6     | 2/6       |
+| Phase 8 | in_progress | 6     | 3/6       |
 
-**Total:** 54/85 tasks completed
+**Total:** 55/85 tasks completed
 
 ---
 
@@ -3252,6 +3252,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Stabilized the native gesture runtime by wrapping the app in
   `GestureHandlerRootView`, importing Gesture Handler at the root, and pinning
   the Expo-compatible Worklets dependency directly.
+- Added the sequence-choice sheet for >5-run pending choices, including
+  client-side five-cell window selection, board highlighting, chained-choice
+  copy, and `chooseSequenceCells` route wiring.
 
 **Verification:**
 
@@ -3287,6 +3290,15 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `/tmp/sequence-mobile-p08-t02-drag-after-move.png` show the active drag game
   and version 2 after a drag-mode no-card `game.makeMove` placed at `16D`; the
   dev-client subscription received the resulting three events.
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
+- Result: pass, 2 suites / 13 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
 - Run: `git diff --check`
 - Result: pass.
 
@@ -3435,6 +3447,60 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+### Task p08-t03: Sequence-choice sheet
+
+**Status:** completed
+**Commit:** e13a789
+
+**Outcome:**
+
+- Added a bottom-sheet `SequenceChoiceSheet` for pending >5-run choices owned
+  by the current user.
+- Derived valid five-cell contiguous windows from the pending run and required
+  the chosen window to include the placed chip.
+- Wired the active game route to `game.chooseSequenceCells` with the current
+  game version.
+- Highlighted the selected choice window on the board while disabling normal
+  hand/move submission during pending choices.
+- Rendered a frozen banner instead of the sheet when another seat owns the
+  pending choice, and surfaced chained-choice copy when `additionalRuns` exist.
+
+**Files changed:**
+
+- `apps/mobile/src/game/SequenceChoiceSheet.tsx` /
+  `SequenceChoiceSheet.test.tsx` - sheet UI, window derivation, selection,
+  submit, chained-choice copy, and other-seat frozen state.
+- `apps/mobile/src/app/game/[id].tsx` /
+  `apps/mobile/src/game/GameRouteScreen.test.tsx` - route wiring,
+  `chooseSequenceCells` mutation, pending-choice controls copy, and board
+  highlight integration.
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` - optional highlighted-cell
+  support for the selected pending-choice window.
+- `apps/mobile/src/test/test-ids.ts` - `sequenceChoice` testID namespace.
+
+**Verification:**
+
+- Run: `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
+- Result: pass, 2 suites / 13 tests; Watchman emitted the existing recrawl
+  warning only.
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Result: pass.
+- Run: `pnpm --filter @sequence/mobile lint`
+- Result: pass.
+- Run: `pnpm format:check`
+- Result: pass.
+- Run: `git diff --check HEAD`
+- Result: pass.
+
+**Notes / Decisions:**
+
+- The sheet treats the server as authoritative; client-side validation exists
+  only to guide users toward valid five-cell windows before submitting.
+- Other-seat pending choices freeze the active game surface and keep the board
+  visible without exposing the local selection sheet.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -3565,7 +3631,8 @@ Chronological log of implementation progress.
 - [x] p07-t09: Full tap-mode game verification - 1a1f149 / 65880bd
 - [x] p08-t01: Drag gesture layer - 0a851b4
 - [x] p08-t02: Drag submit + rejection feedback - 61df269 / a616e36
-- [ ] p08-t03: Dead-card turn-in UI - next
+- [x] p08-t03: Sequence-choice sheet - e13a789
+- [ ] p08-t04: Dead-card turn-in + auto-swap surfacing - next
 
 **What changed (high level):**
 
@@ -3761,6 +3828,7 @@ Track test execution during implementation.
 | 7     | Local API/web/mobile deterministic p07-t09 games `3fc7917c-862d-45a0-90e6-380a7335eb87` and `e6fa8ecf-4839-41a6-b2bf-30b18e64f7ad`; web screenshots `/tmp/p07-t09-web-active.png`, `/tmp/p07-t09-web-final.png`; mobile screenshots `/tmp/p07-t09-mobile-initial.png`, `/tmp/p07-t09-mobile-final.png`, `/tmp/p07-t09-mobile-active.png`; `pnpm --filter @sequence/mobile exec jest src/components/TextField.test.tsx src/auth/login-screen.test.tsx src/auth/signup-screen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p07-t09`; `git diff --check` | yes    | 0      | FR6/FR9 full tap-mode loop passed; stale 409, jack moves, auto-draw, timer UI, locked sequence, and final win verified; p50 samples `6.1ms` and `3.35ms` |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t01`; `git diff --check` | yes    | 0      | 2 drag suites, 5 tests; SDK-compatible gesture dependencies and Reanimated Babel config verified |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/test/root-layout.test.tsx src/game/GameRouteScreen.test.tsx src/game/drag --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `pnpm --filter @sequence/mobile exec expo install react-native-reanimated react-native-gesture-handler react-native-worklets --check`; `pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p08-t02-final`; `git diff --check`; `pnpm --filter @sequence/mobile ios`; simulator proof for drag game `18d450fa-1eb9-4c4a-a91c-f1ef8a1996ad` with screenshots `/tmp/sequence-mobile-p08-t02-drag-game.png` and `/tmp/sequence-mobile-p08-t02-drag-after-move.png` | yes    | 0      | 4 focused suites, 15 tests; dev client rebuilt; no-card drag-mode `game.makeMove` placed `16D`, app received subscription events, and screen updated to version 2 |
+| 8     | `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 sequence-choice/route suites, 13 tests; my-seat pending choice opens the sheet and submits `chooseSequenceCells`; other-seat choice shows frozen banner |
 
 ## Final Summary (for PR/docs)
 
