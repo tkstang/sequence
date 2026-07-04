@@ -53,6 +53,23 @@ function mutationMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Could not update lobby.';
 }
 
+function lifecycleMutationMessage(error: unknown): string {
+  const policy = mapTRPCErrorToPolicy(error);
+  if (policy === 'not-participant') {
+    return 'You are not allowed to update this game.';
+  }
+  if (policy === 'refetch-feedback') {
+    return 'Game changed. Live updates will refresh it.';
+  }
+  if (policy === 'backoff-toast') {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (policy === 'redirect-login') {
+    return 'Sign in or rejoin this game to continue.';
+  }
+  return error instanceof Error ? error.message : 'Could not update game.';
+}
+
 function cardCode(card: Card): string {
   return `${card.rank}${card.suit}`;
 }
@@ -168,7 +185,7 @@ function ActiveGameView({
       await saveAndExit.mutateAsync({ gameId, version });
       router.replace('/' as Href);
     } catch (error) {
-      setLifecycleError(mutationMessage(error));
+      setLifecycleError(lifecycleMutationMessage(error));
     }
   };
   const handleConcede = async ({ version }: { version: number }) => {
@@ -176,7 +193,7 @@ function ActiveGameView({
     try {
       await concede.mutateAsync({ gameId, version });
     } catch (error) {
-      setLifecycleError(mutationMessage(error));
+      setLifecycleError(lifecycleMutationMessage(error));
     }
   };
 

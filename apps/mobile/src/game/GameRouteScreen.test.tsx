@@ -283,6 +283,48 @@ describe('GameRouteScreen active turn flow', () => {
     });
   });
 
+  it('shows active-game copy when save and exit hits a version conflict', async () => {
+    const user = userEvent.setup();
+    const activeView = fixtureView('active-your-turn');
+    mockStreamView = {
+      ...activeView,
+      players: activeView.players.map((player) => ({
+        ...player,
+        isGuest: false,
+      })),
+    };
+    mockMutateAsync.mockRejectedValue({ data: { code: 'CONFLICT' } });
+
+    const { getByTestId, getByText } = await render(<GameRouteScreen />);
+
+    await user.press(getByTestId('game.lifecycle.save'));
+    await user.press(getByTestId('game.lifecycle.save.confirm'));
+
+    await waitFor(() => {
+      expect(
+        getByText('Game changed. Live updates will refresh it.'),
+      ).toBeTruthy();
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('concedes the active game with the current version without leaving the route', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('active-your-turn');
+    mockMutateAsync.mockResolvedValue({ status: 'finished' });
+
+    const { getByTestId } = await render(<GameRouteScreen />);
+
+    await user.press(getByTestId('game.lifecycle.concede'));
+    await user.press(getByTestId('game.lifecycle.concede.confirm'));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({
+      gameId: mockGameId,
+      version: 12,
+    });
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
   it('keeps the board visible but disables move submission on an opponent turn', async () => {
     const user = userEvent.setup();
     mockStreamView = fixtureView('active-not-your-turn');
