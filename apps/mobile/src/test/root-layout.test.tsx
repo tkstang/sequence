@@ -86,6 +86,7 @@ describe('RootLayout protected routing', () => {
       'index',
       'create',
       'history',
+      'settings',
       'join/index',
       'join/[code]',
       'game/[id]',

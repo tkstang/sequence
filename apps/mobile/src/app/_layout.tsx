@@ -29,6 +29,7 @@ export default function RootLayout() {
                 <Stack.Screen name="index" />
                 <Stack.Screen name="create" />
                 <Stack.Screen name="history" />
+                <Stack.Screen name="settings" />
               </Stack.Protected>
               <Stack.Protected guard={!isSignedIn}>
                 <Stack.Screen name="(auth)/login" />

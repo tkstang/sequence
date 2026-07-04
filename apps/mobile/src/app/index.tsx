@@ -12,7 +12,7 @@ import {
 
 import { useTRPC } from '../api/client.ts';
 import { mapTRPCErrorToPolicy } from '../api/error-policy.ts';
-import { signOut, useSession } from '../auth/client.ts';
+import { useSession } from '../auth/client.ts';
 import { Button } from '../components/Button.tsx';
 import { Screen } from '../components/Screen.tsx';
 import {
@@ -21,11 +21,6 @@ import {
 } from '../features/dashboard/GameCard.tsx';
 import { testId } from '../test/test-ids.ts';
 import { useTheme } from '../theme/use-theme.ts';
-
-async function logout() {
-  await signOut();
-  router.replace('./login');
-}
 
 function gameRoute(game: DashboardGame): string {
   const id = encodeURIComponent(game.gameId);
@@ -64,15 +59,6 @@ export default function HomeScreen() {
     <Screen
       header={
         <Screen.Header
-          actions={
-            <Button
-              onPress={logout}
-              testID={testId('dashboard', 'logout')}
-              variant="secondary"
-            >
-              Log out
-            </Button>
-          }
           eyebrow={
             user?.email ??
             user?.name ??
@@ -118,6 +104,13 @@ export default function HomeScreen() {
             variant="secondary"
           >
             History
+          </Button>
+          <Button
+            onPress={() => router.push('./settings')}
+            testID={testId('dashboard', 'settings')}
+            variant="secondary"
+          >
+            Settings
           </Button>
         </View>
 

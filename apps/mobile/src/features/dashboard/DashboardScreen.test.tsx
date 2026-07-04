@@ -133,6 +133,9 @@ describe('DashboardScreen', () => {
     await user.press(getByTestId('dashboard.history'));
     expect(mockRouterPush).toHaveBeenCalledWith('./history');
 
+    await user.press(getByTestId('dashboard.settings'));
+    expect(mockRouterPush).toHaveBeenCalledWith('./settings');
+
     await user.press(getByTestId('dashboard.resumable.lobby-1'));
     expect(mockRouterPush).toHaveBeenCalledWith('/game/lobby-1');
 
@@ -175,15 +178,14 @@ describe('DashboardScreen', () => {
     });
   });
 
-  it('signs out from the dashboard header', async () => {
+  it('keeps account actions on the settings screen entry point', async () => {
     const user = userEvent.setup();
     const { getByTestId } = await render(<HomeScreen />);
 
-    await user.press(getByTestId('dashboard.logout'));
+    await user.press(getByTestId('dashboard.settings'));
 
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalledWith();
-    });
-    expect(mockRouterReplace).toHaveBeenCalledWith('./login');
+    expect(mockRouterPush).toHaveBeenCalledWith('./settings');
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });

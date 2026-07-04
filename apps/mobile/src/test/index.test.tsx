@@ -10,6 +10,7 @@ type MockQueryResult = {
 };
 
 var mockRouterReplace = jest.fn();
+var mockRouterPush = jest.fn();
 var mockSignOut = jest.fn();
 var mockQueries: Record<string, MockQueryResult> = {};
 
@@ -35,6 +36,7 @@ jest.mock('../api/client.ts', () => ({
 
 jest.mock('expo-router', () => ({
   router: {
+    push: (...args: unknown[]) => mockRouterPush(...args),
     replace: (...args: unknown[]) => mockRouterReplace(...args),
   },
 }));
@@ -65,6 +67,7 @@ beforeEach(() => {
     },
   };
   mockRouterReplace = jest.fn();
+  mockRouterPush = jest.fn();
   mockSignOut = jest.fn();
 });
 
@@ -75,7 +78,7 @@ describe('HomeScreen', () => {
     expect(getByText('Sequence Online')).toBeTruthy();
     expect(getByText('No games to resume right now.')).toBeTruthy();
     expect(getByText('No finished games yet.')).toBeTruthy();
-    expect(getByTestId('dashboard.logout')).toBeTruthy();
+    expect(getByTestId('dashboard.settings')).toBeTruthy();
   });
 
   it('redirects to login when the dashboard query is unauthorized', async () => {
@@ -94,15 +97,13 @@ describe('HomeScreen', () => {
     });
   });
 
-  it('signs out and returns to login', async () => {
+  it('opens settings from the dashboard actions', async () => {
     const user = userEvent.setup();
     const { getByTestId } = await render(<HomeScreen />);
 
-    await user.press(getByTestId('dashboard.logout'));
+    await user.press(getByTestId('dashboard.settings'));
 
-    await waitFor(() => {
-      expect(mockSignOut).toHaveBeenCalledWith();
-    });
-    expect(mockRouterReplace).toHaveBeenCalledWith('./login');
+    expect(mockRouterPush).toHaveBeenCalledWith('./settings');
+    expect(mockSignOut).not.toHaveBeenCalled();
   });
 });
