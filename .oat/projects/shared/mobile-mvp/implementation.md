@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t07
+oat_current_task_id: p10-t01
 oat_generated: false
 ---
 
@@ -34,9 +34,10 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 6/7       |
+| Phase 9 | completed   | 7     | 7/7       |
+| Phase 10 | in_progress | 7     | 0/7       |
 
-**Total:** 64/85 tasks completed
+**Total:** 65/85 tasks completed
 
 ---
 
@@ -3723,7 +3724,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 9: Lifecycle + Local Pass-and-Play
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-04
 
 ### Phase Summary
@@ -3954,7 +3955,8 @@ Chronological log of implementation progress.
 - [x] p09-t04: Rematch flow - b004600
 - [x] p09-t05: HandoffScreen + local pass-and-play - 5de7702
 - [x] p09-t06: Local save/resume + dashboard integration - ad72c90
-- [ ] p09-t07: Lifecycle matrix verification - next
+- [x] p09-t07: Lifecycle matrix verification - 01166d6
+- [ ] p10-t01: History screens - next
 
 **What changed (high level):**
 
