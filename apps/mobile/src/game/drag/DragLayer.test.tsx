@@ -1,5 +1,5 @@
 import type { Card } from '@sequence/game-logic';
-import { cleanup, render } from '@testing-library/react-native';
+import { act, cleanup, render, waitFor } from '@testing-library/react-native';
 
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native') as typeof import('react-native');
@@ -9,16 +9,47 @@ jest.mock('react-native-gesture-handler', () => {
     onBegin: jest.Mock<MockGesture>;
     onFinalize: jest.Mock<MockGesture>;
     onUpdate: jest.Mock<MockGesture>;
+    begin?: () => void;
+    finalize?: (event: { x: number; y: number }) => void;
+    update?: (event: {
+      translationX: number;
+      translationY: number;
+      x: number;
+      y: number;
+    }) => void;
   }
+
+  let lastGesture: MockGesture | null = null;
 
   const createGesture = (): MockGesture => {
     const gesture = {} as MockGesture;
 
     gesture.enabled = jest.fn(() => gesture);
-    gesture.onBegin = jest.fn(() => gesture);
-    gesture.onFinalize = jest.fn(() => gesture);
-    gesture.onUpdate = jest.fn(() => gesture);
+    gesture.onBegin = jest.fn((callback: () => void) => {
+      gesture.begin = callback;
+      return gesture;
+    });
+    gesture.onFinalize = jest.fn(
+      (callback: (event: { x: number; y: number }) => void) => {
+        gesture.finalize = callback;
+        return gesture;
+      },
+    );
+    gesture.onUpdate = jest.fn(
+      (
+        callback: (event: {
+          translationX: number;
+          translationY: number;
+          x: number;
+          y: number;
+        }) => void,
+      ) => {
+        gesture.update = callback;
+        return gesture;
+      },
+    );
 
+    lastGesture = gesture;
     return gesture;
   };
 
@@ -31,6 +62,7 @@ jest.mock('react-native-gesture-handler', () => {
     }: {
       children: import('react').ReactNode;
     }) => <View>{children}</View>,
+    __getLastGesture: () => lastGesture,
   };
 });
 
@@ -51,6 +83,21 @@ jest.mock('react-native-reanimated', () => {
 
 import { createBoardLayoutMap } from '../GameBoard/layout-map.ts';
 import { DragLayer } from './DragLayer.tsx';
+
+const { __getLastGesture } = jest.requireMock(
+  'react-native-gesture-handler',
+) as {
+  __getLastGesture: () => {
+    begin?: () => void;
+    update?: (event: {
+      translationX: number;
+      translationY: number;
+      x: number;
+      y: number;
+    }) => void;
+    finalize?: (event: { x: number; y: number }) => void;
+  } | null;
+};
 
 jest.mock('../cards/CardFace.tsx', () => {
   const { Text } = require('react-native') as typeof import('react-native');
@@ -97,5 +144,35 @@ describe('DragLayer', () => {
 
     expect(getByTestId('drag.layer')).toBeTruthy();
     expect(queryByTestId('drag.ghost')).toBeNull();
+  });
+
+  it('shows hover-confirm while over a cell and clears it after release', async () => {
+    const layoutMap = createBoardLayoutMap();
+    layoutMap.registerFrame('1AC', { height: 20, width: 20, x: 10, y: 10 });
+    const { getByTestId, queryByTestId } = await render(
+      <DragLayer card={selectedCard} layoutMap={layoutMap} />,
+    );
+
+    await act(async () => {
+      __getLastGesture()?.begin?.();
+      __getLastGesture()?.update?.({
+        translationX: 8,
+        translationY: 4,
+        x: 12,
+        y: 12,
+      });
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('drag.hover-confirm.1AC')).toBeTruthy();
+    });
+
+    await act(async () => {
+      __getLastGesture()?.finalize?.({ x: 12, y: 12 });
+    });
+
+    await waitFor(() => {
+      expect(queryByTestId('drag.hover-confirm.1AC')).toBeNull();
+    });
   });
 });

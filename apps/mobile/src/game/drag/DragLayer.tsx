@@ -35,6 +35,10 @@ export function DragLayer({
     onDrop,
     onHoverChange,
   });
+  const hoveredFrame =
+    drag.hoveredPosition === null
+      ? undefined
+      : layoutMap.getFrame(drag.hoveredPosition);
 
   return (
     <GestureDetector gesture={drag.gesture}>
@@ -44,6 +48,21 @@ export function DragLayer({
         testID="drag.layer"
       >
         {children}
+        {drag.hoveredPosition !== null && hoveredFrame !== undefined ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.hoverConfirm,
+              {
+                height: hoveredFrame.height,
+                left: hoveredFrame.x,
+                top: hoveredFrame.y,
+                width: hoveredFrame.width,
+              },
+            ]}
+            testID={`drag.hover-confirm.${drag.hoveredPosition}`}
+          />
+        ) : null}
         {card === null ? null : (
           <Animated.View
             accessibilityElementsHidden
@@ -66,6 +85,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     zIndex: 20,
+  },
+  hoverConfirm: {
+    borderColor: 'rgba(250,204,21,0.96)',
+    borderRadius: 4,
+    borderWidth: 3,
+    position: 'absolute',
+    zIndex: 18,
   },
   layer: {
     bottom: 0,

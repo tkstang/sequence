@@ -11,7 +11,9 @@ import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
 import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
 import { Screen } from '../../components/Screen.tsx';
 import { CardHand } from '../../game/CardHand/CardHand.tsx';
+import { DragLayer } from '../../game/drag/DragLayer.tsx';
 import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
+import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
 import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
 import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
 import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
@@ -86,21 +88,24 @@ function ActiveGameView({
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const moveSubmit = useMoveSubmit({ gameId, view });
+  const boardLayoutMap = useMemo(() => createBoardLayoutMap(), []);
   const currentPlayer = view.players.find(
     (player) => player.seat === view.currentSeat,
   );
   const currentTeam = teamForSeat(view);
   const myTurn = view.currentSeat === view.mySeat;
+  const dragMode = view.mode === 'drag';
   const selectionDisabled =
     !myTurn || moveSubmit.selectedCardDisabled || !moveSubmit.canSubmit;
+  const dragEnabled = dragMode && !selectionDisabled;
   const spotlight = useMemo(
     () =>
       createBoardSpotlight({
         board: view.board,
         currentTeam,
-        selectedCard: selectionDisabled ? null : selectedCard,
+        selectedCard: selectionDisabled || dragMode ? null : selectedCard,
       }),
-    [currentTeam, selectedCard, selectionDisabled, view.board],
+    [currentTeam, dragMode, selectedCard, selectionDisabled, view.board],
   );
 
   useEffect(() => {
@@ -134,6 +139,18 @@ function ActiveGameView({
       setSelectedIndex(null);
     }
   };
+  const handleDragDrop = async (position: Position) => {
+    if (!dragEnabled || selectedCard === null) return;
+
+    const move: Move = isOneEyedJack(selectedCard)
+      ? { position, type: 'removeChip' }
+      : { position, type: 'place' };
+    const submitted = await moveSubmit.submitMove(move);
+    if (submitted) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  };
   const turnTitle = myTurn
     ? 'Your turn'
     : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
@@ -142,7 +159,9 @@ function ActiveGameView({
     : (moveSubmit.feedback?.message ??
       (myTurn
         ? selectedCard
-          ? `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+          ? dragMode
+            ? `Drag ${cardCode(selectedCard)} onto a board cell.`
+            : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
           : 'Select a card to show legal targets.'
         : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
 
@@ -195,10 +214,19 @@ function ActiveGameView({
         <GameBoard
           board={view.board}
           currentTeam={selectionDisabled ? null : currentTeam}
+          layoutMap={boardLayoutMap}
           onCellPress={handleCellPress}
-          selectedCard={selectionDisabled ? null : selectedCard}
+          selectedCard={selectionDisabled || dragMode ? null : selectedCard}
           sequences={view.sequences}
         />
+        {dragMode ? (
+          <DragLayer
+            card={dragEnabled ? selectedCard : null}
+            enabled={dragEnabled}
+            layoutMap={boardLayoutMap}
+            onDrop={handleDragDrop}
+          />
+        ) : null}
         <CardHand
           board={view.board}
           disabled={selectionDisabled}

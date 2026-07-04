@@ -10,6 +10,7 @@ import { cleanup, render, userEvent } from '@testing-library/react-native';
 
 import type { GameStreamConnectionState } from '../realtime/use-game-stream.ts';
 import { useGameStream } from '../realtime/use-game-stream.ts';
+import type { DragLayerProps } from './drag/DragLayer.tsx';
 import type { UseMoveSubmitResult } from './use-move-submit.ts';
 import { useMoveSubmit } from './use-move-submit.ts';
 
@@ -81,6 +82,26 @@ jest.mock('./use-move-submit.ts', () => ({
     submitting: false,
   })),
 }));
+
+jest.mock('./drag/DragLayer.tsx', () => {
+  const { Pressable, View } =
+    require('react-native') as typeof import('react-native');
+
+  return {
+    DragLayer: ({ card, children, onDrop }: DragLayerProps) => (
+      <View testID="drag.layer.mock">
+        {children}
+        {card ? <View testID="drag.ghost.mock" /> : null}
+        <Pressable
+          onPress={() => {
+            onDrop?.('15C');
+          }}
+          testID="drag.drop.15C"
+        />
+      </View>
+    ),
+  };
+});
 
 import GameRouteScreen from '../app/game/[id].tsx';
 
@@ -219,6 +240,63 @@ describe('GameRouteScreen active turn flow', () => {
 
     await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
     expect(mockSubmitMove).not.toHaveBeenCalled();
+  });
+
+  it('selects drag mode and submits a cardless move when a dragged chip drops on a cell', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('active-your-turn', { mode: 'drag' });
+    mockSubmitMove = jest.fn((_move: Move) => true);
+
+    const { getByTestId, queryByTestId } = await render(<GameRouteScreen />);
+
+    expect(getByTestId('drag.layer.mock')).toBeTruthy();
+    expect(queryByTestId('drag.ghost.mock')).toBeNull();
+
+    await user.press(getByTestId('hand.card.5C'));
+
+    expect(getByTestId('drag.ghost.mock')).toBeTruthy();
+    expect(queryByTestId('board.cell.15C.spotlight.target')).toBeNull();
+
+    await user.press(getByTestId('drag.drop.15C'));
+
+    expect(mockSubmitMove).toHaveBeenCalledWith({
+      position: '15C',
+      type: 'place',
+    });
+  });
+
+  it('keeps the dragged chip selected when a drag-mode drop is rejected', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('active-your-turn', { mode: 'drag' });
+    mockSubmitMove = jest.fn((_move: Move) => false);
+    jest.mocked(useMoveSubmit).mockReturnValue({
+      ...defaultMoveSubmitResult(),
+      feedback: {
+        haptic: 'error',
+        message: 'That space is already occupied.',
+        tone: 'error',
+      },
+      submitMove: (...args: [Move]) =>
+        mockSubmitMove(...args) as unknown as Promise<boolean>,
+    });
+
+    const { getByTestId, getByText, queryByTestId } = await render(
+      <GameRouteScreen />,
+    );
+
+    await user.press(getByTestId('hand.card.5C'));
+    await user.press(getByTestId('drag.drop.15C'));
+
+    expect(mockSubmitMove).toHaveBeenCalledWith({
+      position: '15C',
+      type: 'place',
+    });
+    expect(getByTestId('drag.ghost.mock')).toBeTruthy();
+    expect(getByTestId('hand.card.5C').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+    expect(getByText('That space is already occupied.')).toBeTruthy();
+    expect(queryByTestId('board.cell.15C.chip')).toBeNull();
   });
 
   it('keeps the lobby branch intact', async () => {
