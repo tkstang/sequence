@@ -5,6 +5,7 @@ export type TestIdScreen =
   | 'dashboard'
   | 'game'
   | 'hand'
+  | 'handoff'
   | 'history'
   | 'home'
   | 'join'

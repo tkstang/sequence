@@ -18,6 +18,10 @@ import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
 import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
 import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
 import { GameOver } from '../../game/GameOver.tsx';
+import {
+  HandoffScreen,
+  visibleHandForSeat,
+} from '../../game/HandoffScreen.tsx';
 import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
 import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
 import {
@@ -499,7 +503,36 @@ function GameStateView({
   const trpc = useTRPC();
   const router = useRouter();
   const [rematchError, setRematchError] = useState<string | null>(null);
+  const [revealedSeat, setRevealedSeat] = useState(
+    view.local ? view.currentSeat : view.mySeat,
+  );
+  const [handoffTargetSeat, setHandoffTargetSeat] = useState<number | null>(
+    null,
+  );
   const rematch = useMutation(trpc.game.rematch.mutationOptions());
+  const localActiveWithHands =
+    view.local && view.status === 'active' && view.localHands !== undefined;
+  const handoffVisible =
+    localActiveWithHands &&
+    (handoffTargetSeat !== null || view.currentSeat !== revealedSeat);
+  const activeSeat = localActiveWithHands
+    ? (handoffTargetSeat ?? view.currentSeat)
+    : view.mySeat;
+  const activeHand = visibleHandForSeat({
+    fallbackHand: view.hand,
+    local: localActiveWithHands,
+    localHands: view.localHands,
+    seat: activeSeat,
+    veiled: handoffVisible,
+  });
+  const activePlayerName =
+    view.players.find((player) => player.seat === activeSeat)?.name ??
+    `Seat ${activeSeat + 1}`;
+  const visibleActiveView: GameViewState = {
+    ...view,
+    hand: [...activeHand],
+    mySeat: activeSeat,
+  };
   const handleRematch = async () => {
     setRematchError(null);
     try {
@@ -509,6 +542,22 @@ function GameStateView({
       setRematchError(rematchMutationMessage(error));
     }
   };
+
+  useEffect(() => {
+    if (!localActiveWithHands) {
+      setHandoffTargetSeat(null);
+      setRevealedSeat(view.currentSeat);
+      return;
+    }
+    if (view.currentSeat !== revealedSeat && handoffTargetSeat === null) {
+      setHandoffTargetSeat(view.currentSeat);
+    }
+  }, [handoffTargetSeat, localActiveWithHands, revealedSeat, view.currentSeat]);
+
+  function revealHandoff() {
+    setRevealedSeat(activeSeat);
+    setHandoffTargetSeat(null);
+  }
 
   if (view.status === 'lobby') {
     if (!isLobbyPlayerCount(view.playerCount)) {
@@ -556,7 +605,17 @@ function GameStateView({
   }
 
   if (view.status === 'active') {
-    return <ActiveGameView gameId={gameId} view={view} />;
+    if (handoffVisible) {
+      return (
+        <HandoffScreen
+          lastMoveLabel={view.lastMove?.label}
+          onReveal={revealHandoff}
+          playerName={activePlayerName}
+        />
+      );
+    }
+
+    return <ActiveGameView gameId={gameId} view={visibleActiveView} />;
   }
   if (view.status === 'finished') {
     return (

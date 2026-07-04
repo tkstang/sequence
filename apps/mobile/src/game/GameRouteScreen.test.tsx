@@ -3,7 +3,7 @@ import {
   stateFromSnapshot,
   type GameViewState,
 } from '@sequence/client-state';
-import type { Move } from '@sequence/game-logic';
+import type { Card, Move } from '@sequence/game-logic';
 import { boardCellsFor } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -169,6 +169,49 @@ function fixtureView(id: string, overrides: Partial<GameViewState> = {}) {
     version: 12,
     ...overrides,
   };
+}
+
+function localTurnView(
+  currentSeat: number,
+  overrides: Partial<GameViewState> = {},
+) {
+  const outgoingHand = [
+    { rank: '5', suit: 'C' },
+    { rank: 'T', suit: 'H' },
+  ] as const satisfies readonly Card[];
+  const incomingHand = [
+    { rank: 'A', suit: 'H' },
+    { rank: 'K', suit: 'D' },
+  ] as const satisfies readonly Card[];
+
+  return fixtureView('active-your-turn', {
+    currentSeat,
+    hand: [...outgoingHand],
+    local: true,
+    localHands: [[...outgoingHand], [...incomingHand]],
+    mySeat: 0,
+    players: [
+      {
+        connected: true,
+        isCreator: true,
+        isGuest: false,
+        name: 'You',
+        seat: 0,
+        team: 1,
+      },
+      {
+        connected: true,
+        isCreator: false,
+        isGuest: true,
+        name: 'Riya',
+        seat: 1,
+        team: 2,
+      },
+    ],
+    playerCount: 2,
+    teams: [1, 2],
+    ...overrides,
+  });
 }
 
 beforeEach(() => {
@@ -351,6 +394,39 @@ describe('GameRouteScreen active turn flow', () => {
 
     await user.press(getByTestId(`board.cell.${firstFiveClubsTarget}`));
     expect(mockSubmitMove).not.toHaveBeenCalled();
+  });
+
+  it('veils both local hands between pass-and-play turns until the incoming player confirms', async () => {
+    const user = userEvent.setup();
+    mockStreamView = localTurnView(0);
+
+    const { getByTestId, getByText, queryByTestId, queryByText, rerender } =
+      await render(<GameRouteScreen />);
+
+    expect(getByTestId('hand.card.5C')).toBeTruthy();
+    expect(queryByTestId('hand.card.AH')).toBeNull();
+
+    mockStreamView = localTurnView(1, {
+      lastMove: {
+        label: '5C to 15C',
+        seat: 0,
+      },
+    });
+    await rerender(<GameRouteScreen />);
+
+    expect(getByText('Pass to Riya')).toBeTruthy();
+    expect(getByText('5C to 15C')).toBeTruthy();
+    expect(getByTestId('handoff.confirm')).toBeTruthy();
+    expect(queryByTestId('hand.dock')).toBeNull();
+    expect(queryByTestId('hand.card.5C')).toBeNull();
+    expect(queryByTestId('hand.card.AH')).toBeNull();
+    expect(queryByText('5C')).toBeNull();
+    expect(queryByText('AH')).toBeNull();
+
+    await user.press(getByTestId('handoff.confirm'));
+
+    expect(getByTestId('hand.card.AH')).toBeTruthy();
+    expect(queryByTestId('hand.card.5C')).toBeNull();
   });
 
   it('selects drag mode and submits a cardless move when a dragged chip drops on a cell', async () => {
