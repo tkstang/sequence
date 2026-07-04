@@ -11,6 +11,7 @@ import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
 import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
 import { Screen } from '../../components/Screen.tsx';
 import { CardHand } from '../../game/CardHand/CardHand.tsx';
+import { useDeadCardControls } from '../../game/DeadCardControls.tsx';
 import { DragLayer } from '../../game/drag/DragLayer.tsx';
 import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
 import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
@@ -97,6 +98,7 @@ function ActiveGameView({
     Position[]
   >([]);
   const moveSubmit = useMoveSubmit({ gameId, view });
+  const deadCardControls = useDeadCardControls({ gameId, view });
   const chooseSequenceCells = useMutation(
     trpc.game.chooseSequenceCells.mutationOptions({
       onError(error: unknown) {
@@ -116,6 +118,7 @@ function ActiveGameView({
   const selectionDisabled =
     pendingChoice !== undefined ||
     !myTurn ||
+    deadCardControls.submitting ||
     moveSubmit.selectedCardDisabled ||
     !moveSubmit.canSubmit;
   const dragEnabled = dragMode && !selectionDisabled;
@@ -189,18 +192,21 @@ function ActiveGameView({
     : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
   const controlsCopy = moveSubmit.submitting
     ? 'Submitting move...'
-    : choiceForMySeat
-      ? 'Choose which five chips will become the locked sequence.'
-      : pendingChoice
-        ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
-        : (moveSubmit.feedback?.message ??
-          (myTurn
-            ? selectedCard
-              ? dragMode
-                ? `Drag ${cardCode(selectedCard)} onto a board cell.`
-                : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
-              : 'Select a card to show legal targets.'
-            : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
+    : deadCardControls.submitting
+      ? 'Turning in dead card...'
+      : choiceForMySeat
+        ? 'Choose which five chips will become the locked sequence.'
+        : pendingChoice
+          ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
+          : (deadCardControls.feedback?.message ??
+            moveSubmit.feedback?.message ??
+            (myTurn
+              ? selectedCard
+                ? dragMode
+                  ? `Drag ${cardCode(selectedCard)} onto a board cell.`
+                  : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+                : 'Select a card to show legal targets.'
+              : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
 
   return (
     <View style={styles.activeStack} testID={testId('game', 'active')}>
@@ -274,8 +280,13 @@ function ActiveGameView({
           mode={view.mode}
           onSelectionChange={(card, index) => {
             moveSubmit.clearFeedback();
+            deadCardControls.clearFeedback();
             setSelectedCard(card);
             setSelectedIndex(index);
+          }}
+          onTurnInDeadCard={(card) => {
+            moveSubmit.clearFeedback();
+            void deadCardControls.turnInDeadCard(card);
           }}
           selectedIndex={selectionDisabled ? null : selectedIndex}
         />
@@ -287,11 +298,13 @@ function ActiveGameView({
           styles.controls,
           {
             backgroundColor:
-              moveSubmit.feedback?.tone === 'error'
+              (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+              'error'
                 ? colors.frozenBg
                 : colors.surfaceRaised,
             borderColor:
-              moveSubmit.feedback?.tone === 'error'
+              (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+              'error'
                 ? colors.danger
                 : colors.border,
           },
@@ -299,12 +312,17 @@ function ActiveGameView({
         testID={testId('game', 'controls')}
       >
         <Text
-          accessibilityRole={moveSubmit.feedback ? 'alert' : undefined}
+          accessibilityRole={
+            deadCardControls.feedback || moveSubmit.feedback
+              ? 'alert'
+              : undefined
+          }
           style={[
             styles.controlsText,
             {
               color:
-                moveSubmit.feedback?.tone === 'error'
+                (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+                'error'
                   ? colors.danger
                   : colors.text,
             },

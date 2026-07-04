@@ -20,6 +20,12 @@ export const GAME_UPDATED_FEEDBACK = {
   tone: 'info',
 } as const satisfies MoveSubmitFeedback;
 
+export const AUTO_SWAP_FEEDBACK = {
+  haptic: 'warning',
+  message: 'Auto-swapped a dead card.',
+  tone: 'info',
+} as const satisfies MoveSubmitFeedback;
+
 const GENERIC_MOVE_FAILURE = {
   haptic: 'error',
   message: 'Move failed. Try again.',

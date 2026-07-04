@@ -23,11 +23,13 @@ var mockStreamView: GameViewState | null = null;
 var mockConnectionState: GameStreamConnectionState = 'live';
 var mockSubmitMove = jest.fn((_move: Move) => false);
 var mockMutate = jest.fn();
+var mockMutateAsync = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   useMutation: jest.fn((options: MutationOptions) => ({
     isPending: false,
     mutate: mockMutate,
+    mutateAsync: (...args: unknown[]) => mockMutateAsync(...args),
     options,
   })),
 }));
@@ -48,6 +50,9 @@ jest.mock('../api/client.ts', () => ({
       },
       setTeam: { mutationOptions: (options: MutationOptions) => options },
       start: { mutationOptions: (options: MutationOptions) => options },
+      turnInDeadCard: {
+        mutationOptions: (options: MutationOptions) => options,
+      },
     },
   })),
 }));
@@ -142,6 +147,7 @@ beforeEach(() => {
   mockConnectionState = 'live';
   mockSubmitMove = jest.fn((_move: Move) => false);
   mockMutate = jest.fn();
+  mockMutateAsync = jest.fn();
   jest.mocked(useMutation).mockClear();
   jest.mocked(useGameStream).mockClear();
   jest
@@ -268,6 +274,25 @@ describe('GameRouteScreen active turn flow', () => {
       position: '15C',
       type: 'place',
     });
+  });
+
+  it('turns in a drag-mode dead card through the versioned mutation', async () => {
+    const user = userEvent.setup();
+    mockStreamView = fixtureView('dead-card', { mode: 'drag' });
+    mockMutateAsync.mockResolvedValue({ events: [], version: 13 });
+
+    const { getByTestId } = await render(<GameRouteScreen />);
+
+    expect(getByTestId('hand.card.5C.dead')).toBeTruthy();
+
+    await user.press(getByTestId('hand.card.5C.turnIn'));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({
+      card: { rank: '5', suit: 'C' },
+      gameId: mockGameId,
+      version: 12,
+    });
+    expect(mockSubmitMove).not.toHaveBeenCalled();
   });
 
   it('keeps the dragged chip selected when a drag-mode drop is rejected', async () => {

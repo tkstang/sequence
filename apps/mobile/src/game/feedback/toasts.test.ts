@@ -4,6 +4,7 @@ import {
 } from '@sequence/client-state';
 
 import {
+  AUTO_SWAP_FEEDBACK,
   GAME_UPDATED_FEEDBACK,
   feedbackForMoveSubmitError,
   feedbackForRuleViolationCode,
@@ -30,6 +31,14 @@ describe('move submit feedback toasts', () => {
     expect(feedbackForMoveSubmitError({ data: { code: 'CONFLICT' } })).toEqual(
       GAME_UPDATED_FEEDBACK,
     );
+  });
+
+  it('defines default-mode dead-card auto-swap feedback', () => {
+    expect(AUTO_SWAP_FEEDBACK).toEqual({
+      haptic: 'warning',
+      message: 'Auto-swapped a dead card.',
+      tone: 'info',
+    });
   });
 
   it('falls back to a generic submit failure message', () => {
