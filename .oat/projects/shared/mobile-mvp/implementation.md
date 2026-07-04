@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p10-t02
+oat_current_task_id: p10-t03
 oat_generated: false
 ---
 
@@ -35,9 +35,9 @@ oat_generated: false
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
-| Phase 10 | in_progress | 7     | 1/7       |
+| Phase 10 | in_progress | 7     | 2/7       |
 
-**Total:** 66/85 tasks completed
+**Total:** 67/85 tasks completed
 
 ---
 
@@ -3830,6 +3830,12 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `history.headToHead`.
 - The signed-in dashboard now exposes a History action so the route is reachable
   from the app, matching the web dashboard's full-history affordance.
+- Active game streams now surface in-app notification affordances for turn
+  changes to my seat, opponent sequences, concede, and disconnect/freeze events,
+  with Expo notification haptics and a seq baseline that avoids replaying the
+  initial stream view as a toast.
+- The shared move-feedback catalog now exposes a broader `GameFeedback` shape
+  while preserving all 13 rule-violation mappings through UI feedback tests.
 
 **Verification:**
 
@@ -3840,11 +3846,21 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `pnpm format:check`
 - Run: `git diff --check HEAD`
 - Result: pass; Jest reported the known Watchman recrawl warning.
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/feedback src/game/GameRouteScreen.test.tsx --runInBand`
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Run: `pnpm --filter @sequence/mobile lint`
+- Run: `pnpm format:check`
+- Run: `git diff --check HEAD`
+- Result: pass; Jest reported the known Watchman recrawl warning.
 
 **Notes / Decisions:**
 
 - The history route test lives under `src/features/history` rather than
   `src/app` to preserve the Expo Router test-location rule.
+- Stream-driven notification effects establish their first-seen seq from the
+  first visible view, then only process later `recentEvents` entries. This keeps
+  resumed screens and initial snapshots quiet while still surfacing live events.
 
 ---
 
@@ -3990,7 +4006,8 @@ Chronological log of implementation progress.
 - [x] p09-t06: Local save/resume + dashboard integration - ad72c90
 - [x] p09-t07: Lifecycle matrix verification - 01166d6
 - [x] p10-t01: History screens - d181966 / 4750213
-- [ ] p10-t02: Notification affordances - next
+- [x] p10-t02: Notification affordances - 8c0c116
+- [ ] p10-t03: Settings screen - next
 
 **What changed (high level):**
 
@@ -4226,6 +4243,7 @@ Track test execution during implementation.
 | 9     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/game/ActiveGameControls.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | Dashboard/control suites 16 tests and route suite 19 tests; local resumables show a `LOCAL` badge, route to `/game/<id>`, local save remains available, and resumed local active games start behind the handoff veil |
 | 9     | `pnpm --filter @sequence/api exec vitest run src/game/routes/lifecycle.test.ts src/game/presence.test.ts`; `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx src/game/GameOver.test.tsx src/game/HandoffScreen.test.tsx --runInBand`; `node /tmp/p09-t07-live.mjs`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | API lifecycle/presence suites 15 tests, mobile lifecycle suites 36 tests, and live local API/web probe passed; covers registered save/resume, 2-team concede, 3-player FFA concede/no-result, disconnect freeze/resume, registered rematch roster, local pass-and-play save after handoff, and fixture-backed expiry UI |
 | 10    | `pnpm --filter @sequence/mobile exec jest src/features/history src/features/dashboard src/test/root-layout.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 4 history/dashboard/root suites, 16 tests; `/history` route registered, record/list/head-to-head rendered, nextCursor load-more behavior covered, local games flagged, and dashboard history navigation added |
+| 10    | `pnpm --filter @sequence/mobile exec jest src/game/feedback src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 feedback/route suites, 53 tests; live stream notifications cover turn-to-me, opponent sequence, concede, freeze/disconnect, initial-view suppression, haptics, and all 13 rule-violation catalog mappings |
 
 ## Final Summary (for PR/docs)
 

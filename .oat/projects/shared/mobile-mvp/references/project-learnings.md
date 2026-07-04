@@ -163,6 +163,10 @@ value. Expo MCP and Argent usage details belong in
   On deadline prop changes, reset the local clock baseline immediately; on
   expiry, clamp the display to `0:00` and wait for the stream to reflect any
   server-side forfeit instead of triggering client-side expiry behavior.
+- Stream-driven notification effects should establish their first-seen cursor
+  from the first visible stream view, then notify only for later event seqs.
+  This prevents resumed screens, initial snapshots, or replayed current state
+  from firing stale haptics while preserving live turn/event feedback.
 - Do not use a quiet subscription as proof that a mobile realtime connection is
   stale. During p07-t09, the mobile inactivity watchdog unconditionally
   resubscribed after 15 seconds without stream items; the aborted subscription
