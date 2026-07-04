@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t03
+oat_current_task_id: p11-t04
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 2/7       |
+| Phase 11 | in_progress | 7     | 3/7       |
 
-**Total:** 74/85 tasks completed
+**Total:** 75/85 tasks completed
 
 ---
 
@@ -4018,6 +4018,14 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Project-level and Expo MCP learnings now capture the p11-t02 perf workflow:
   stable board callbacks, layout-map revision subscriptions, Argent profiler
   start/stop/analyze usage, and commit-query validation.
+- NFR4 release-audit hardening now fails closed for production `apiUrl`/`wsUrl`
+  protocol drift, strips app `console.*` calls from production Babel output,
+  and excludes development-only Expo Router routes from the production Hermes
+  bundle through a production router context.
+- The release audit confirmed credential storage boundaries and remote-hand
+  redaction: Better Auth session and raw guest tokens stay in SecureStore, and
+  the host's remote `GameSnapshotView` contained only seat 0's hand with no
+  `localHands` or exact opponent-hand array.
 
 **Verification:**
 
@@ -4077,6 +4085,34 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `pnpm --filter @sequence/mobile lint`; `pnpm format:check`;
   `git diff --check`.
 - Result: pass.
+- Run: `NODE_ENV=production pnpm --filter @sequence/mobile exec expo config --type public`.
+- Result: expected fail-closed pass; production config without secure overrides
+  errors with `EXPO_PUBLIC_API_URL must use https in production.`
+- Run:
+  `NODE_ENV=production EXPO_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app EXPO_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app pnpm --filter @sequence/mobile exec expo config --type public --json`.
+- Result: pass; public config resolves secure production `apiUrl` and `wsUrl`.
+- Run:
+  `NODE_ENV=production EXPO_PUBLIC_API_URL=https://sequence-api-production-8687.up.railway.app EXPO_PUBLIC_WS_URL=wss://sequence-api-production-8687.up.railway.app pnpm --filter @sequence/mobile exec expo export --platform ios --output-dir /tmp/sequence-mobile-export-p11-t03-current`.
+- Result: pass; production iOS export bundled 1036 modules and produced
+  `/tmp/sequence-mobile-export-p11-t03-current/_expo/static/js/ios/entry-4e1dc39a01bdc816ea069a45914dc083.hbc`
+  at `2.1M`.
+- Run: release bundle `strings -a ... | rg -o ... | sort -u` scans for
+  dev-route markers, `expo-mcp`, app move telemetry, localhost endpoints, and
+  raw auth-token keys.
+- Result: pass; dev-route, `expo-mcp`, localhost endpoint, app telemetry, and
+  raw auth-token marker scans were empty. The only console marker found was a
+  generic dependency `console.error`; a narrow Babel transform proof produced
+  `const y = void 0;`, confirming app console calls are stripped.
+- Run: source credential audit greps across `apps/mobile/src`.
+- Result: pass; Better Auth session storage uses `expo-secure-store`,
+  guest raw tokens use SecureStore async APIs, and AsyncStorage usage is limited
+  to theme preference plus guest-game registry metadata.
+- Run: live local API remote-game redaction proof with database hand comparison
+  and `@sequence/client-state` projection.
+- Result: pass; `/tmp/p11-t03-remote-game-summary.json` shows remote game
+  `62959319-7538-4ebd-9b82-46cf2c817bde`, host seat 0, host hand matching DB,
+  no `localHands`, and no exact seat 1 hand array in the server snapshot or
+  client `GameSnapshotView`.
 
 ### Task p11-t01: NFR2 measured scenario matrix
 
@@ -4190,6 +4226,67 @@ subscription input lastEventId=505; latest card kind=event seq=505
   the map object.
 - SVG card rendering remains the accepted implementation for Phase 11; no
   design deviation or sprite-raster follow-up is required from this pass.
+
+### Task p11-t03: Release build audit (NFR4)
+
+**Status:** completed
+**Commit:** fff72a4
+
+**Outcome:**
+
+- Added production config assertions so release config must use `https` for
+  `EXPO_PUBLIC_API_URL` and `wss` for `EXPO_PUBLIC_WS_URL`.
+- Added a production-only Babel console-strip plugin that removes app
+  `console.*` calls while preserving Reanimated's plugin as the final Babel
+  plugin.
+- Added a production Metro resolver override for `expo-router/_ctx` so the
+  production router context excludes `./dev/*` route modules from the Hermes
+  bundle instead of only guarding runtime route access.
+- Verified the release bundle, credential storage boundary, and NFR1
+  remote-hand redaction boundary.
+- Appended p11-t03 release-audit learnings to the Expo MCP/Argent and general
+  project learning references.
+
+**Release-audit results:**
+
+| Area | Result | Evidence |
+| ---- | ------ | -------- |
+| Production config | pass | `NODE_ENV=production expo config` fails closed without secure overrides; secure override config resolves `https://sequence-api-production-8687.up.railway.app` and `wss://sequence-api-production-8687.up.railway.app`. |
+| Production export | pass | `/tmp/sequence-mobile-export-p11-t03-current`, 1036 modules, `2.1M` Hermes bundle. |
+| Dev-route exclusion | pass | Bundle string scan found no `dev.playground`, `Development only`, `Kit playground`, `DevStreamFeed`, `dev.stream`, or `./dev/*.tsx` markers after the production router context override. |
+| Release leak scan | pass | Bundle string scan found no `expo-mcp`, `game.move.round_trip`, localhost API/WS endpoints, raw guest registry/token constants, or Better Auth token markers; only generic dependency `console.error` remained. |
+| Console strip | pass | Production Babel transform changed `console.info("x"); const y = console.error("y");` into `const y = void 0;`. |
+| Credential storage | pass | Better Auth session and raw guest tokens use SecureStore; AsyncStorage is limited to theme preference and non-token guest-game registry metadata. |
+| Remote hand privacy | pass | `/tmp/p11-t03-remote-game-summary.json` proves the host snapshot/client view had only seat 0's hand, no `localHands`, and no exact seat 1 hand array. |
+
+**Files changed:**
+
+- `apps/mobile/app.config.ts` - production URL protocol assertions and resolved
+  API/WS extras.
+- `apps/mobile/babel.config.js` - production console stripping before the
+  Reanimated plugin.
+- `apps/mobile/metro.config.js` - production `expo-router/_ctx` resolver
+  override.
+- `apps/mobile/src/router/ctx-production.js` - production-only route context
+  excluding development routes.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - general
+  production route-bundle learning.
+- `.oat/projects/shared/mobile-mvp/references/using-expo-mcp-learnings.md` -
+  Hermes bundle scan, console-strip proof, Argent invocation, and p11-t03
+  evidence learnings.
+
+**Notes / Decisions:**
+
+- A `__DEV__` route guard is not a bundle-exclusion proof. The first production
+  export still included development route strings until the production router
+  context excluded `./dev/*`.
+- The generic `console.error` string is dependency-owned bundle residue; the
+  app-specific telemetry marker is absent and the Babel plugin proof verifies
+  app console calls are stripped.
+- Argent remained useful as a configured MCP concept, but the local package
+  binary was not available through the mobile workspace and `pnpm dlx` hit
+  ignored-build friction. The redaction proof used direct API/DB/runtime probes
+  instead of adding tooling dependencies.
 
 ---
 
@@ -4343,7 +4440,8 @@ Chronological log of implementation progress.
 - [x] p10-t07: FR13-FR15 verification - evidence only, no source changes
 - [x] p11-t01: NFR2 measured scenario matrix - fcfc1f9
 - [x] p11-t02: Perf pass + NFR3 measurement - a2ccf75
-- [ ] p11-t03: Release build audit (NFR4) - next
+- [x] p11-t03: Release build audit (NFR4) - fff72a4
+- [ ] p11-t04: Gate sweep (NFR6) - next
 
 **What changed (high level):**
 
@@ -4592,6 +4690,7 @@ Track test execution during implementation.
 | 10    | p10-t07 local API + Metro LAN + iOS dev-client seeded-history and active-game verification; `file /tmp/p10-t07-history-seeded.png /tmp/p10-t07-active-local-created.png /tmp/p10-t07-launch.png /tmp/p10-t07-create-screen.png`; `pnpm --filter @sequence/mobile exec jest src/features/history src/game/feedback src/features/settings/SettingsScreen.test.tsx src/theme/theme-provider.test.tsx --runInBand` | yes    | 0      | FR13-FR15 parity pass: seeded history rendered 2-1 record, `Parity Opponent 2-1`, 3 games, and local badge; live active game exposed `Your turn`, rail, lifecycle controls, and board affordances; focused tests covered notification and theme behavior, 5 suites / 44 tests |
 | 11    | p11-t01 simulator/API NFR2 matrix; `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/api exec vitest run src/game/presence.test.ts src/game/routes/on-game-event.test.ts src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/components/ConnectionBanner.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/{api,client-state,mobile} typecheck`; `pnpm format:check`; `pnpm lint`; `git diff --check` | yes    | 0      | NFR2 pass: API restart recovered in `4391ms`, brief foreground recovered in `1830ms`, force-quit route recovered in `2743ms`, replay-window fallback snapshot covered after 502 events, and stale-version recovery remained covered by focused API/mobile tests |
 | 11    | p11-t02 Argent/React profiler selected-card drag session; `profiler-commit-query --component_name BoardCell`; `jq '.p50RoundTripMs' /tmp/p07-t09-deterministic-summary.json`; `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/GameBoard.test.tsx src/game/GameBoard/layout-map.test.ts src/game/drag/use-drag-chip.test.ts src/game/drag/DragLayer.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR3 pass: 3 React commits over `21.6s`, no drag per-frame React cascade, no `BoardCell` hot-commit renders, local move p50 `6.1ms`, 7 mobile suites / 54 tests passed |
+| 11    | `NODE_ENV=production pnpm --filter @sequence/mobile exec expo config --type public` expected-failure check; secure production `expo config --json`; production `expo export --platform ios --output-dir /tmp/sequence-mobile-export-p11-t03-current`; Hermes `strings -a` leak scans; production Babel transform proof; source credential audit greps; live local API remote-game redaction proof `/tmp/p11-t03-remote-game-summary.json`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm --filter @sequence/mobile exec oxfmt --check src app.config.ts babel.config.js metro.config.js`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR4 pass: production config fails closed without secure URLs, secure release config exports, dev-route markers and app telemetry are absent from the Hermes bundle, app console calls are stripped, credentials use SecureStore, and the host client view contains only its own hand |
 
 ## Final Summary (for PR/docs)
 
