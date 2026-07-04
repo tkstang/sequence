@@ -66,6 +66,7 @@ export function GameBoard({
   const window = useWindowDimensions();
   const [rotation, setRotation] = useState<BoardRotation>(0);
   const animatedRotation = useSharedValue(0);
+  const animatedScale = useSharedValue(1);
   const boardWidth = Math.min(maxWidth ?? window.width - 24, 430);
   const cellWidth = Math.max(
     24,
@@ -92,14 +93,27 @@ export function GameBoard({
     [highlightedCells],
   );
   const boardAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${animatedRotation.value}deg` }],
+    transform: [
+      { rotate: `${animatedRotation.value}deg` },
+      { scale: animatedScale.value },
+    ],
   }));
 
   useEffect(() => {
     animatedRotation.value = withTiming(rotation, {
       duration: ROTATION_DURATION_MS,
     });
-  }, [animatedRotation, rotation]);
+    animatedScale.value = withTiming(
+      scaleForRotation(rotation, renderedBoardWidth, renderedBoardHeight),
+      { duration: ROTATION_DURATION_MS },
+    );
+  }, [
+    animatedRotation,
+    animatedScale,
+    renderedBoardHeight,
+    renderedBoardWidth,
+    rotation,
+  ]);
 
   useEffect(() => {
     if (!layoutMap) return;
@@ -249,7 +263,8 @@ function rotateFrame(
   boardWidth: number,
   boardHeight: number,
 ): BoardCellFrame {
-  if (rotation === 0) return frame;
+  const scale = scaleForRotation(rotation, boardWidth, boardHeight);
+  if (rotation === 0 && scale === 1) return frame;
 
   const centerX = boardWidth / 2;
   const centerY = boardHeight / 2;
@@ -268,7 +283,7 @@ function rotateFrame(
       sin,
     ),
     rotatePoint(frame.x, frame.y + frame.height, centerX, centerY, cos, sin),
-  ];
+  ].map((point) => scalePoint(point.x, point.y, centerX, centerY, scale));
   const xValues = corners.map((corner) => corner.x);
   const yValues = corners.map((corner) => corner.y);
   const left = Math.round(Math.min(...xValues));
@@ -282,6 +297,15 @@ function rotateFrame(
     x: left,
     y: top,
   };
+}
+
+function scaleForRotation(
+  rotation: BoardRotation,
+  boardWidth: number,
+  boardHeight: number,
+): number {
+  if (rotation === 0 || rotation === 180) return 1;
+  return Math.min(1, boardWidth / boardHeight, boardHeight / boardWidth);
 }
 
 function rotatePoint(
@@ -298,6 +322,19 @@ function rotatePoint(
   return {
     x: centerX + offsetX * cos - offsetY * sin,
     y: centerY + offsetX * sin + offsetY * cos,
+  };
+}
+
+function scalePoint(
+  x: number,
+  y: number,
+  centerX: number,
+  centerY: number,
+  scale: number,
+): { readonly x: number; readonly y: number } {
+  return {
+    x: centerX + (x - centerX) * scale,
+    y: centerY + (y - centerY) * scale,
   };
 }
 
@@ -325,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   surface: {
     display: 'flex',

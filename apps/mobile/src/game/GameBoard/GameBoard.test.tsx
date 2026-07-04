@@ -179,10 +179,10 @@ describe('GameBoard', () => {
     await user.press(getByTestId('board.rotate'));
     await waitFor(() => {
       expect(layoutMap.getFrame('1AC')).toEqual({
-        height: 32,
-        width: 45,
-        x: 348,
-        y: 105,
+        height: 23,
+        width: 32,
+        x: 298,
+        y: 141,
       });
     });
 
@@ -199,10 +199,10 @@ describe('GameBoard', () => {
     await user.press(getByTestId('board.rotate'));
     await waitFor(() => {
       expect(layoutMap.getFrame('1AC')).toEqual({
-        height: 32,
-        width: 45,
-        x: -57,
-        y: 329,
+        height: 23,
+        width: 32,
+        x: 6,
+        y: 302,
       });
     });
 
@@ -227,7 +227,7 @@ describe('GameBoard', () => {
     await user.press(getByTestId('board.rotate'));
 
     await waitFor(() => {
-      expect(layoutMap.hitTest({ x: 370, y: 120 })).toBe('1AC');
+      expect(layoutMap.hitTest({ x: 310, y: 150 })).toBe('1AC');
       expect(layoutMap.hitTest({ x: 24, y: 24 })).not.toBe('1AC');
     });
   });
