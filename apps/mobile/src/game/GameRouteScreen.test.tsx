@@ -6,7 +6,12 @@ import {
 import type { Move } from '@sequence/game-logic';
 import { boardCellsFor } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
-import { cleanup, render, userEvent } from '@testing-library/react-native';
+import {
+  cleanup,
+  render,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import type { GameStreamConnectionState } from '../realtime/use-game-stream.ts';
 import { useGameStream } from '../realtime/use-game-stream.ts';
@@ -24,6 +29,7 @@ var mockConnectionState: GameStreamConnectionState = 'live';
 var mockSubmitMove = jest.fn((_move: Move) => false);
 var mockMutate = jest.fn();
 var mockMutateAsync = jest.fn();
+var mockRouterReplace = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   useMutation: jest.fn((options: MutationOptions) => ({
@@ -36,6 +42,7 @@ jest.mock('@tanstack/react-query', () => ({
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: mockGameId }),
+  useRouter: () => ({ replace: mockRouterReplace }),
 }));
 
 jest.mock('../api/client.ts', () => ({
@@ -44,8 +51,14 @@ jest.mock('../api/client.ts', () => ({
       chooseSequenceCells: {
         mutationOptions: (options: MutationOptions) => options,
       },
+      concede: {
+        mutationOptions: (options: MutationOptions) => options,
+      },
       kick: { mutationOptions: (options: MutationOptions) => options },
       randomizeTeams: {
+        mutationOptions: (options: MutationOptions) => options,
+      },
+      saveAndExit: {
         mutationOptions: (options: MutationOptions) => options,
       },
       setTeam: { mutationOptions: (options: MutationOptions) => options },
@@ -112,6 +125,20 @@ jest.mock('./drag/DragLayer.tsx', () => {
   };
 });
 
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native') as typeof import('react-native');
+
+  return {
+    __esModule: true,
+    default: {
+      View,
+    },
+    useAnimatedStyle: (factory: () => unknown) => factory(),
+    useSharedValue: (value: unknown) => ({ value }),
+    withTiming: (value: unknown) => value,
+  };
+});
+
 import GameRouteScreen from '../app/game/[id].tsx';
 
 function defaultMoveSubmitResult(): UseMoveSubmitResult {
@@ -148,6 +175,7 @@ beforeEach(() => {
   mockSubmitMove = jest.fn((_move: Move) => false);
   mockMutate = jest.fn();
   mockMutateAsync = jest.fn();
+  mockRouterReplace = jest.fn();
   jest.mocked(useMutation).mockClear();
   jest.mocked(useGameStream).mockClear();
   jest
@@ -226,6 +254,32 @@ describe('GameRouteScreen active turn flow', () => {
     expect(useMoveSubmit).toHaveBeenLastCalledWith({
       gameId: mockGameId,
       view: expect.objectContaining({ version: 12 }),
+    });
+  });
+
+  it('saves the active game with the current version and navigates home', async () => {
+    const user = userEvent.setup();
+    const activeView = fixtureView('active-your-turn');
+    mockStreamView = {
+      ...activeView,
+      players: activeView.players.map((player) => ({
+        ...player,
+        isGuest: false,
+      })),
+    };
+    mockMutateAsync.mockResolvedValue({ status: 'saved' });
+
+    const { getByTestId } = await render(<GameRouteScreen />);
+
+    await user.press(getByTestId('game.lifecycle.save'));
+    await user.press(getByTestId('game.lifecycle.save.confirm'));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({
+      gameId: mockGameId,
+      version: 12,
+    });
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('/');
     });
   });
 

@@ -2,7 +2,7 @@ import type { GameViewState } from '@sequence/client-state';
 import type { Card, Move, Position, Team } from '@sequence/game-logic';
 import { isOneEyedJack } from '@sequence/game-logic';
 import { useMutation } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +10,7 @@ import { useTRPC } from '../../api/client.ts';
 import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
 import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
 import { Screen } from '../../components/Screen.tsx';
+import { ActiveGameControls } from '../../game/ActiveGameControls.tsx';
 import { CardHand } from '../../game/CardHand/CardHand.tsx';
 import { useDeadCardControls } from '../../game/DeadCardControls.tsx';
 import { DragLayer } from '../../game/drag/DragLayer.tsx';
@@ -91,8 +92,10 @@ function ActiveGameView({
 }) {
   const { colors } = useTheme();
   const trpc = useTRPC();
+  const router = useRouter();
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
   const [choiceError, setChoiceError] = useState<string | null>(null);
   const [choiceHighlightedCells, setChoiceHighlightedCells] = useState<
     Position[]
@@ -106,6 +109,8 @@ function ActiveGameView({
       },
     }),
   );
+  const saveAndExit = useMutation(trpc.game.saveAndExit.mutationOptions());
+  const concede = useMutation(trpc.game.concede.mutationOptions());
   const boardLayoutMap = useMemo(() => createBoardLayoutMap(), []);
   const currentPlayer = view.players.find(
     (player) => player.seat === view.currentSeat,
@@ -115,9 +120,11 @@ function ActiveGameView({
   const dragMode = view.mode === 'drag';
   const pendingChoice = view.pendingChoice;
   const choiceForMySeat = pendingChoice?.seat === view.mySeat;
+  const lifecyclePending = saveAndExit.isPending || concede.isPending;
   const selectionDisabled =
     pendingChoice !== undefined ||
     !myTurn ||
+    lifecyclePending ||
     deadCardControls.submitting ||
     moveSubmit.selectedCardDisabled ||
     !moveSubmit.canSubmit;
@@ -154,6 +161,23 @@ function ActiveGameView({
   const handleChooseSequence = ({ cells, version }: SequenceChoiceSubmit) => {
     setChoiceError(null);
     chooseSequenceCells.mutate({ cells, gameId, version });
+  };
+  const handleSaveAndExit = async ({ version }: { version: number }) => {
+    setLifecycleError(null);
+    try {
+      await saveAndExit.mutateAsync({ gameId, version });
+      router.replace('/' as Href);
+    } catch (error) {
+      setLifecycleError(mutationMessage(error));
+    }
+  };
+  const handleConcede = async ({ version }: { version: number }) => {
+    setLifecycleError(null);
+    try {
+      await concede.mutateAsync({ gameId, version });
+    } catch (error) {
+      setLifecycleError(mutationMessage(error));
+    }
   };
 
   const handleCellPress = async (position: Position) => {
@@ -248,6 +272,17 @@ function ActiveGameView({
         timerSeconds={view.timerSeconds}
         turnDeadlineAt={view.turnDeadlineAt}
         turnRemainingMs={view.turnRemainingMs}
+      />
+
+      <ActiveGameControls
+        errorMessage={lifecycleError}
+        gameId={gameId}
+        isPending={lifecyclePending}
+        local={view.local}
+        onConcede={handleConcede}
+        onSaveAndExit={handleSaveAndExit}
+        players={view.players}
+        version={view.version}
       />
 
       <View
