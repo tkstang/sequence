@@ -136,6 +136,11 @@ value. Expo MCP and Argent usage details belong in
   The Sequence board uses portrait card-aspect cells, so frame registration and
   visual sizing must use the same card aspect ratio to keep future drag
   hit-testing aligned with what the player sees.
+- Rotating the mobile board must account for its non-square portrait-card
+  geometry. A raw 90-degree transform can push visual cells outside the
+  drag-layer touch area and produce negative or overflow layout-map frames;
+  scale 90/270-degree rotations to the existing board bounds and apply the same
+  transform to registered frames.
 - Spotlight UI should be gated on a non-empty `validPlacements` target set, not
   just on "a card is selected". This preserves web parity and avoids dimming
   the entire board when a dead card or otherwise unplayable selected card has no
