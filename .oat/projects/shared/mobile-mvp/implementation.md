@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p10-t07
+oat_current_task_id: p11-t01
 oat_generated: false
 ---
 
@@ -35,9 +35,10 @@ oat_generated: false
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
-| Phase 10 | in_progress | 7     | 6/7       |
+| Phase 10 | completed   | 7     | 7/7       |
+| Phase 11 | in_progress | 7     | 0/7       |
 
-**Total:** 71/85 tasks completed
+**Total:** 72/85 tasks completed
 
 ---
 
@@ -3817,7 +3818,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 10: History, Notifications, Settings, Polish
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-04
 
 ### Phase Summary
@@ -3853,6 +3854,11 @@ subscription input lastEventId=505; latest card kind=event seq=505
   settings, an active local game, and development game-surface fixtures in
   light and dark appearances. FR15 system tracking and manual theme override
   persistence passed without requiring source changes.
+- FR13-FR15 parity verification passed: seeded history data rendered the
+  expected 2-1 record, head-to-head row, completed-game rows, and local-game
+  badge; a live active local game exposed the notification surface and active
+  game affordances; FR15 reused the accepted p10-t06 theme persistence and
+  both-theme evidence.
 
 **Verification:**
 
@@ -3924,6 +3930,27 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Run: `git diff --check HEAD`
 - Result: pass; mobile Jest reported 49 suites / 297 tests with the known
   Watchman recrawl warning.
+- Run: local API + Metro LAN + iOS dev-client p10-t07 parity verification.
+- Result: pass. FR13 seeded account
+  `p10t06-direct-1783137043685@example.test` with opponent
+  `Parity Opponent` (`p10-t07-opponent-1783138511475`), finished games
+  `52791c97-6eee-4116-9628-a61c089283f2`,
+  `cccc5d11-eb19-4840-8185-159c8dac2ad0`,
+  `a476d393-f1e2-4f14-8276-0d2f956c0d07`, and local listed game
+  `028b77dd-33f0-4cf3-a655-495f27ef70d7`. Screenshot
+  `/tmp/p10-t07-history-seeded.png` and accessibility tree confirmed record
+  `2 / 1 / 3`, `Parity Opponent 2-1`, `3 games`, and `LOCAL`.
+- Result: pass. FR14 live active game with opponent `P10 Nia` produced
+  screenshot `/tmp/p10-t07-active-local-created.png`; accessibility tree
+  confirmed `Your turn`, player rail, lifecycle controls, and board
+  affordances. Deterministic fallback tests cover turn-to-me, opponent
+  sequence, concede, freeze/disconnect, haptics/toasts, and violation mapping.
+- Result: pass. FR15 reused the p10-t06 both-theme screenshot set and
+  persisted Light-override relaunch proof; current p10-t07 screenshots also
+  include `/tmp/p10-t07-launch.png` and `/tmp/p10-t07-create-screen.png`.
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/features/history src/game/feedback src/features/settings/SettingsScreen.test.tsx src/theme/theme-provider.test.tsx --runInBand`
+- Result: pass, 5 suites / 44 tests.
 
 **Notes / Decisions:**
 
@@ -3953,6 +3980,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
   interference with local evidence collection. The learning was captured in
   `references/project-learnings.md`: a booted simulator needs exclusive
   ownership during visual/scenario verification.
+- p10-t07 produced no app code commit because the scenario found no source
+  issues to fix. The live FR14 event-transition attempt was narrowed to a live
+  active-game surface plus deterministic notification tests, which is the
+  source of truth for turn/event affordance mapping.
 
 ---
 
@@ -4103,7 +4134,8 @@ Chronological log of implementation progress.
 - [x] p10-t04: Empty/loading/error states pass - f15c7c0
 - [x] p10-t05: A11y labels + testID audit - c7d03f9
 - [x] p10-t06: Both-themes screenshot pass - evidence only, no source changes
-- [ ] p10-t07: FR13-FR15 verification - next
+- [x] p10-t07: FR13-FR15 verification - evidence only, no source changes
+- [ ] p11-t01: NFR2 measured scenario matrix - next
 
 **What changed (high level):**
 
@@ -4286,6 +4318,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p10-t04       | plan.md         | Agent screenshot pass over each screen's loading/empty/error variants | Full mobile Jest covers the changed loading/empty/error branches; simulator screenshots were not run in this task | The changed states are query/error branches rather than new layout primitives, and p10-t06/p10-t07 still own visual/theme and scenario verification | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx` | Complete visual proof in p10-t06/p10-t07 |
 | p10-t05       | plan.md         | Agent drives one flow per screen through testID/a11y tree | Full mobile Jest exercises dashboard, create, join, history, settings, and active-game selectors through testID/accessibility queries; no simulator coordinate fallback was needed | This task was an accessibility/testID audit, and the updated route/feature tests provide deterministic selector proof while p10-t06 still owns screenshot proof | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/create/CreateScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/settings/SettingsScreen.test.tsx`; `apps/mobile/src/game/GameRouteScreen.test.tsx` | Use p10-t06 for visual/theming confirmation |
 | p10-t06       | plan.md         | Agent loop covers every screen plus key game states in light and dark, with source commit if fixes land | Orchestrator-local simulator pass covered dashboard, create, join, history, settings, active local game, and dev game-surface fixtures; no source fixes landed, so no app code commit was made | The visual pass found no contrast/token misuse, and evidence-only scenario tasks should record proof without manufacturing a source commit | `implementation.md`; `references/using-expo-mcp-learnings.md`; `/tmp/p10-t06-*.png` | Complete FR13-FR15 scenario acceptance in p10-t07 |
+| p10-t07       | plan.md         | History against seeded local data, notification affordances observed in a live game, and theming scenarios | Seeded history data was verified in the simulator; a live active local game proved the active notification surface; deterministic mobile tests covered turn/event/concede/freeze notification mapping; p10-t06 theme evidence was reused | No source issues were found, and deterministic tests are the durable source for notification mapping after the live event-transition attempt was narrowed | `/tmp/p10-t07-history-seeded.png`; `/tmp/p10-t07-active-local-created.png`; `apps/mobile/src/game/feedback/turn-notifications.test.ts`; `apps/mobile/src/game/GameRouteScreen.test.tsx` | Start Phase 11 NFR hardening |
 
 ## Test Results
 
@@ -4348,6 +4381,7 @@ Track test execution during implementation.
 | 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; dashboard, history, and join preview error states no longer collapse into empty/not-found states; simulator screenshots deferred to p10-t06/p10-t07 visual passes |
 | 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; p10-t05 selector/accessibility audit covers dashboard, create, join, history, settings, and active-game paths via testID/a11y queries with no coordinate fallback |
 | 10    | p10-t06 local API + Metro LAN + iOS dev-client visual pass; `simctl` light/dark appearance changes; terminate/relaunch theme override persistence check; `file /tmp/p10-t06-*.png`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | FR15 proof passed with dashboard, create, active local game, history, settings, join entry/not-found, dev index, and dev board story screenshots in light/dark. Manual Light override persisted across app terminate/relaunch while simulator appearance stayed dark; 49 mobile suites / 297 tests passed |
+| 10    | p10-t07 local API + Metro LAN + iOS dev-client seeded-history and active-game verification; `file /tmp/p10-t07-history-seeded.png /tmp/p10-t07-active-local-created.png /tmp/p10-t07-launch.png /tmp/p10-t07-create-screen.png`; `pnpm --filter @sequence/mobile exec jest src/features/history src/game/feedback src/features/settings/SettingsScreen.test.tsx src/theme/theme-provider.test.tsx --runInBand` | yes    | 0      | FR13-FR15 parity pass: seeded history rendered 2-1 record, `Parity Opponent 2-1`, 3 games, and local badge; live active game exposed `Your turn`, rail, lifecycle controls, and board affordances; focused tests covered notification and theme behavior, 5 suites / 44 tests |
 
 ## Final Summary (for PR/docs)
 
