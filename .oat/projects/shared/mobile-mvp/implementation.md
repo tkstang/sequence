@@ -6,7 +6,7 @@ oat_blockers:
     reason: 'Operator account/setup still required: Expo/EAS login and EAS project link are verified; Apple Developer team access, App Store Connect app record, and EAS iOS credentials remain operator-owned.'
     since: 2026-07-04
 oat_last_updated: 2026-07-04
-oat_current_task_id: p12-t16
+oat_current_task_id: p12-t01
 oat_generated: false
 ---
 
@@ -40,9 +40,9 @@ oat_generated: false
 | Phase 9  | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
 | Phase 11 | completed   | 7     | 7/7       |
-| Phase 12 | in_progress | 17    | 9/17      |
+| Phase 12 | in_progress | 17    | 11/17     |
 
-**Total:** 88/96 tasks completed
+**Total:** 90/96 tasks completed
 
 ---
 
@@ -4597,7 +4597,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `@tkstang/sequence-online`.
 - p01-p12 review-fix tasks p12-t07 through p12-t15 are implemented and
   verified. The p01-p12 re-review added minor follow-up tasks p12-t16 and
-  p12-t17 for autonomous execution while p12-t01 remains operator-blocked.
+  p12-t17; both are complete while p12-t01 remains operator-blocked.
 
 **Verification / Pre-flight checks:**
 
@@ -4740,9 +4740,17 @@ Expo/EAS/Apple/App Store Connect setup.
   read-only API surface. p12-t17 will align the artifact record; no code change
   is required for that finding.
 
-**Next:** Execute p12-t16 and p12-t17 via `oat-project-implement`, then rerun
-`oat-project-review-provide code p01-p12` and `oat-project-review-receive` to
-reach `passed`.
+**Completed fixes:**
+
+- p12-t16 in `3fb85a2`: restored TextField and ConnectionBanner typography
+  values while keeping those values centralized in native tokens.
+- p12-t17 in `9dadf66`: recorded the additive `game.access` API surface in
+  design and implementation lifecycle artifacts.
+
+**Next:** Re-run `oat-project-review-provide code p01-p12`, then
+`oat-project-review-receive` to reach `passed`. The p12-t01 operator
+pre-flight blocker remains active while the operator completes
+Expo/EAS/Apple/App Store Connect setup.
 
 ---
 
@@ -4911,8 +4919,8 @@ Chronological log of implementation progress.
 - [x] p12-t13: (review) Align rematch acceptance to parity semantics - d1c7855
 - [x] p12-t14: (review) Resolve vestigial React Strict DOM layer - 920ba50
 - [x] p12-t15: (review) Bound mobile non-color token drift - 83140fc
-- [ ] p12-t16: (review) Restore token-migration typography values - next
-- [ ] p12-t17: (review) Record game.access API surface - queued by p01-p12 re-review
+- [x] p12-t16: (review) Restore token-migration typography values - 3fb85a2
+- [x] p12-t17: (review) Record game.access API surface - 9dadf66
 
 **What changed (high level):**
 
@@ -5175,6 +5183,7 @@ Track test execution during implementation.
 | 11    | Focused API smoke suites: `pnpm --filter @sequence/api exec vitest run src/test/full-game.e2e.test.ts src/game/routes/lifecycle.test.ts src/game/routes/rematch.test.ts src/game/TimerService.test.ts src/game/routes/create-game.test.ts src/game/routes/join-game.test.ts`; local + production public-contract smoke: `node --experimental-transform-types --env-file=packages/api/.env /tmp/p11-t07-smoke.mjs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | yes                         | 0                    | Pre-distribution smoke pass: local API (`DATABASE_URL_TEST`) and production Railway API both passed health/auth/create/join/play-to-win/rematch/pass-and-play/save-resume/concede/timer flows; production full game won in 82 turns, save resumed to active version 3, and timer snapshot carried a 30s deadline (`/tmp/p11-t07-smoke-summary.json`)                                      |
 
 | 12    | p12-t07/p12-t09/p12-t13 artifact alignment greps; `pnpm --filter @sequence/mobile exec jest src/api/ws.test.ts src/realtime/lifecycle.test.ts src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/api exec vitest run src/game/routes/access.test.ts`; `pnpm --filter @sequence/design-tokens generate:web-stylex && git diff --exit-code apps/web/src/styles`; `pnpm --filter @sequence/design-tokens test`; `pnpm --filter @sequence/mobile exec jest src/components src/theme --runInBand`; `pnpm typecheck`; `pnpm lint`; `pnpm format:check`; `pnpm test`; `git diff --check` | yes                         | 0                    | p01-p12 review fixes complete: artifact drift aligned, guest WebSocket credentials reset on active-game changes, forbidden guest cleanup now confirms over HTTP, non-live lifecycle recovery is bounded, generated StyleX token freshness is guarded, RSD vestiges removed, and mobile chrome dimensions map through native token helpers; root test passed 65 Vitest files / 415 tests plus 50 mobile suites / 310 tests |
+| 12    | p12-t17 `rg -n "game\\.access\|accessRoute\|p12-t08" .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md packages/api/src/game/game.router.ts packages/api/src/game/routes/access.ts`; p12-t16 `pnpm --filter @sequence/mobile exec jest src/components src/theme --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check -- apps/mobile/src/theme/native-tokens.ts apps/mobile/src/theme/native-tokens.test.ts apps/mobile/src/components/TextField.tsx apps/mobile/src/components/ConnectionBanner.tsx` | yes                         | 0                    | p01-p12 re-review fixes complete: TextField input typography and ConnectionBanner title typography are centralized without inheriting button-label drift; `game.access` is documented as additive read-only API surface; focused mobile suite passed 8 suites / 27 tests |
 
 ## Final Summary (for PR/docs)
 
