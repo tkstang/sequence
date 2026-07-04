@@ -26,6 +26,10 @@ value. Expo MCP and Argent usage details belong in
   `message` or structured `items`, not both. Use a single self-contained
   `message` for pinned OAT roles unless a future tool version supports mixed
   payloads.
+- OAT subagent coordination candidate: simulator-controlling subagents need
+  exclusive ownership of the booted simulator during visual or scenario
+  verification. If the orchestrator also drives routes/screenshots at the same
+  time, screenshots can be mislabeled or capture the wrong route/theme.
 - Repo `AGENTS.md` candidate: keep Expo Router tests out of `apps/mobile/src/app`
   because route-local test files can be included in Metro/export bundles.
 - Repo `AGENTS.md` candidate: after adding or changing Expo native modules,
@@ -81,6 +85,12 @@ value. Expo MCP and Argent usage details belong in
   creation; retrying with the same self-contained prompt as `message` worked.
   Prefer single-message dispatch prompts for OAT implementers until the tool
   contract changes.
+- Treat a booted simulator as a shared mutable resource. A p10-t06 visual pass
+  showed that running a simulator-driving subagent while the orchestrator also
+  captures routes can move the app between screens, change theme state, and
+  create misleading screenshot labels. Assign one agent exclusive simulator
+  ownership for the duration of a scenario, or keep the scenario local and use
+  subagents only for read-only review/checklist work.
 
 ## Codebase Patterns
 

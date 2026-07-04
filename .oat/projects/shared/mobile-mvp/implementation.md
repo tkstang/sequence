@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p10-t06
+oat_current_task_id: p10-t07
 oat_generated: false
 ---
 
@@ -35,9 +35,9 @@ oat_generated: false
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
-| Phase 10 | in_progress | 7     | 5/7       |
+| Phase 10 | in_progress | 7     | 6/7       |
 
-**Total:** 70/85 tasks completed
+**Total:** 71/85 tasks completed
 
 ---
 
@@ -3849,6 +3849,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
   loading/empty/error states, badges, and game control messaging.
 - Route and feature tests now exercise these screens through testID and
   accessibility queries without coordinate fallbacks.
+- The p10-t06 both-theme visual pass covered dashboard, create, join, history,
+  settings, an active local game, and development game-surface fixtures in
+  light and dark appearances. FR15 system tracking and manual theme override
+  persistence passed without requiring source changes.
 
 **Verification:**
 
@@ -3890,6 +3894,36 @@ subscription input lastEventId=505; latest card kind=event seq=505
   tests drive dashboard, create, join, history, settings, and active-game
   affordances through testID/accessibility queries, so no coordinate fallback
   was needed for this audit.
+- Run: local API + Metro LAN + iOS dev-client p10-t06 both-theme visual pass,
+  including `simctl` light/dark appearance changes and a terminate/relaunch
+  persistence check for the Light theme override while the simulator stayed in
+  dark appearance.
+- Result: pass; no contrast or token misuse fixes were needed. Screenshot
+  evidence:
+  `/tmp/p10-t06-dashboard-current.png`,
+  `/tmp/p10-t06-dashboard-light.png`,
+  `/tmp/p10-t06-create-light.png`, `/tmp/p10-t06-create-dark.png`,
+  `/tmp/p10-t06-game-active-dark.png`,
+  `/tmp/p10-t06-game-active-light.png`,
+  `/tmp/p10-t06-history-light.png`, `/tmp/p10-t06-history-dark.png`,
+  `/tmp/p10-t06-settings-system-dark.png`,
+  `/tmp/p10-t06-settings-light-override.png`,
+  `/tmp/p10-t06-settings-light-persisted-after-relaunch.png`,
+  `/tmp/p10-t06-join-entry-dark.png`,
+  `/tmp/p10-t06-join-entry-light.png`,
+  `/tmp/p10-t06-join-preview-not-found-light.png`,
+  `/tmp/p10-t06-join-preview-not-found-dark.png`,
+  `/tmp/p10-t06-dev-index-dark.png`,
+  `/tmp/p10-t06-dev-index-light-final.png`,
+  `/tmp/p10-t06-dev-game-board-light.png`, and
+  `/tmp/p10-t06-dev-game-board-dark.png`.
+- Run: `pnpm --filter @sequence/mobile test`
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Run: `pnpm --filter @sequence/mobile lint`
+- Run: `pnpm format:check`
+- Run: `git diff --check HEAD`
+- Result: pass; mobile Jest reported 49 suites / 297 tests with the known
+  Watchman recrawl warning.
 
 **Notes / Decisions:**
 
@@ -3907,6 +3941,18 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - p10-t05 verified the planned NFR5 selector/accessibility audit through
   component and route tests rather than simulator coordinate driving; the
   relevant user flows are queryable by stable testIDs or accessibility labels.
+- p10-t06 produced no app code commit because the visual pass found no
+  contrast/token misuse to fix. The OAT tracking commit records evidence and
+  advances the task.
+- Some screenshots include the Expo dev-client gear near the top-right. This
+  is a tooling overlay and did not obscure the app surfaces under review.
+- The bounded `simctl io screenshot` wrapper can exit by alarm after a valid
+  PNG is already written; each selected p10-t06 screenshot was confirmed with
+  `file` as a full-size simulator PNG.
+- A simulator-driving p10-t06 subagent was closed after route/theme
+  interference with local evidence collection. The learning was captured in
+  `references/project-learnings.md`: a booted simulator needs exclusive
+  ownership during visual/scenario verification.
 
 ---
 
@@ -4056,7 +4102,8 @@ Chronological log of implementation progress.
 - [x] p10-t03: Settings screen - f2b6868
 - [x] p10-t04: Empty/loading/error states pass - f15c7c0
 - [x] p10-t05: A11y labels + testID audit - c7d03f9
-- [ ] p10-t06: Both-themes screenshot pass - next
+- [x] p10-t06: Both-themes screenshot pass - evidence only, no source changes
+- [ ] p10-t07: FR13-FR15 verification - next
 
 **What changed (high level):**
 
@@ -4238,6 +4285,7 @@ Document any intentional deviations from the original plan, spec, or design. Inc
 | p10-t03       | plan.md         | Settings route test at `apps/mobile/src/app/settings.test.tsx` | Settings route lives at `apps/mobile/src/app/settings.tsx`; route behavior tests live at `apps/mobile/src/features/settings/SettingsScreen.test.tsx` | Expo Router can bundle route-local tests into Metro/export; this preserves the established route-test location rule | `apps/mobile/src/features/settings/SettingsScreen.test.tsx`; `apps/mobile/src/test/root-layout.test.tsx` | Keep future route tests outside `src/app` unless Expo Router behavior changes |
 | p10-t04       | plan.md         | Agent screenshot pass over each screen's loading/empty/error variants | Full mobile Jest covers the changed loading/empty/error branches; simulator screenshots were not run in this task | The changed states are query/error branches rather than new layout primitives, and p10-t06/p10-t07 still own visual/theme and scenario verification | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx` | Complete visual proof in p10-t06/p10-t07 |
 | p10-t05       | plan.md         | Agent drives one flow per screen through testID/a11y tree | Full mobile Jest exercises dashboard, create, join, history, settings, and active-game selectors through testID/accessibility queries; no simulator coordinate fallback was needed | This task was an accessibility/testID audit, and the updated route/feature tests provide deterministic selector proof while p10-t06 still owns screenshot proof | `apps/mobile/src/features/dashboard/DashboardScreen.test.tsx`; `apps/mobile/src/features/create/CreateScreen.test.tsx`; `apps/mobile/src/features/join/JoinScreen.test.tsx`; `apps/mobile/src/features/history/HistoryScreen.test.tsx`; `apps/mobile/src/features/settings/SettingsScreen.test.tsx`; `apps/mobile/src/game/GameRouteScreen.test.tsx` | Use p10-t06 for visual/theming confirmation |
+| p10-t06       | plan.md         | Agent loop covers every screen plus key game states in light and dark, with source commit if fixes land | Orchestrator-local simulator pass covered dashboard, create, join, history, settings, active local game, and dev game-surface fixtures; no source fixes landed, so no app code commit was made | The visual pass found no contrast/token misuse, and evidence-only scenario tasks should record proof without manufacturing a source commit | `implementation.md`; `references/using-expo-mcp-learnings.md`; `/tmp/p10-t06-*.png` | Complete FR13-FR15 scenario acceptance in p10-t07 |
 
 ## Test Results
 
@@ -4299,6 +4347,7 @@ Track test execution during implementation.
 | 10    | `pnpm --filter @sequence/mobile exec jest src/features/settings/SettingsScreen.test.tsx src/features/dashboard/DashboardScreen.test.tsx src/test/root-layout.test.tsx src/test/index.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 4 settings/dashboard/root suites, 14 tests; signed-in `/settings` route registered, dashboard settings navigation covered, theme mode control persists through ThemeProvider, logout redirects to login, and version display is testable |
 | 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; dashboard, history, and join preview error states no longer collapse into empty/not-found states; simulator screenshots deferred to p10-t06/p10-t07 visual passes |
 | 10    | `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 49 mobile suites, 297 tests; p10-t05 selector/accessibility audit covers dashboard, create, join, history, settings, and active-game paths via testID/a11y queries with no coordinate fallback |
+| 10    | p10-t06 local API + Metro LAN + iOS dev-client visual pass; `simctl` light/dark appearance changes; terminate/relaunch theme override persistence check; `file /tmp/p10-t06-*.png`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | FR15 proof passed with dashboard, create, active local game, history, settings, join entry/not-found, dev index, and dev board story screenshots in light/dark. Manual Light override persisted across app terminate/relaunch while simulator appearance stayed dark; 49 mobile suites / 297 tests passed |
 
 ## Final Summary (for PR/docs)
 

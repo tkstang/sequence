@@ -99,6 +99,15 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   `restart-app` when you need native devtools injection.
 - The fallback simulator screenshot command can hang after the image is written.
   Use a bounded timeout and keep the file if it already exists.
+- During p10-t06, the bounded screenshot wrapper
+  `perl -e 'alarm shift; exec @ARGV' 20 xcrun simctl io booted screenshot ...`
+  often exited with signal/alarm status after writing a valid PNG. Treat the
+  file's existence and `file` output as the evidence, not the wrapper exit code
+  alone.
+- Direct Better Auth probes against the local API need an Expo/mobile origin.
+  A signup request without `Origin` returned `403 MISSING_OR_NULL_ORIGIN`;
+  adding `Origin: sequence://` matched the mobile trust path and allowed the
+  disposable simulator-login account setup.
 - Keep route-adjacent tests out of `src/app`; Expo Router can bundle route-local
   test files into Metro.
 - When the local API is not available, production API overrides are acceptable
@@ -121,9 +130,14 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
 - Argent keyboard input can be flaky in secure fields; if a password submit
   returns a validation error after apparent entry, retap the field, clear the
   partial value, and retype before resubmitting.
+- Argent `describe` is useful after keyboard entry because it exposes TextInput
+  accessibility values and native prompts. In p10-t06 it confirmed email and
+  password values before submit and exposed the iOS "Save Password?" sheet so
+  the flow could dismiss `Not Now` before continuing.
 - The Expo dev-client tools gear can overlap app controls near the top-right.
   For coordinate taps, prefer the left side of the app control or use a
-  selector-driven tool when available.
+  selector-driven tool when available. When screenshots include the gear,
+  record it as a tooling artifact if the app surface itself remains visible.
 
 ## Evidence Captured So Far
 
@@ -147,6 +161,21 @@ the final skill; keep it appendable as new phases exercise more of the tooling.
   `/tmp/p04-t06-signed-in.png`, `/tmp/p04-t06-after-restart.png`,
   `/tmp/p04-t06-after-logout.png`, and
   `/tmp/p04-t06-after-logout-relaunch.png`.
+- p10-t06 both-theme visual pass evidence:
+  `/tmp/p10-t06-dashboard-current.png`, `/tmp/p10-t06-dashboard-light.png`,
+  `/tmp/p10-t06-create-light.png`, `/tmp/p10-t06-create-dark.png`,
+  `/tmp/p10-t06-game-active-dark.png`, `/tmp/p10-t06-game-active-light.png`,
+  `/tmp/p10-t06-history-light.png`, `/tmp/p10-t06-history-dark.png`,
+  `/tmp/p10-t06-settings-system-dark.png`,
+  `/tmp/p10-t06-settings-light-override.png`,
+  `/tmp/p10-t06-settings-light-persisted-after-relaunch.png`,
+  `/tmp/p10-t06-join-entry-dark.png`, `/tmp/p10-t06-join-entry-light.png`,
+  `/tmp/p10-t06-join-preview-not-found-light.png`,
+  `/tmp/p10-t06-join-preview-not-found-dark.png`,
+  `/tmp/p10-t06-dev-index-dark.png`,
+  `/tmp/p10-t06-dev-index-light-final.png`,
+  `/tmp/p10-t06-dev-game-board-light.png`, and
+  `/tmp/p10-t06-dev-game-board-dark.png`.
 
 ## Candidate Skill Shape
 
