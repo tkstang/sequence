@@ -22,6 +22,10 @@ value. Expo MCP and Argent usage details belong in
 - OAT subagent prompt candidate: pinned roles currently need self-contained
   prompts because they cannot be combined with full-history forks in the
   available multi-agent tool.
+- OAT subagent prompt candidate: current multi-agent spawn calls accept either
+  `message` or structured `items`, not both. Use a single self-contained
+  `message` for pinned OAT roles unless a future tool version supports mixed
+  payloads.
 - Repo `AGENTS.md` candidate: keep Expo Router tests out of `apps/mobile/src/app`
   because route-local test files can be included in Metro/export bundles.
 - Repo `AGENTS.md` candidate: after adding or changing Expo native modules,
@@ -62,6 +66,11 @@ value. Expo MCP and Argent usage details belong in
   current multi-agent tool. For OAT dispatches that need a pinned role such as
   `oat-phase-implementer-medium`, send an explicit context package instead of
   using `fork_context: true`.
+- Current multi-agent spawn payloads are mutually exclusive between `message`
+  and structured `items`. A dispatch attempt with both failed before agent
+  creation; retrying with the same self-contained prompt as `message` worked.
+  Prefer single-message dispatch prompts for OAT implementers until the tool
+  contract changes.
 
 ## Codebase Patterns
 
