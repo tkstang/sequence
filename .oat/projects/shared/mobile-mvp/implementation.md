@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p08-t06
+oat_current_task_id: p09-t01
 oat_generated: false
 ---
 
@@ -33,9 +33,10 @@ oat_generated: false
 | Phase 5 | completed   | 7     | 7/7       |
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
-| Phase 8 | in_progress | 6     | 5/6       |
+| Phase 8 | completed   | 6     | 6/6       |
+| Phase 9 | in_progress | 7     | 0/7       |
 
-**Total:** 57/85 tasks completed
+**Total:** 58/85 tasks completed
 
 ---
 
@@ -3230,7 +3231,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 8: Game Surface — Advanced Play
 
-**Status:** in_progress
+**Status:** completed
 **Started:** 2026-07-03
 
 ### Phase Summary
@@ -3262,6 +3263,10 @@ subscription input lastEventId=505; latest card kind=event seq=505
   layout-map frames aligned with drag hit-testing, and scaled 90/270-degree
   rotations so the non-square portrait-card board remains inside the drag
   layer's touch area.
+- Verified hard-mode play end-to-end across the mobile simulator, public tRPC
+  mutations, a web client, and direct DB assertions: dead-card turn-in,
+  one-eyed removal, web opponent placement, no-card drag contract placement,
+  pending sequence choice, final win, and a separate chained-choice proof.
 
 **Verification:**
 
@@ -3319,6 +3324,31 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Result: pass.
 - Run: `git diff --check HEAD`
 - Result: pass.
+- Run: seeded drag-mode game
+  `c5315deb-9acb-4f8c-b78a-355b0ae95447` with mobile seat 0 and web seat 1.
+- Result: pass; event/version chain was `DeadCardSwapped` v2,
+  `ChipRemoved`/`CardDrawn`/`TurnAdvanced` v3, web
+  `ChipPlaced`/`CardDrawn`/`TurnAdvanced` v4, mobile no-card
+  `ChipPlaced`/`PendingChoice` v5, and
+  `SequenceCompleted`/`GameWon` v6.
+- Run: simulator screenshots
+  `/tmp/p08-t06-mobile-seeded.png`,
+  `/tmp/p08-t06-mobile-pending-choice.png`, and
+  `/tmp/p08-t06-mobile-final-win.png`.
+- Result: pass; mobile route showed the seeded hard-mode board at v1, the
+  pending-choice-highlight state at v5, and `Game finished` at v6.
+- Run: web screenshot `/tmp/p08-t06-web-final-win.png`.
+- Result: pass; web opponent client showed game-over, team 1 win, and
+  sequence count 2/0/0.
+- Run: DB assertions for game `c5315deb-9acb-4f8c-b78a-355b0ae95447`.
+- Result: pass; `status=finished`, `version=6`, `winnerTeam=1`,
+  `pendingChoice=null`, two locked team-1 sequences, `17S` cleared, and `23H`
+  locked by sequence 2.
+- Run: chained-choice seed `716fbe0d-ea9d-453f-bd00-117032eea989`.
+- Result: pass; no-card two-eyed-jack placement at `15H` emitted
+  `ChipPlaced`/`PendingChoice`, first choice emitted
+  `SequenceCompleted`/`PendingChoice`, second choice emitted
+  `SequenceCompleted`/`GameWon`.
 - Run: `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`
 - Result: pass, 3 suites / 16 tests; Watchman emitted the existing recrawl
   warning only.
@@ -3627,6 +3657,91 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ---
 
+### Task p08-t06: Hard-mode e2e verification
+
+**Status:** completed
+**Commit:** evidence-only
+
+**Outcome:**
+
+- Seeded a real drag-mode game for the mobile simulator's signed-in account
+  (`mobile-1783120066432-1529@example.test`) and a registered web opponent
+  (`p08-web-1783128469616@example.test`).
+- Verified hard-mode dead-card turn-in through the public
+  `game.turnInDeadCard` mutation; the event stream emitted
+  `DeadCardSwapped` with no turn advance.
+- Verified one-eyed jack removal in hard mode via no-card `game.makeMove`; the
+  event stream emitted `ChipRemoved`, `CardDrawn`, and `TurnAdvanced`.
+- Verified the web opponent seat advanced the game with a legal placement.
+- Verified the mobile hard-mode no-card placement contract at `23H`, producing
+  a `PendingChoice`, then resolved the choice to complete the second team-1
+  sequence and win.
+- Verified chained choice on a separate deterministic seeded drag game where a
+  two-eyed-jack no-card placement at `15H` produced two crossing six-runs.
+
+**Files changed:**
+
+- None in app source. Evidence was captured in this implementation artifact and
+  durable project learnings.
+
+**Verification:**
+
+- Run: seeded drag-mode game
+  `c5315deb-9acb-4f8c-b78a-355b0ae95447`.
+- Result: pass; event/version chain was:
+  `v2 DeadCardSwapped`,
+  `v3 ChipRemoved/CardDrawn/TurnAdvanced`,
+  `v4 ChipPlaced/CardDrawn/TurnAdvanced` from the web opponent,
+  `v5 ChipPlaced/PendingChoice`, and
+  `v6 SequenceCompleted/GameWon`.
+- Run: screenshots
+  `/tmp/p08-t06-mobile-seeded.png`,
+  `/tmp/p08-t06-mobile-pending-choice.png`,
+  `/tmp/p08-t06-mobile-final-win.png`, and
+  `/tmp/p08-t06-web-final-win.png`.
+- Result: pass; mobile showed the hard-mode board, pending-choice state, and
+  final version 6; web showed game-over with `Team 1 wins`.
+- Run: DB assertions for
+  `c5315deb-9acb-4f8c-b78a-355b0ae95447`.
+- Result: pass; status finished, winner team 1, no pending choice, two team-1
+  sequences, removed target `17S` empty, and `23H` locked by sequence 2.
+- Run: chained-choice seed `716fbe0d-ea9d-453f-bd00-117032eea989`.
+- Result: pass; first choice chained to a second `PendingChoice`, and resolving
+  the second completed the game with `GameWon`.
+
+**Notes / Decisions:**
+
+- Direct simulator gesture injection was still not available, so the pass
+  combined simulator route/stream screenshots with public tRPC hard-mode
+  mutations and DB assertions. The no-card `makeMove` calls exercised the same
+  server contract that drag-mode UI uses after a drop.
+- Chained choice was verified through a deterministic API-backed seed rather
+  than another simulator route because the primary end-to-end game already
+  finished on the first resolved pending choice.
+
+---
+
+## Phase 9: Lifecycle + Local Pass-and-Play
+
+**Status:** in_progress
+**Started:** 2026-07-04
+
+### Phase Summary
+
+**Outcome (what changed):**
+
+- Phase 9 is starting from task p09-t01.
+
+**Verification:**
+
+- Pending.
+
+**Notes / Decisions:**
+
+- None yet.
+
+---
+
 ## Orchestration Runs
 
 _Each run from `oat-project-implement` appends an entry below with:_
@@ -3760,7 +3875,8 @@ Chronological log of implementation progress.
 - [x] p08-t03: Sequence-choice sheet - e13a789
 - [x] p08-t04: Dead-card turn-in + auto-swap surfacing - 6ca7d32
 - [x] p08-t05: Board rotate control - b21961a / aaa8f56
-- [ ] p08-t06: Hard-mode e2e verification - next
+- [x] p08-t06: Hard-mode e2e verification - evidence-only
+- [ ] p09-t01: Save & exit + concede controls - next
 
 **What changed (high level):**
 
@@ -3898,6 +4014,9 @@ Chronological log of implementation progress.
   dead-card turn-in controls, including default-mode auto-swap feedback.
 - The mobile board now has a rotate control with Reanimated visual rotation
   and layout-map-aware transformed hit targets for drag-mode play.
+- Hard-mode Phase 8 verification now covers mobile simulator state, web client
+  state, public tRPC hard-mode mutations, DB assertions, pending-choice final
+  win, and an API-backed chained-choice proof.
 
 ---
 
@@ -3966,6 +4085,7 @@ Track test execution during implementation.
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/SequenceChoiceSheet.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 sequence-choice/route suites, 13 tests; my-seat pending choice opens the sheet and submits `chooseSequenceCells`; other-seat choice shows frozen banner |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 dead-card/route/feedback suites, 29 tests; hard-mode turn-in calls `turnInDeadCard`, same-turn rejection uses `not-a-dead-card`, and default-mode auto-swap emits one toast per event seq |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 GameBoard suites, 16 tests; rotate control cycles 0/90/180/270, transformed frames stay aligned with drag hit-testing, and 90/270 rotations stay within the board touch area |
+| 8     | Seeded drag-mode game `c5315deb-9acb-4f8c-b78a-355b0ae95447`; public mutations `game.turnInDeadCard`, `game.makeMove`, `game.chooseSequenceCells`; mobile screenshots `/tmp/p08-t06-mobile-seeded.png`, `/tmp/p08-t06-mobile-pending-choice.png`, `/tmp/p08-t06-mobile-final-win.png`; web screenshot `/tmp/p08-t06-web-final-win.png`; DB assertions; chained-choice seed `716fbe0d-ea9d-453f-bd00-117032eea989` | yes    | 0      | FR7/FR8 hard-mode pass: dead-card turn-in, one-eyed removal, web opponent move, no-card drag contract placement, pending choice, final win, and chained choice verified |
 
 ## Final Summary (for PR/docs)
 

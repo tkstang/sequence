@@ -223,6 +223,16 @@ value. Expo MCP and Argent usage details belong in
   `sequence://join/<code>` reaches the intended Expo Router screen and renders
   route-derived UI, but it should not be described as a real API-backed invite
   lookup unless the API/database environment is actually running.
+- For simulator scenario tasks, seeding a game for the account already signed
+  into the dev client can avoid fragile manual auth while still proving the real
+  mobile route, session, stream, and API authorization path. Pair that with
+  public tRPC mutations and DB assertions so the evidence separates UI route
+  proof from server-contract proof.
+- When capturing web evidence against an already-running dev server, match the
+  browser URL and auth-cookie origin to the server's configured API origin. The
+  web client defaults to `http://localhost:3001`; injecting cookies for
+  `127.0.0.1:3001` while visiting `localhost:3000` leaves the page stuck in a
+  loading state even though the same cookie value is otherwise valid.
 
 ## Open Follow-Ups
 
