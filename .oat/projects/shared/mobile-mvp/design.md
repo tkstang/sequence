@@ -271,7 +271,11 @@ behavior without regressing web clients.
    guest joins, include the signed guest token in the response body
    (`guestToken?: string`) in addition to the httpOnly cookie. Web never
    sends the flag; behavior is unchanged for existing clients.
-3. Presence tracker correctness changes required by NFR2: per-seat
+3. `game.access`: expose an additive, read-only, seat-authorized access check
+   backed by `gamePlayerProcedure`. Native clients use it to confirm a
+   game-scoped credential before destructive local guest cleanup; the route
+   returns only resolved public seat metadata.
+4. Presence tracker correctness changes required by NFR2: per-seat
    subscription accounting, local-game presence updates for every local seat,
    and reconnect-race handling that prevents false freezes or missed
    reconnects. These changes intentionally affect observable presence behavior
@@ -286,6 +290,9 @@ behavior without regressing web clients.
 - CORS needs no change: native requests are not browser-governed; Better
   Auth's origin/CSRF checks are what the `expo()` plugin + `trustedOrigins`
   address.
+- `game.access` reuses the existing game-seat authorization path instead of
+  adding new credential semantics; it is a conservative probe for native guest
+  cleanup, not a second source of access truth.
 - The original additive-only API constraint is narrowed here: auth/config
   support stays additive, while presence-correctness fixes are accepted because
   they are necessary to satisfy the mobile realtime contract and preserve
