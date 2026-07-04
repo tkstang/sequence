@@ -128,6 +128,12 @@ pnpm --filter @sequence/mobile start
 These mobile variables are not API secrets and must not contain credentials.
 They are resolved by Expo config and can be embedded in the mobile bundle.
 
+Production config fails closed for insecure mobile endpoints. When
+`NODE_ENV=production`, `apps/mobile/app.config.ts` requires
+`EXPO_PUBLIC_API_URL` to parse as `https://...` and `EXPO_PUBLIC_WS_URL` to parse
+as `wss://...`; `http://` or `ws://` values are accepted only for non-production
+development.
+
 ## Social OAuth (`GITHUB_*`, `GOOGLE_*`)
 
 Social providers are presence-gated: a provider registers only when both its

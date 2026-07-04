@@ -5,20 +5,23 @@ the exact commands, see `development.md`. For the environment variables that gat
 DB-backed tests, see `configuration.md`. For system boundaries, see
 `architecture.md`.
 
-Sequence Online tests in four layers, each living next to the code it covers:
+Sequence Online tests in six layers, each living next to the code it covers:
 
 | Layer | Where | Runner | Needs a DB? |
 | --- | --- | --- | --- |
 | `@sequence/game-logic` unit tests | `packages/game-logic/src/*.test.ts` | Vitest | No |
+| shared client package tests | `packages/client-state/src/*.test.ts`, `packages/design-tokens/src/*.test.ts` | Vitest | No |
 | `@sequence/api` integration tests | `packages/api/src/**/*.test.ts`, `*.e2e.test.ts` | Vitest | Yes (test branch) |
 | `@sequence/web` component/route tests | `apps/web/src/**/*.test.{ts,tsx}` | Vitest (jsdom) | No |
+| `@sequence/mobile` component/hook/route tests | `apps/mobile/src/**/*.test.{ts,tsx}` | Jest (`jest-expo`) | No |
 | Playwright e2e | `apps/web/e2e/*.spec.ts` | Playwright | Yes (test branch) |
 
-The first three layers run under one Vitest workspace
-(`vitest.workspace.ts:5`), which globs `packages/*` and `apps/*` and lets each
-package own its config. The root `pnpm test` drives that workspace through a thin
-harness; Playwright is a separate runner invoked with `pnpm --filter
-@sequence/web e2e`.
+The Vitest layers run under one workspace (`vitest.workspace.ts`), which globs
+`packages/*` and `apps/web`. `apps/mobile` is intentionally excluded from
+Vitest because it uses `jest-expo`. The root `pnpm test` harness runs the Vitest
+workspace first and then runs `pnpm --filter @sequence/mobile test`.
+Playwright is a separate runner invoked with
+`pnpm --filter @sequence/web e2e`.
 
 ## `@sequence/game-logic` unit tests
 
@@ -33,6 +36,23 @@ The package has no Vitest config of its own; the workspace glob picks it up and
 its `test` script is `vitest run --passWithNoTests`
 (`packages/game-logic/package.json`). These tests are fast and run on every
 `pnpm test`, with or without a database.
+
+## Shared Client Package Tests
+
+`@sequence/client-state` and `@sequence/design-tokens` run under Vitest through
+the workspace glob.
+
+`@sequence/client-state` tests cover snapshot-to-view projection, streamed event
+application, route-screen selection, fixture behavior, and rule-violation copy.
+The package stays framework-free so web, mobile, and tests can share the same
+redacted game-view helpers.
+
+`@sequence/design-tokens` tests keep light and dark palette keys in parity. When
+token values change, regenerate the web StyleX files with:
+
+```bash
+pnpm --filter @sequence/design-tokens generate:web-stylex
+```
 
 ## `@sequence/api` integration tests
 
@@ -97,6 +117,26 @@ config sets `environment: 'jsdom'`, `globals: true`, a setup file, the automatic
 JSX runtime, and the `@` path alias mirroring `tsconfig.json`. The workspace glob
 picks it up and `pnpm --filter @sequence/web test` runs it standalone.
 
+## `@sequence/mobile` Jest Tests
+
+Mobile tests live under `apps/mobile/src/**/*.test.{ts,tsx}` and run with Jest
+through the `jest-expo` preset (`apps/mobile/jest.config.js`). The config
+transforms Expo, React Native, React Strict DOM, StyleX, and `@sequence/*`
+workspace packages so route components, hooks, native components, and shared
+client-state consumers can run in Node.
+
+The mobile setup file (`apps/mobile/src/test/setup.ts`) installs React Native
+test globals, mocks native modules, configures Testing Library, and provides the
+minimal timers/bridge state needed for React Native 0.86 tests. Mobile route
+tests stay outside `apps/mobile/src/app`; Expo Router can bundle route-local
+tests into Metro/export output.
+
+Run the suite directly with:
+
+```bash
+pnpm --filter @sequence/mobile test
+```
+
 ## Playwright e2e
 
 The browser-level e2e specs live in `apps/web/e2e/` (full game, pass-and-play,
@@ -150,18 +190,20 @@ keeps that destructive churn off any shared or production database. Never point
 `DATABASE_URL_TEST` at production. See `configuration.md` for the variable and
 `development.md` for the workflow.
 
-## The root `pnpm test` harness
+## The Root `pnpm test` Harness
 
 `pnpm test` runs `scripts/run-tests.mjs` (`scripts/run-tests.mjs`), which:
 
 1. Checks whether any `packages/*` or `apps/*` directory has a `package.json`. If
    none exist (the empty-monorepo state), it prints a skip message and exits `0`.
 2. Otherwise spawns `pnpm exec vitest run --passWithNoTests`, driving the
-   workspace, and exits with Vitest's status.
+   workspace, and exits with Vitest's status when it fails.
+3. If `apps/mobile/package.json` exists, runs
+   `pnpm --filter @sequence/mobile test` and exits with that Jest status when it
+   fails.
 
 `--passWithNoTests` means a project with no test files (or one whose only tests
 are DB-gated `describe.skip` blocks) does not fail the run. So `pnpm test` is
-green without Neon creds: the game-logic and web layers run fully, the api
-integration blocks skip, and the global setup no-ops. The harness drives the
-Vitest workspace only — Playwright is **not** part of `pnpm test` and must be run
-explicitly.
+green without Neon creds: the game-logic, shared-package, web, and mobile layers
+run fully, the api integration blocks skip, and the global setup no-ops.
+Playwright is **not** part of `pnpm test` and must be run explicitly.

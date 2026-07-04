@@ -27,15 +27,16 @@ Run this loop as build -> launch -> screenshot -> drive by testID -> logs.
    - Generated `ios/`, `android/`, `.expo/`, and `expo-env.d.ts` are ignored
      build artifacts and must stay untracked.
 2. Start Metro:
-   - `EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host localhost --port 8081`
+   - `EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host lan --port 8081`
 3. Launch the installed dev build:
    - Preferred: use the Expo CLI prompt or QR/deep link.
    - Fallback when Expo CLI's Simulator activation path fails:
-     `xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
+     `xcrun simctl launch --terminate-running-process booted com.tkstang.sequenceonline --initialUrl 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F<lan-ip>%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
    - Fallback for a deep link into an already-running app:
-     `xcrun simctl openurl booted 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
+     `xcrun simctl openurl booted 'exp+sequence-online://expo-development-client/?url=http%3A%2F%2F<lan-ip>%3A8081%3FdisableOnboarding%3D1&disableOnboarding=1'`
    - Prefer `launch --initialUrl` over `openurl` for startup; `openurl` can
      surface the iOS "Open in Sequence Online?" confirmation prompt.
+   - Replace `<lan-ip>` with the LAN URL printed by Expo when Metro starts.
 4. See the app:
    - Expo MCP local tool: `automation_take_screenshot`.
    - Argent tool: `screenshot`.
@@ -106,5 +107,5 @@ Use `screen.element[.qualifier]`.
 - `README.md` - workspace quick reference.
 - `../../docs/development.md` - repo-wide local workflows.
 - `../../docs/configuration.md` - environment variables.
-- `../../docs/mobile-operator-runbook.md` - operator-only account and
-  distribution steps once that runbook exists.
+- `../../docs/mobile-operator-runbook.md` - operator-only account, signing,
+  TestFlight, physical-device, and production-smoke steps.

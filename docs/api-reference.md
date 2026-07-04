@@ -1,9 +1,9 @@
 # API Reference
 
 The Sequence Online API is a [tRPC](https://trpc.io) router served by Fastify. It
-is consumed type-safely by the web app, which imports only the `AppRouter` _type_
-from `@sequence/api` (no runtime API code ships to the browser). The router is the
-multi-client contract — a future React Native client imports the same type.
+is consumed type-safely by the web and mobile apps, which import only the
+`AppRouter` _type_ from `@sequence/api`. The router is the multi-client contract;
+API runtime code does not ship to the browser or mobile bundle.
 
 See [architecture.md](architecture.md) for request/event flow, the transport
 split, and realtime/presence/timer behavior. Persisted shapes are documented in

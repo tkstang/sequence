@@ -7,18 +7,28 @@ no global utility-class system; every component declares its styles with
 
 ## Tokens and themes
 
-Design values are StyleX **variables**, not hard-coded literals:
+Design values come from
+[`@sequence/design-tokens`](../packages/design-tokens/README.md), not
+hard-coded literals. The package exports the shared `palette`, `space`,
+`radius`, `shadow`, `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, and
+`zIndex` values consumed by both clients.
+
+The web StyleX files are generated from that package:
 
 - [`apps/web/src/styles/tokens.stylex.ts`](../apps/web/src/styles/tokens.stylex.ts)
-  — `defineVars` groups: `color`, `space`, `radius`, `shadow`, `fontFamily`,
-  `fontSize`, `fontWeight`, `lineHeight`, `zIndex`. `color` carries surfaces,
-  text, team colors, badges, and a semantic `highlight` token.
+  — generated `defineVars` groups for color, spacing, radius, shadow,
+  typography, line height, and z-index.
 - [`apps/web/src/styles/themes.stylex.ts`](../apps/web/src/styles/themes.stylex.ts)
-  — `lightTheme` / `darkTheme` as `createTheme(color, …)` overrides. Every color
-  variable is listed in both themes.
+  — generated `lightTheme` / `darkTheme` as `createTheme(color, …)` overrides.
 
-When adding a color, add it to `tokens.stylex.ts` **and** to both themes in
-`themes.stylex.ts`. Prefer an existing token over a new literal.
+When adding a token, edit `packages/design-tokens/src/*` first, then regenerate
+the web StyleX files:
+
+```bash
+pnpm --filter @sequence/design-tokens generate:web-stylex
+```
+
+Prefer an existing token over a new literal.
 
 ## Dark mode
 
@@ -73,7 +83,8 @@ render without real styles — styling is verified visually in the
 
 - Style with `stylex.create` + `stylex.props`; no inline style objects for static
   styling and no utility-class system.
-- Pull values from the token groups; add new colors to both themes.
+- Pull values from the token groups; add new values in
+  `@sequence/design-tokens` and regenerate web StyleX files.
 - Use semantic accent tokens (e.g. `color.highlight`) rather than raw hex.
 - Keep explicit `.ts`/`.tsx` extensions on imports, including the token/theme
   files (the `@/styles/*.stylex.ts` alias works; bare extensionless or other
