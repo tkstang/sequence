@@ -3749,6 +3749,9 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Local saved/resumable games now surface an explicit dashboard `LOCAL` badge,
   route back into `/game/<id>` from the dashboard, and resumed local active
   streams enter through the handoff veil when another seat is current.
+- Phase 9 lifecycle verification passed against the running local API/web stack
+  plus focused API/mobile suites: save/resume, concede outcomes, freeze/resume,
+  rematch, local pass-and-play save, and expiry UI coverage are all evidenced.
 
 **Verification:**
 
@@ -3766,6 +3769,11 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/game/ActiveGameControls.test.tsx --runInBand`
 - Run:
   `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`
+- Run:
+  `pnpm --filter @sequence/api exec vitest run src/game/routes/lifecycle.test.ts src/game/presence.test.ts`
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx src/game/GameOver.test.tsx src/game/HandoffScreen.test.tsx --runInBand`
+- Run: `node /tmp/p09-t07-live.mjs`
 - Run: `pnpm --filter @sequence/mobile typecheck`
 - Run: `pnpm --filter @sequence/mobile lint`
 - Run: `pnpm format:check`
@@ -3787,6 +3795,22 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Resumed local active games initialize the locally revealed seat from
   `view.mySeat`, not `view.currentSeat`, so a current-seat mismatch shows
   `HandoffScreen` before exposing the incoming hand.
+- p09-t07 live stack evidence used the already-running local API
+  (`localhost:3001`), web app (`localhost:3000`), and system Chrome because the
+  local Playwright bundled Chromium cache was absent. The temp probe created
+  unique users/games and left no repo files behind.
+- Live matrix IDs: registered save/resume
+  `578d55e4-d71d-42bd-9a6f-3756a849b6d8` (`resumeState: active` after the
+  saved card was observed in `myGames`), 2-team concede
+  `25529460-e675-4840-9c0f-016cf050cf07`, 3-player FFA concede
+  `e31c7373-a4e0-4769-ac67-c028b4c0b0aa`, disconnect freeze/resume
+  `73b881a5-f5dd-48c3-99bf-a1d0ad883978`, rematch
+  `9699eba3-e086-4995-b0b8-86d1e039a547`, and local pass-and-play save after
+  a real handoff `b16166f5-68c3-4321-9ec3-6cf79fb00628`.
+- Expiry messaging was fixture-verified rather than live-seeded: mobile route
+  tests cover saved expiry copy with computed `Intl.DateTimeFormat` labels, the
+  connection banner covers frozen expiry copy, and p09-t02 includes a `TZ=UTC`
+  rerun to avoid local-time false positives.
 
 ---
 
@@ -4164,6 +4188,7 @@ Track test execution during implementation.
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/GameOver.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 rematch/game-over route suites, 23 tests; rematch mutation payload, success navigation to returned game route, pending disabled state, dashboard preservation, and conflict copy covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/game/HandoffScreen.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 local-handoff/route suites, 20 tests; handoff prompt/action, visible-hand helper, full hand-tree veil, outgoing/incoming hand privacy, and revealed current-seat hand covered |
 | 9     | `pnpm --filter @sequence/mobile exec jest src/features/dashboard src/game/ActiveGameControls.test.tsx --runInBand`; `pnpm --filter @sequence/mobile exec jest src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | Dashboard/control suites 16 tests and route suite 19 tests; local resumables show a `LOCAL` badge, route to `/game/<id>`, local save remains available, and resumed local active games start behind the handoff veil |
+| 9     | `pnpm --filter @sequence/api exec vitest run src/game/routes/lifecycle.test.ts src/game/presence.test.ts`; `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx src/components/ConnectionBanner.test.tsx src/game/GameOver.test.tsx src/game/HandoffScreen.test.tsx --runInBand`; `node /tmp/p09-t07-live.mjs`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | API lifecycle/presence suites 15 tests, mobile lifecycle suites 36 tests, and live local API/web probe passed; covers registered save/resume, 2-team concede, 3-player FFA concede/no-result, disconnect freeze/resume, registered rematch roster, local pass-and-play save after handoff, and fixture-backed expiry UI |
 
 ## Final Summary (for PR/docs)
 

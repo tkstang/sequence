@@ -40,6 +40,10 @@ value. Expo MCP and Argent usage details belong in
 - Repo `AGENTS.md` candidate: local pass-and-play privacy tests should assert
   the full hand tree is absent during handoff (`hand.dock` and card testIDs),
   not just that individual card labels are missing.
+- Repo `AGENTS.md` candidate: browser-driven live scenario probes should prefer
+  authoritative API/dashboard state over transient connected-count labels for
+  active presence transitions, and can launch Playwright with the system Chrome
+  channel when the bundled browser cache is absent.
 - Skill candidate: create a general OAT project execution learnings skill from
   the orchestration, verification, and codebase-pattern notes in this file; keep
   the Expo MCP-specific skill sourced from `using-expo-mcp-learnings.md`.
@@ -244,6 +248,16 @@ value. Expo MCP and Argent usage details belong in
   web client defaults to `http://localhost:3001`; injecting cookies for
   `127.0.0.1:3001` while visiting `localhost:3000` leaves the page stuck in a
   loading state even though the same cookie value is otherwise valid.
+- Browser-driven lifecycle probes should assert authoritative state when
+  possible. In p09-t07, closing a second web client correctly froze the game,
+  but the active page's `1/2 connected` label was not a reliable initial
+  assertion because connect events do not publish standalone active-state
+  snapshots; polling `game.myGames` for `frozen` and then for resumable removal
+  after reconnect was the stable contract proof.
+- If Playwright's bundled browser cache is missing on a machine with system
+  Chrome installed, a temporary scenario script can use
+  `chromium.launch({ channel: "chrome" })` instead of stopping to download
+  browsers. Record that as an environment workaround, not a product behavior.
 - Expiry/date UI tests should not pin a local timezone unless the component does.
   During p09-t02, a saved-game test passed locally with Central-time copy but
   failed under `TZ=UTC`; compute the expected `Intl.DateTimeFormat` label in the
