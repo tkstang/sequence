@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p09-t01
+oat_current_task_id: p09-t02
 oat_generated: false
 ---
 
@@ -34,9 +34,9 @@ oat_generated: false
 | Phase 6 | completed   | 8     | 8/8       |
 | Phase 7 | completed   | 9     | 9/9       |
 | Phase 8 | completed   | 6     | 6/6       |
-| Phase 9 | in_progress | 7     | 0/7       |
+| Phase 9 | in_progress | 7     | 1/7       |
 
-**Total:** 58/85 tasks completed
+**Total:** 59/85 tasks completed
 
 ---
 
@@ -3730,15 +3730,24 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 **Outcome (what changed):**
 
-- Phase 9 is starting from task p09-t01.
+- Active games now expose save-and-exit and concede controls with confirmation,
+  version-guarded mutations, guest-roster save hiding, dashboard navigation for
+  saved games, and active-game-specific lifecycle error copy.
 
 **Verification:**
 
-- Pending.
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`
+- Run: `pnpm --filter @sequence/mobile typecheck`
+- Run: `pnpm --filter @sequence/mobile lint`
+- Run: `pnpm format:check`
+- Run: `git diff --check HEAD`
+- Result: pass; Jest reported the known Watchman recrawl warning.
 
 **Notes / Decisions:**
 
-- None yet.
+- Save-and-exit intentionally navigates to the dashboard while concede waits
+  for the authoritative stream to render the outcome.
 
 ---
 
@@ -3876,7 +3885,8 @@ Chronological log of implementation progress.
 - [x] p08-t04: Dead-card turn-in + auto-swap surfacing - 6ca7d32
 - [x] p08-t05: Board rotate control - b21961a / aaa8f56
 - [x] p08-t06: Hard-mode e2e verification - 7e06cfc
-- [ ] p09-t01: Save & exit + concede controls - next
+- [x] p09-t01: Save & exit + concede controls - e664340 / 7d27bf4
+- [ ] p09-t02: Freeze/resume + expiry states - next
 
 **What changed (high level):**
 
@@ -4017,6 +4027,10 @@ Chronological log of implementation progress.
 - Hard-mode Phase 8 verification now covers mobile simulator state, web client
   state, public tRPC hard-mode mutations, DB assertions, pending-choice final
   win, and an API-backed chained-choice proof.
+- Active games now have save-and-exit plus concede lifecycle controls; save
+  hides for guest-roster games, both actions submit the current version, save
+  returns signed-in users to the dashboard, and lifecycle conflicts show
+  game-specific recovery copy.
 
 ---
 
@@ -4086,6 +4100,7 @@ Track test execution during implementation.
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/DeadCardControls.test.tsx src/game/GameRouteScreen.test.tsx src/game/feedback/toasts.test.ts --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 dead-card/route/feedback suites, 29 tests; hard-mode turn-in calls `turnInDeadCard`, same-turn rejection uses `not-a-dead-card`, and default-mode auto-swap emits one toast per event seq |
 | 8     | `pnpm --filter @sequence/mobile exec jest src/game/GameBoard --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 3 GameBoard suites, 16 tests; rotate control cycles 0/90/180/270, transformed frames stay aligned with drag hit-testing, and 90/270 rotations stay within the board touch area |
 | 8     | Seeded drag-mode game `c5315deb-9acb-4f8c-b78a-355b0ae95447`; public mutations `game.turnInDeadCard`, `game.makeMove`, `game.chooseSequenceCells`; mobile screenshots `/tmp/p08-t06-mobile-seeded.png`, `/tmp/p08-t06-mobile-pending-choice.png`, `/tmp/p08-t06-mobile-final-win.png`; web screenshot `/tmp/p08-t06-web-final-win.png`; DB assertions; chained-choice seed `716fbe0d-ea9d-453f-bd00-117032eea989` | yes    | 0      | FR7/FR8 hard-mode pass: dead-card turn-in, one-eyed removal, web opponent move, no-card drag contract placement, pending choice, final win, and chained choice verified |
+| 9     | `pnpm --filter @sequence/mobile exec jest src/game/ActiveGameControls.test.tsx src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | 2 active-lifecycle/control suites, 19 tests; save-and-exit, concede, versioned payloads, guest save hiding, and active-game lifecycle conflict copy covered |
 
 ## Final Summary (for PR/docs)
 
