@@ -117,11 +117,8 @@ function RecentMeta({ game }: { game: DashboardGame }) {
 
 export function GameCard({ game, kind, onPress }: GameCardProps) {
   const { colors } = useTheme();
-  const cardTestId = testId(
-    'dashboard',
-    kind === 'resumable' ? 'resumable' : 'recent',
-    game.gameId,
-  );
+  const cardKind = kind === 'resumable' ? 'resumable' : 'recent';
+  const cardTestId = testId('dashboard', cardKind, game.gameId);
   const label =
     kind === 'resumable'
       ? `Open ${describeOpponents(game)}`
@@ -141,15 +138,26 @@ export function GameCard({ game, kind, onPress }: GameCardProps) {
             <Text style={[styles.roster, { color: colors.text }]}>
               {describeOpponents(game)}
             </Text>
-            {kind === 'resumable' ? (
-              <Badge size="sm" variant={statusVariant(game.status)}>
-                {statusLabel(game.status)}
-              </Badge>
-            ) : (
-              <Badge size="sm" variant={resultVariant(game.result)}>
-                {resultLabel(game.result)}
-              </Badge>
-            )}
+            <View style={styles.badges}>
+              {game.local ? (
+                <Badge
+                  size="sm"
+                  testID={testId('dashboard', cardKind, game.gameId, 'local')}
+                  variant="accent"
+                >
+                  LOCAL
+                </Badge>
+              ) : null}
+              {kind === 'resumable' ? (
+                <Badge size="sm" variant={statusVariant(game.status)}>
+                  {statusLabel(game.status)}
+                </Badge>
+              ) : (
+                <Badge size="sm" variant={resultVariant(game.result)}>
+                  {resultLabel(game.result)}
+                </Badge>
+              )}
+            </View>
           </View>
           {kind === 'resumable' ? (
             <ResumableMeta game={game} />
@@ -174,6 +182,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     justifyContent: 'space-between',
+  },
+  badges: {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'flex-end',
   },
   roster: {
     flex: 1,

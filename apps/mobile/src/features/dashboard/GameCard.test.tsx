@@ -92,7 +92,7 @@ describe('GameCard', () => {
     expect(getByText(/concede/i)).toBeTruthy();
   });
 
-  it('uses local roster labels and invokes navigation on press', async () => {
+  it('flags local resumables and invokes navigation on press', async () => {
     const user = userEvent.setup();
     const onPress = jest.fn();
     const { getByTestId, getByText } = await render(
@@ -103,6 +103,8 @@ describe('GameCard', () => {
       />,
     );
 
+    expect(getByTestId('dashboard.resumable.local-1.local')).toBeTruthy();
+    expect(getByText('LOCAL')).toBeTruthy();
     expect(getByText('local vs Sam')).toBeTruthy();
     await user.press(getByTestId('dashboard.resumable.local-1'));
 

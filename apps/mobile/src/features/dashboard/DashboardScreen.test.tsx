@@ -86,6 +86,7 @@ beforeEach(() => {
         }),
         game({
           gameId: 'saved-1',
+          local: true,
           opponents: ['Sam'],
           status: 'saved',
         }),
@@ -117,6 +118,8 @@ describe('DashboardScreen', () => {
     expect(getByText('LOBBY')).toBeTruthy();
     expect(getByText('vs Maya, Ben')).toBeTruthy();
     expect(getByTestId('dashboard.resumable.saved-1')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.saved-1.local')).toBeTruthy();
+    expect(getByText('LOCAL')).toBeTruthy();
     expect(getByText('SAVED')).toBeTruthy();
     expect(getByTestId('dashboard.recent.finished-1')).toBeTruthy();
     expect(getByText('W')).toBeTruthy();
@@ -129,6 +132,9 @@ describe('DashboardScreen', () => {
 
     await user.press(getByTestId('dashboard.resumable.lobby-1'));
     expect(mockRouterPush).toHaveBeenCalledWith('/game/lobby-1');
+
+    await user.press(getByTestId('dashboard.resumable.saved-1'));
+    expect(mockRouterPush).toHaveBeenCalledWith('/game/saved-1');
 
     await user.press(getByTestId('dashboard.recent.finished-1'));
     expect(mockRouterPush).toHaveBeenCalledWith(

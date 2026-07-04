@@ -429,6 +429,26 @@ describe('GameRouteScreen active turn flow', () => {
     expect(queryByTestId('hand.card.5C')).toBeNull();
   });
 
+  it('resumes a local game behind the handoff veil when another seat is active', async () => {
+    const user = userEvent.setup();
+    mockStreamView = localTurnView(1);
+
+    const { getByTestId, getByText, queryByTestId, queryByText } = await render(
+      <GameRouteScreen />,
+    );
+
+    expect(getByText('Pass to Riya')).toBeTruthy();
+    expect(getByTestId('handoff.confirm')).toBeTruthy();
+    expect(queryByTestId('hand.dock')).toBeNull();
+    expect(queryByTestId('hand.card.AH')).toBeNull();
+    expect(queryByText('AH')).toBeNull();
+
+    await user.press(getByTestId('handoff.confirm'));
+
+    expect(getByTestId('hand.card.AH')).toBeTruthy();
+    expect(queryByTestId('hand.card.5C')).toBeNull();
+  });
+
   it('selects drag mode and submits a cardless move when a dragged chip drops on a cell', async () => {
     const user = userEvent.setup();
     mockStreamView = fixtureView('active-your-turn', { mode: 'drag' });

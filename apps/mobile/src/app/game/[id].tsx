@@ -503,9 +503,7 @@ function GameStateView({
   const trpc = useTRPC();
   const router = useRouter();
   const [rematchError, setRematchError] = useState<string | null>(null);
-  const [revealedSeat, setRevealedSeat] = useState(
-    view.local ? view.currentSeat : view.mySeat,
-  );
+  const [revealedSeat, setRevealedSeat] = useState(view.mySeat);
   const [handoffTargetSeat, setHandoffTargetSeat] = useState<number | null>(
     null,
   );
