@@ -3,7 +3,7 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers: []
 oat_last_updated: 2026-07-04
-oat_current_task_id: p11-t02
+oat_current_task_id: p11-t03
 oat_generated: false
 ---
 
@@ -36,9 +36,9 @@ oat_generated: false
 | Phase 8 | completed   | 6     | 6/6       |
 | Phase 9 | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
-| Phase 11 | in_progress | 7     | 1/7       |
+| Phase 11 | in_progress | 7     | 2/7       |
 
-**Total:** 73/85 tasks completed
+**Total:** 74/85 tasks completed
 
 ---
 
@@ -4008,6 +4008,16 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Project-level learnings now capture the DB-reset simulator gotcha, route-test
   hook wiring gotcha, and presence-race testing pattern for later skill and
   `AGENTS.md` distillation.
+- NFR3 now has fresh game-surface profiling evidence. The selected-card/drag
+  session produced 3 React commits over `21.6s`, no per-frame React commit
+  cascade during drag movement, and no `BoardCell` renders in the hot commit
+  query.
+- Board-cell memo boundaries are hardened against route-level callback churn,
+  and the mutable board layout map now publishes revision updates so Reanimated
+  drag snapshots refresh after frame mutations.
+- Project-level and Expo MCP learnings now capture the p11-t02 perf workflow:
+  stable board callbacks, layout-map revision subscriptions, Argent profiler
+  start/stop/analyze usage, and commit-query validation.
 
 **Verification:**
 
@@ -4049,6 +4059,24 @@ subscription input lastEventId=505; latest card kind=event seq=505
   `unicorn(no-array-sort)` in `presence.ts`; `toSorted` was not compatible with
   the package's current TypeScript lib target, so the target-compatible `sort`
   remains.
+- Run: Argent React profiler over the active local drag game:
+  `react-profiler-start`, tap `hand.card.8S`, `gesture-swipe` toward
+  `board.cell.15D`, `react-profiler-stop`, `react-profiler-analyze`, and
+  `profiler-commit-query`.
+- Result: pass. Profiler captured 3 React commits / `21.6s`; one dev-mode hot
+  commit (`29.45ms`) followed the selection tap and mounted the drag chip/card;
+  drag movement did not create per-frame React commits, and
+  `profiler-commit-query --component_name BoardCell` returned no `BoardCell`
+  commit data. Evidence: `/tmp/p11-t02-react-profiler-report.md` and
+  `/tmp/p11-t02-active-drag-profile.png`.
+- Run:
+  `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/GameBoard.test.tsx src/game/GameBoard/layout-map.test.ts src/game/drag/use-drag-chip.test.ts src/game/drag/DragLayer.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`.
+- Result: pass, 7 suites / 54 tests; Jest reported the known Watchman recrawl
+  warning.
+- Run: `pnpm --filter @sequence/mobile typecheck`;
+  `pnpm --filter @sequence/mobile lint`; `pnpm format:check`;
+  `git diff --check`.
+- Result: pass.
 
 ### Task p11-t01: NFR2 measured scenario matrix
 
@@ -4106,6 +4134,62 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - The brief background failure required two server-side fixes: overlapping
   subscription counts and a post-freeze resume recheck for reconnects that
   arrive while the older disconnect is committing the freeze.
+
+### Task p11-t02: Perf pass + NFR3 measurement
+
+**Status:** completed
+**Commit:** a2ccf75
+
+**Outcome:**
+
+- Recorded NFR3 profiling evidence for the active drag game surface with
+  Argent / React DevTools.
+- Hardened board-cell memo boundaries so route-level `onCellPress` identity
+  changes do not re-render all repeated board cells.
+- Added a revision/subscription contract to the mutable board layout map so
+  `useDragChip` refreshes its UI-thread frame snapshot after cell frame
+  registration, clearing the stale-layout risk around rotation/layout updates.
+- Kept the existing SVG card-rendering path; profiling did not show an SVG
+  bottleneck requiring a sprite-raster contingency.
+- Appended p11-t02 learnings to the Expo MCP/Argent and general project
+  learning references for end-of-project skill and instruction distillation.
+
+**Measured values / decisions:**
+
+| Area | Result | Measurement / Evidence |
+| ---- | ------ | ---------------------- |
+| Drag frame timing | pass | React profiler recorded 3 commits over `21.6s`; drag movement did not create per-frame React commits after the selected-card overlay mounted. Evidence: `/tmp/p11-t02-react-profiler-report.md`. |
+| Event-application memo scope | pass | `GameBoard.test.tsx` proves only the changed chip cell re-renders and that parent `onCellPress` identity changes leave sampled cells at one render; `profiler-commit-query --component_name BoardCell` found no `BoardCell` renders in the hot selection commit. |
+| Move round-trip p50 | pass | Existing p07-t09 sampled local game p50 remains `6.1ms` (`/tmp/p07-t09-deterministic-summary.json`) against the `<=300ms` local target. Successful samples: `10.4ms`, `6.1ms`, `10ms`, `2.7ms`, `4ms`. |
+| SVG contingency | keep SVG | The only hot dev-mode commit was selected-card overlay mount (`29.45ms`, roughly production-acceptable per profiler note); no board-cell/SVG cascade appeared during drag. Sprite rasters are not justified for this pass. |
+
+**Files changed:**
+
+- `apps/mobile/src/game/GameBoard/GameBoard.tsx` - stable ref-backed board-cell
+  press callback passed into repeated cells.
+- `apps/mobile/src/game/GameBoard/GameBoard.test.tsx` - regression for
+  callback-identity stability and existing changed-cell memo audit.
+- `apps/mobile/src/game/GameBoard/layout-map.ts` - revision counter and
+  batched subscriber notifications for mutable frame changes.
+- `apps/mobile/src/game/GameBoard/layout-map.test.ts` - revision batching and
+  unsubscribe regression.
+- `apps/mobile/src/game/drag/use-drag-chip.ts` - `useSyncExternalStore`
+  subscription that refreshes drag frame snapshots on layout-map revisions.
+- `.oat/projects/shared/mobile-mvp/references/project-learnings.md` - general
+  p11-t02 project/codebase learnings.
+- `.oat/projects/shared/mobile-mvp/references/using-expo-mcp-learnings.md` -
+  Argent profiler and dev-client route-loop learnings.
+
+**Notes / Decisions:**
+
+- The selected-card mount is the intentional React boundary for drag mode; the
+  drag gesture itself stays on the UI-thread path except for bounded hover/drop
+  state publication, and no per-frame React commit cascade was observed.
+- The `BoardLayoutMap` object remains stable by design. Its new revision store
+  makes internal frame mutations observable to React consumers without replacing
+  the map object.
+- SVG card rendering remains the accepted implementation for Phase 11; no
+  design deviation or sprite-raster follow-up is required from this pass.
 
 ---
 
@@ -4258,7 +4342,8 @@ Chronological log of implementation progress.
 - [x] p10-t06: Both-themes screenshot pass - evidence only, no source changes
 - [x] p10-t07: FR13-FR15 verification - evidence only, no source changes
 - [x] p11-t01: NFR2 measured scenario matrix - fcfc1f9
-- [ ] p11-t02: Perf pass + NFR3 measurement - next
+- [x] p11-t02: Perf pass + NFR3 measurement - a2ccf75
+- [ ] p11-t03: Release build audit (NFR4) - next
 
 **What changed (high level):**
 
@@ -4506,6 +4591,7 @@ Track test execution during implementation.
 | 10    | p10-t06 local API + Metro LAN + iOS dev-client visual pass; `simctl` light/dark appearance changes; terminate/relaunch theme override persistence check; `file /tmp/p10-t06-*.png`; `pnpm --filter @sequence/mobile test`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check HEAD` | yes    | 0      | FR15 proof passed with dashboard, create, active local game, history, settings, join entry/not-found, dev index, and dev board story screenshots in light/dark. Manual Light override persisted across app terminate/relaunch while simulator appearance stayed dark; 49 mobile suites / 297 tests passed |
 | 10    | p10-t07 local API + Metro LAN + iOS dev-client seeded-history and active-game verification; `file /tmp/p10-t07-history-seeded.png /tmp/p10-t07-active-local-created.png /tmp/p10-t07-launch.png /tmp/p10-t07-create-screen.png`; `pnpm --filter @sequence/mobile exec jest src/features/history src/game/feedback src/features/settings/SettingsScreen.test.tsx src/theme/theme-provider.test.tsx --runInBand` | yes    | 0      | FR13-FR15 parity pass: seeded history rendered 2-1 record, `Parity Opponent 2-1`, 3 games, and local badge; live active game exposed `Your turn`, rail, lifecycle controls, and board affordances; focused tests covered notification and theme behavior, 5 suites / 44 tests |
 | 11    | p11-t01 simulator/API NFR2 matrix; `pnpm --filter @sequence/client-state test`; `pnpm --filter @sequence/api exec vitest run src/game/presence.test.ts src/game/routes/on-game-event.test.ts src/game/routes/make-move.test.ts`; `pnpm --filter @sequence/mobile exec jest src/realtime/use-game-stream.test.tsx src/components/ConnectionBanner.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx --runInBand`; `pnpm --filter @sequence/{api,client-state,mobile} typecheck`; `pnpm format:check`; `pnpm lint`; `git diff --check` | yes    | 0      | NFR2 pass: API restart recovered in `4391ms`, brief foreground recovered in `1830ms`, force-quit route recovered in `2743ms`, replay-window fallback snapshot covered after 502 events, and stale-version recovery remained covered by focused API/mobile tests |
+| 11    | p11-t02 Argent/React profiler selected-card drag session; `profiler-commit-query --component_name BoardCell`; `jq '.p50RoundTripMs' /tmp/p07-t09-deterministic-summary.json`; `pnpm --filter @sequence/mobile exec jest src/game/GameBoard/GameBoard.test.tsx src/game/GameBoard/layout-map.test.ts src/game/drag/use-drag-chip.test.ts src/game/drag/DragLayer.test.tsx src/game/use-move-submit.test.ts src/game/GameRouteScreen.test.tsx src/realtime/use-game-stream.test.tsx --runInBand`; `pnpm --filter @sequence/mobile typecheck`; `pnpm --filter @sequence/mobile lint`; `pnpm format:check`; `git diff --check` | yes    | 0      | NFR3 pass: 3 React commits over `21.6s`, no drag per-frame React cascade, no `BoardCell` hot-commit renders, local move p50 `6.1ms`, 7 mobile suites / 54 tests passed |
 
 ## Final Summary (for PR/docs)
 
