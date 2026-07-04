@@ -6,5 +6,6 @@ module.exports = function babelConfig(api) {
       'babel-preset-expo',
       ['react-strict-dom/babel-preset', { platform: 'native' }],
     ],
+    plugins: ['react-native-reanimated/plugin'],
   };
 };
