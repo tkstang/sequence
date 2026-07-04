@@ -3,10 +3,10 @@ oat_status: in_progress
 oat_ready_for: null
 oat_blockers:
   - task_id: p12-t01
-    reason: 'Operator account/setup required: Expo CLI is not logged in, EAS CLI is not installed, EXPO_TOKEN/App Store Connect API env vars are unset, and pnpm dlx eas-cli is blocked by ignored-build approval.'
+    reason: 'Operator account/setup still required: Expo/EAS login and EAS project link are verified; Apple Developer team access, App Store Connect app record, and EAS iOS credentials remain operator-owned.'
     since: 2026-07-04
 oat_last_updated: 2026-07-04
-oat_current_task_id: p12-t01
+oat_current_task_id: p12-t16
 oat_generated: false
 ---
 
@@ -40,9 +40,9 @@ oat_generated: false
 | Phase 9  | completed   | 7     | 7/7       |
 | Phase 10 | completed   | 7     | 7/7       |
 | Phase 11 | completed   | 7     | 7/7       |
-| Phase 12 | in_progress | 15    | 9/15      |
+| Phase 12 | in_progress | 17    | 9/17      |
 
-**Total:** 88/94 tasks completed
+**Total:** 88/96 tasks completed
 
 ---
 
@@ -4583,7 +4583,7 @@ subscription input lastEventId=505; latest card kind=event seq=505
 
 ## Phase 12: TestFlight (Operator Phase)
 
-**Status:** blocked
+**Status:** blocked on remaining operator Apple/App Store/EAS credential steps
 **Started:** 2026-07-04
 
 ### Phase Summary
@@ -4591,10 +4591,13 @@ subscription input lastEventId=505; latest card kind=event seq=505
 **Outcome:**
 
 - Phase 12 started after Phase 11 hardening and pre-distribution smoke passed.
-- p12-t01 cannot proceed autonomously on this shell because the required Expo,
-  EAS, Apple Developer, and App Store Connect operator state is not available.
-- p01-p12 review-fix tasks p12-t07 through p12-t15 are implemented and verified;
-  p12-t01 remains the active operator blocker.
+- p12-t01 cannot proceed autonomously because Apple Developer team access, App
+  Store Connect app-record setup, and EAS iOS credentials require the operator.
+- Expo/EAS CLI login and EAS project linking are now verified for
+  `@tkstang/sequence-online`.
+- p01-p12 review-fix tasks p12-t07 through p12-t15 are implemented and
+  verified. The p01-p12 re-review added minor follow-up tasks p12-t16 and
+  p12-t17 for autonomous execution while p12-t01 remains operator-blocked.
 
 **Verification / Pre-flight checks:**
 
@@ -4611,25 +4614,34 @@ subscription input lastEventId=505; latest card kind=event seq=505
 - Result: blocked; pnpm downloaded the package but stopped on
   `ERR_PNPM_IGNORED_BUILDS` for `dtrace-provider@0.8.8` and requires
   `pnpm approve-builds` operator approval.
+- Update 2026-07-04: operator logged into Expo/EAS as `tkstang`
+  (`stang.tk@gmail.com`) and installed EAS CLI `20.5.1`.
+- Run: `PATH="/Users/tstang/.nvm/versions/node/v24.15.0/bin:$PATH" pnpm --filter @sequence/mobile exec expo whoami`.
+- Result: pass; returned `tkstang`.
+- Run:
+  `export PATH="/Users/tstang/.nvm/versions/node/v24.15.0/bin:$PATH"; cd apps/mobile && eas project:info --non-interactive`.
+- Result: pass; returned `@tkstang/sequence-online`
+  (`784a6dba-4936-437d-b8ad-71c185860a36`).
+- Run:
+  `export PATH="/Users/tstang/.nvm/versions/node/v24.15.0/bin:$PATH"; pnpm --filter @sequence/mobile typecheck; pnpm --filter @sequence/mobile lint`.
+- Result: pass after adding `extra.eas.projectId` to dynamic Expo config.
 
 ### Task p12-t01: Operator pre-flight (runbook §§1–4)
 
-**Status:** blocked
-**Blocker:** Operator account/setup required. Expo CLI is not logged in, EAS CLI
-is not installed, no Expo/App Store Connect automation token is present in the
-shell, `pnpm dlx eas-cli@latest --version` requires ignored-build approval, and
-Apple Developer / App Store Connect membership cannot be verified or created by
-the agent without the operator.
+**Status:** blocked on remaining operator Apple/App Store/EAS credential steps
+**Blocker:** Operator account/setup still required. Expo/EAS login and EAS
+project linking are complete. Apple Developer / App Store Connect membership,
+the App Store Connect app record, and EAS-managed iOS credentials cannot be
+verified or created by the agent without the operator.
 
 **Next required operator actions:**
 
-1. Log in to Expo for this shell or provide an approved Expo automation path:
-   `pnpm --filter @sequence/mobile exec expo login` or an operator-approved
-   token outside the repo.
-2. Install or approve EAS CLI for the operator shell, then run from
-   `apps/mobile`: `eas whoami`.
-3. Confirm Apple Developer Program team access and App Store Connect app-record
+1. Confirm Apple Developer Program team access and App Store Connect app-record
    authority for bundle id `com.tkstang.sequenceonline`.
+2. Create or confirm the App Store Connect app record for bundle id
+   `com.tkstang.sequenceonline`.
+3. Run from `apps/mobile`: `eas credentials --platform ios` and choose
+   EAS-managed credentials unless the owner explicitly chooses manual signing.
 4. Resume p12-t01 so the runbook can record non-secret identifiers only
    (team name/id, operator role, App Store Connect app URL/id, Expo org, EAS
    project id).
@@ -4699,6 +4711,38 @@ p12-t12, p12-t13, p12-t14, p12-t15
 `oat-project-review-receive` to reach `passed`. The p12-t01 operator
 pre-flight blocker remains active while the operator completes
 Expo/EAS/Apple/App Store Connect setup.
+
+### Review Received: p01-p12 re-review
+
+**Date:** 2026-07-04
+**Review artifact:** reviews/archived/range-review-2026-07-04-v2.md
+
+**Findings:**
+
+- Critical: 0
+- Important: 0
+- Medium: 0
+- Minor: 2
+
+**New tasks added:** p12-t16, p12-t17
+
+**Finding disposition map:**
+
+- m1 converted to p12-t16: restore TextField and ConnectionBanner typography
+  values changed unintentionally by the native-token migration.
+- m2 converted to p12-t17: record the additive `game.access` API route in the
+  design/API-surface artifacts and implementation review notes.
+
+**Design drift / artifact alignment notes:**
+
+- m2: The re-review found that the shipped `game.access` route is defensible
+  and tested, but the lifecycle artifacts do not yet record the new additive
+  read-only API surface. p12-t17 will align the artifact record; no code change
+  is required for that finding.
+
+**Next:** Execute p12-t16 and p12-t17 via `oat-project-implement`, then rerun
+`oat-project-review-provide code p01-p12` and `oat-project-review-receive` to
+reach `passed`.
 
 ---
 
@@ -4867,6 +4911,8 @@ Chronological log of implementation progress.
 - [x] p12-t13: (review) Align rematch acceptance to parity semantics - d1c7855
 - [x] p12-t14: (review) Resolve vestigial React Strict DOM layer - 920ba50
 - [x] p12-t15: (review) Bound mobile non-color token drift - 83140fc
+- [ ] p12-t16: (review) Restore token-migration typography values - next
+- [ ] p12-t17: (review) Record game.access API surface - queued by p01-p12 re-review
 
 **What changed (high level):**
 

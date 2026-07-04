@@ -1,9 +1,9 @@
 ---
-oat_current_task: p12-t01
+oat_current_task: p12-t16
 oat_last_commit: 83140fc
 oat_blockers:
   - task_id: p12-t01
-    reason: 'Operator account/setup required: Expo CLI is not logged in, EAS CLI is not installed, EXPO_TOKEN/App Store Connect API env vars are unset, and pnpm dlx eas-cli is blocked by ignored-build approval.'
+    reason: 'Operator account/setup still required: Expo/EAS login and EAS project link are verified; Apple Developer team access, App Store Connect app record, and EAS iOS credentials remain operator-owned.'
     since: 2026-07-04
 associated_issues: [] # [{type: backlog|project|jira|linear, ref: "identifier"}]
 oat_kind: implementation # implementation | coordination; coordination parents may use oat_phase: decomposition
@@ -30,24 +30,25 @@ oat_pr_status: null # null | ready | open | closed | merged — actual PR state 
 oat_pr_url: null # null | string — tracked PR URL when a PR exists
 oat_project_created: '2026-07-03T01:05:50.448Z' # ISO 8601 UTC timestamp — set once at project creation
 oat_project_completed: null # ISO 8601 UTC timestamp — set when project is completed/archived
-oat_project_state_updated: '2026-07-04T12:28:24Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
+oat_project_state_updated: '2026-07-04T16:26:16Z' # ISO 8601 UTC timestamp — updated on every state.md mutation
 oat_generated: false
 ---
 
 # Project State: mobile-mvp
 
-**Status:** Implementation blocked — current task p12-t01; p01-p12 review fixes complete
+**Status:** Implementation in progress — p12-t16 review fix next; p12-t01 operator blocker remains
 **Started:** 2026-07-03
 **Last Updated:** 2026-07-04
 
 ## Current Phase
 
 Implementation - Phase 11 hardening work is complete; p12-t01 started and is
-blocked on required operator account/setup for the Phase 12 pre-flight. The
-p01-p12 independent review has been received and review-fix tasks p12-t07
-through p12-t15 are complete.
-The plan has 12 phases / 94 tasks tracing all 19 FRs + 7 NFRs; Phases 1–11 are
-agent-only with Phase 12 as the single operator phase plus completed
+partially unblocked for Expo/EAS project setup, but still blocked on Apple
+Developer, App Store Connect, and EAS iOS credential operator steps. The
+p01-p12 independent re-review has been received and minor review-fix tasks
+p12-t16 and p12-t17 are queued for autonomous execution.
+The plan has 12 phases / 96 tasks tracing all 19 FRs + 7 NFRs; Phases 1–11 are
+agent-only with Phase 12 as the single operator phase plus completed and queued
 review-fix tasks. Dispatch ceiling is maximum (codex xhigh / claude opus).
 Plan-phase HiLL checkpoints are final-only (`p12`) and auto-review at HiLL
 checkpoints is enabled from workflow config.
@@ -58,14 +59,14 @@ checkpoints is enabled from workflow config.
 - **Spec:** `spec.md` (complete — Requirement Index traced to task IDs)
 - **Design:** `design.md` (complete — review findings resolved)
 - **Plan:** `plan.md` (complete — execution started)
-- **Implementation:** `implementation.md` (in progress — current task p12-t01)
+- **Implementation:** `implementation.md` (in progress — current task p12-t16)
 
 ## Progress
 
 - ✓ Discovery complete (brainstorm-seeded, user-validated decisions)
 - ✓ Specification complete (folded into design phase)
 - ✓ Design complete (independent artifact review received + resolved)
-- ✓ Plan complete (94 tasks after p01-p12 review-fix task conversion)
+- ✓ Plan complete (96 tasks after p01-p12 re-review fix task conversion)
 - ✓ Deferred follow-ups captured as backlog items (EAS Updates, universal
   links, Maestro e2e, Android support, Xcode 27 MCP re-evaluation, Sentry)
 - ✓ Phase 2 agent tooling complete (5/5)
@@ -85,18 +86,20 @@ checkpoints is enabled from workflow config.
 - ✓ Phase 11 documentation parity complete (6/7)
 - ✓ Phase 11 pre-distribution smoke complete (7/7)
 - ✓ p01-p12 independent review received; 9 review-fix tasks completed
-- ⧗ Implementation blocked at p12-t01 (Phase 12 9/15 complete)
+- ✓ p01-p12 re-review received; 2 minor review-fix tasks queued
+- ⧗ Implementation continues at p12-t16 (p12-t01 operator blocker remains; Phase 12 9/17 complete)
 
 ## Blockers
 
-- `p12-t01`: Operator account/setup required. `expo whoami` reports not logged
-  in; `eas` is not installed; `EXPO_TOKEN`, `ASC_API_KEY`, and
-  `APP_STORE_CONNECT_API_KEY` are unset; `pnpm dlx eas-cli@latest --version`
-  stopped on `ERR_PNPM_IGNORED_BUILDS` and requires `pnpm approve-builds`;
-  Apple Developer / App Store Connect team access requires the operator.
+- `p12-t01`: Operator account/setup still required. `expo whoami`, `eas
+  whoami`, and `eas project:info` now pass for `@tkstang/sequence-online`
+  (`784a6dba-4936-437d-b8ad-71c185860a36`) after adding the dynamic-config EAS
+  project link. Apple Developer / App Store Connect team access and EAS iOS
+  credentials still require the operator.
 
 ## Next Milestone
 
-Re-run the p01-p12 independent code review and receive the result. Operator
-must complete Expo/EAS/Apple/App Store Connect pre-flight from
-`docs/mobile-operator-runbook.md` sections 1-4, then resume p12-t01.
+Execute p12-t16 and p12-t17, then rerun the p01-p12 independent code review and
+receive the result. Operator must complete Expo/EAS/Apple/App Store Connect
+pre-flight from `docs/mobile-operator-runbook.md` sections 1-4 before p12-t01
+can complete.

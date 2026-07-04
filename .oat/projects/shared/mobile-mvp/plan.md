@@ -2373,6 +2373,77 @@ git add apps/mobile/src/theme apps/mobile/src/components packages/design-tokens/
 git commit -m "chore(p12-t15): bound mobile dimension token drift"
 ```
 
+### Task p12-t16: (review) Restore token-migration typography values
+
+**Files:**
+
+- Modify: `apps/mobile/src/theme/native-tokens.ts`
+- Modify: `apps/mobile/src/theme/native-tokens.test.ts`
+- Modify: `apps/mobile/src/components/TextField.tsx`
+- Modify: `apps/mobile/src/components/ConnectionBanner.tsx`
+
+**Step 1: Understand the issue**
+
+Review finding m1: p12-t15 centralized typography through
+`nativeTypography.buttonLabel`, but that changed two previously shipped chrome
+values: TextField input text became bold, and ConnectionBanner title size grew
+from 15 to 16. This was unintended visual drift from the p10 simulator evidence
+and should be corrected before TestFlight.
+
+**Step 2: Implement fix**
+
+Add dedicated native typography entries for text inputs and connection-banner
+titles, preserving the pre-migration values while keeping the values centralized
+in `native-tokens.ts`.
+
+**Step 3: Verify**
+
+Run: `pnpm --filter @sequence/mobile exec jest src/components src/theme --runInBand`
+Run: `pnpm --filter @sequence/mobile typecheck && pnpm --filter @sequence/mobile lint && pnpm format:check`
+Expected: component/theme suites pass, and TextField/ConnectionBanner no longer
+inherit button-label typography.
+
+**Step 4: Commit**
+
+```bash
+git add apps/mobile/src/theme/native-tokens.ts apps/mobile/src/theme/native-tokens.test.ts apps/mobile/src/components/TextField.tsx apps/mobile/src/components/ConnectionBanner.tsx
+git commit -m "fix(p12-t16): restore token-migration typography values"
+```
+
+### Task p12-t17: (review) Record game.access API surface
+
+**Files:**
+
+- Modify: `design.md`
+- Modify: `.oat/projects/shared/mobile-mvp/implementation.md`
+
+**Step 1: Understand the issue**
+
+Review finding m2: p12-t08 added the additive read-only `game.access` tRPC
+route to support conservative guest cleanup, but the freshly realigned API
+surface artifacts do not mention that new route. The route itself is correct
+and tested; this is artifact alignment only.
+
+**Step 2: Implement fix**
+
+Record `game.access` in the design API server changes as an additive,
+read-only, seat-authorized access check owned by `gamePlayerProcedure`. Add or
+update the implementation deviations/review notes so the p12-t08 API-side scope
+extension is durable.
+
+**Step 3: Verify**
+
+Run: `rg -n "game\\.access|accessRoute|p12-t08" .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md packages/api/src/game/game.router.ts packages/api/src/game/routes/access.ts`
+Expected: code and lifecycle artifacts consistently describe the additive
+`game.access` route.
+
+**Step 4: Commit**
+
+```bash
+git add .oat/projects/shared/mobile-mvp/design.md .oat/projects/shared/mobile-mvp/implementation.md
+git commit -m "docs(p12-t17): record game access API surface"
+```
+
 ---
 
 ## Reviews
@@ -2393,7 +2464,7 @@ git commit -m "chore(p12-t15): bound mobile dimension token drift"
 | p10     | code     | pending         | -          | -                                                                          |
 | p11     | code     | pending         | -          | -                                                                          |
 | p12     | code     | pending         | -          | -                                                                          |
-| p01-p12 | code     | received        | 2026-07-04 | reviews/range-review-2026-07-04-v2.md (re-review of fixes; prior: reviews/archived/range-review-2026-07-04.md) |
+| p01-p12 | code     | fixes_added     | 2026-07-04 | reviews/archived/range-review-2026-07-04-v2.md (re-review of fixes; prior: reviews/archived/range-review-2026-07-04.md) |
 | final   | code     | pending         | -          | -                                                                          |
 | spec    | artifact | pending         | -          | -                                                                          |
 | design  | artifact | fixes_completed | 2026-07-03 | reviews/archived/artifact-design-review-2026-07-02.md                      |
@@ -2425,11 +2496,11 @@ git commit -m "chore(p12-t15): bound mobile dimension token drift"
 - Phase 9: 7 tasks — Lifecycle + pass-and-play (save/concede, freeze/resume, game over, rematch, handoff)
 - Phase 10: 7 tasks — History/notifications/settings/polish (FR13–15, a11y/testID audit, themes)
 - Phase 11: 7 tasks — Hardening (NFR matrices, perf, release audit, gates, runbook, docs, smoke)
-- Phase 12: 15 tasks — TestFlight operator phase (pre-flight, EAS, builds, testers, device smoke, wrap) plus review-fix tasks
+- Phase 12: 17 tasks — TestFlight operator phase (pre-flight, EAS, builds, testers, device smoke, wrap) plus review-fix tasks
 
-**Total: 94 tasks**
+**Total: 96 tasks**
 
-Ready for p01-p12 re-review, remaining Phase 12 operator work, and final
+Ready for p01-p12 re-review fixes, remaining Phase 12 operator work, and final
 closeout.
 
 ---
