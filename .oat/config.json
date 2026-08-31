@@ -1,7 +1,8 @@
 {
   "version": 1,
   "projects": {
-    "root": ".oat/projects/shared"
+    "root": ".oat/projects/shared",
+    "defaultScope": "shared"
   },
   "git": {
     "defaultBranch": "main"
