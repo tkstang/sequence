@@ -44,6 +44,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     extra: {
       ...config.extra,
+      eas: {
+        projectId: '784a6dba-4936-437d-b8ad-71c185860a36',
+      },
       apiUrl,
       wsUrl,
     },

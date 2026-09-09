@@ -378,9 +378,9 @@ upload. Optional earlier only for account-risk reduction.
 
    | Field | Value |
    | --- | --- |
-   | Expo account / organization | `<record in Phase 12>` |
-   | EAS project ID | `<record in Phase 12>` |
-   | Credential mode | `EAS-managed` or `manual` |
+   | Expo account / organization | `@tkstang` / `tkstang` |
+   | EAS project ID | `784a6dba-4936-437d-b8ad-71c185860a36` |
+   | Credential mode | `<record EAS-managed or manual in Phase 12>` |
    | First production build URL | `<record in Phase 12>` |
 
 7. When Phase 12 reaches the production build task, run build and submit from
