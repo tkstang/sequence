@@ -1,3 +1,4 @@
+import type { SnapshotBoardCell } from '@sequence/client-state';
 import {
   isDeadCard,
   type Card,
@@ -6,7 +7,6 @@ import {
   type Team,
 } from '@sequence/game-logic';
 
-import type { SnapshotBoardCell } from '../game-state.ts';
 import { boardRecordToMap } from './tap-controller.ts';
 
 export type DragIntent =

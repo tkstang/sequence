@@ -1,5 +1,6 @@
 'use client';
 
+import type { SnapshotPlayer } from '@sequence/client-state';
 import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 
@@ -12,8 +13,6 @@ import {
   radius,
   space,
 } from '@/styles/tokens.stylex.ts';
-
-import type { SnapshotPlayer } from '../game-state.ts';
 
 export interface GameOverProps {
   winnerTeam?: number | null;

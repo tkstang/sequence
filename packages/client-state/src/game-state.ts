@@ -450,6 +450,8 @@ export function applyGameEvent(
     case 'PlayerReconnected': {
       return {
         ...state,
+        status: 'active',
+        expiresAt: null,
         players: state.players.map((p) => ({ ...p, connected: true })),
       };
     }

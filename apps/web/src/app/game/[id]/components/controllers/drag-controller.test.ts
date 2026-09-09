@@ -1,3 +1,4 @@
+import type { SnapshotBoardCell } from '@sequence/client-state';
 import {
   applyMove,
   createGame,
@@ -10,7 +11,6 @@ import {
 } from '@sequence/game-logic';
 import { describe, expect, it } from 'vitest';
 
-import type { SnapshotBoardCell } from '../game-state.ts';
 import {
   buildChipRemovalMove,
   buildDeadCardTurnIn,

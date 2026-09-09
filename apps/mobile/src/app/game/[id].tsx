@@ -1,0 +1,925 @@
+import type { GameViewState } from '@sequence/client-state';
+import type { Card, Move, Position, Team } from '@sequence/game-logic';
+import { isOneEyedJack } from '@sequence/game-logic';
+import { useMutation } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { useTRPC } from '../../api/client.ts';
+import { mapTRPCErrorToPolicy } from '../../api/error-policy.ts';
+import { ConnectionBanner } from '../../components/ConnectionBanner.tsx';
+import { Screen } from '../../components/Screen.tsx';
+import { ActiveGameControls } from '../../game/ActiveGameControls.tsx';
+import { CardHand } from '../../game/CardHand/CardHand.tsx';
+import { useDeadCardControls } from '../../game/DeadCardControls.tsx';
+import { DragLayer } from '../../game/drag/DragLayer.tsx';
+import type { GameFeedback } from '../../game/feedback/toasts.ts';
+import {
+  collectTurnNotifications,
+  type StreamEventNotification,
+} from '../../game/feedback/turn-notifications.ts';
+import { GameBoard } from '../../game/GameBoard/GameBoard.tsx';
+import { createBoardLayoutMap } from '../../game/GameBoard/layout-map.ts';
+import { createBoardSpotlight } from '../../game/GameBoard/spotlight.ts';
+import { GameOver } from '../../game/GameOver.tsx';
+import {
+  HandoffScreen,
+  visibleHandForSeat,
+} from '../../game/HandoffScreen.tsx';
+import { LobbyTeams, type LobbyPlayerCount } from '../../game/LobbyTeams.tsx';
+import { PlayerRail } from '../../game/PlayerRail/PlayerRail.tsx';
+import {
+  SequenceChoiceSheet,
+  type SequenceChoiceSubmit,
+} from '../../game/SequenceChoiceSheet.tsx';
+import { useMoveSubmit } from '../../game/use-move-submit.ts';
+import { useGameStream } from '../../realtime/use-game-stream.ts';
+import { testId } from '../../test/test-ids.ts';
+import { useTheme } from '../../theme/use-theme.ts';
+
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function isLobbyPlayerCount(value: number): value is LobbyPlayerCount {
+  return value === 2 || value === 3 || value === 4 || value === 6;
+}
+
+function mutationMessage(error: unknown): string {
+  const policy = mapTRPCErrorToPolicy(error);
+  if (policy === 'not-participant') {
+    return 'You are not allowed to change this lobby.';
+  }
+  if (policy === 'refetch-feedback') {
+    return 'The lobby changed. Live updates will refresh it.';
+  }
+  if (policy === 'backoff-toast') {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (policy === 'redirect-login') {
+    return 'Sign in or rejoin this game to continue.';
+  }
+  return error instanceof Error ? error.message : 'Could not update lobby.';
+}
+
+function lifecycleMutationMessage(error: unknown): string {
+  const policy = mapTRPCErrorToPolicy(error);
+  if (policy === 'not-participant') {
+    return 'You are not allowed to update this game.';
+  }
+  if (policy === 'refetch-feedback') {
+    return 'Game changed. Live updates will refresh it.';
+  }
+  if (policy === 'backoff-toast') {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (policy === 'redirect-login') {
+    return 'Sign in or rejoin this game to continue.';
+  }
+  return error instanceof Error ? error.message : 'Could not update game.';
+}
+
+function rematchMutationMessage(error: unknown): string {
+  const policy = mapTRPCErrorToPolicy(error);
+  if (policy === 'not-participant') {
+    return 'You are not allowed to rematch this game.';
+  }
+  if (policy === 'refetch-feedback') {
+    return 'Rematch unavailable. This game is not finished yet.';
+  }
+  if (policy === 'backoff-toast') {
+    return 'Too many requests. Wait a moment and try again.';
+  }
+  if (policy === 'redirect-login') {
+    return 'Sign in or rejoin this game to rematch.';
+  }
+  return error instanceof Error ? error.message : 'Could not start a rematch.';
+}
+
+function cardCode(card: Card): string {
+  return `${card.rank}${card.suit}`;
+}
+
+function teamForSeat(view: GameViewState): Team | null {
+  const team = view.teams[view.mySeat];
+  if (team !== undefined) return team;
+  return (
+    view.players.find((player) => player.seat === view.mySeat)?.team ?? null
+  );
+}
+
+function disconnectedPlayerName(view: GameViewState): string | null {
+  return view.players.find((player) => !player.connected)?.name ?? null;
+}
+
+function hapticType(feedback: GameFeedback): Haptics.NotificationFeedbackType {
+  if (feedback.haptic === 'success') {
+    return Haptics.NotificationFeedbackType.Success;
+  }
+  if (feedback.haptic === 'warning') {
+    return Haptics.NotificationFeedbackType.Warning;
+  }
+  return Haptics.NotificationFeedbackType.Error;
+}
+
+function triggerNotificationFeedback(feedback: GameFeedback): void {
+  void Haptics.notificationAsync(hapticType(feedback)).catch(() => undefined);
+}
+
+function formatExpiry(expiresAt: string | null | undefined) {
+  if (!expiresAt) return null;
+  const expires = new Date(expiresAt);
+  if (Number.isNaN(expires.getTime())) return null;
+  const label = new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(expires);
+  return expires.getTime() <= Date.now()
+    ? `Expired ${label}`
+    : `Expires ${label}`;
+}
+
+function Placeholder({ title, view }: { title: string; view: GameViewState }) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.placeholder} testID={testId('game', 'placeholder')}>
+      <Text style={[styles.placeholderTitle, { color: colors.text }]}>
+        {title}
+      </Text>
+      <Text style={[styles.placeholderBody, { color: colors.textMuted }]}>
+        This game state is live. The full mobile surface lands in a later phase.
+      </Text>
+      <Text style={[styles.placeholderMeta, { color: colors.textMuted }]}>
+        Version {view.version}
+      </Text>
+    </View>
+  );
+}
+
+function ActiveGameView({
+  gameId,
+  interactionDisabled = false,
+  view,
+}: {
+  gameId: string;
+  interactionDisabled?: boolean;
+  view: GameViewState;
+}) {
+  const { colors } = useTheme();
+  const trpc = useTRPC();
+  const router = useRouter();
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
+  const [choiceError, setChoiceError] = useState<string | null>(null);
+  const [choiceHighlightedCells, setChoiceHighlightedCells] = useState<
+    Position[]
+  >([]);
+  const moveSubmit = useMoveSubmit({ gameId, view });
+  const deadCardControls = useDeadCardControls({ gameId, view });
+  const chooseSequenceCells = useMutation(
+    trpc.game.chooseSequenceCells.mutationOptions({
+      onError(error: unknown) {
+        setChoiceError(mutationMessage(error));
+      },
+    }),
+  );
+  const saveAndExit = useMutation(trpc.game.saveAndExit.mutationOptions());
+  const concede = useMutation(trpc.game.concede.mutationOptions());
+  const boardLayoutMap = useMemo(() => createBoardLayoutMap(), []);
+  const currentPlayer = view.players.find(
+    (player) => player.seat === view.currentSeat,
+  );
+  const currentTeam = teamForSeat(view);
+  const myTurn = view.currentSeat === view.mySeat;
+  const dragMode = view.mode === 'drag';
+  const pendingChoice = view.pendingChoice;
+  const choiceForMySeat = pendingChoice?.seat === view.mySeat;
+  const lifecyclePending = saveAndExit.isPending || concede.isPending;
+  const selectionDisabled =
+    interactionDisabled ||
+    pendingChoice !== undefined ||
+    !myTurn ||
+    lifecyclePending ||
+    deadCardControls.submitting ||
+    moveSubmit.selectedCardDisabled ||
+    !moveSubmit.canSubmit;
+  const dragEnabled = dragMode && !selectionDisabled;
+  const spotlight = useMemo(
+    () =>
+      createBoardSpotlight({
+        board: view.board,
+        currentTeam,
+        selectedCard: selectionDisabled || dragMode ? null : selectedCard,
+      }),
+    [currentTeam, dragMode, selectedCard, selectionDisabled, view.board],
+  );
+
+  useEffect(() => {
+    if (
+      (selectionDisabled ||
+        selectedIndex === null ||
+        selectedIndex >= view.hand.length) &&
+      (selectedCard !== null || selectedIndex !== null)
+    ) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  }, [selectedCard, selectedIndex, selectionDisabled, view.hand.length]);
+
+  useEffect(() => {
+    if (!pendingChoice) {
+      setChoiceError(null);
+      setChoiceHighlightedCells([]);
+    }
+  }, [pendingChoice]);
+
+  const handleChooseSequence = ({ cells, version }: SequenceChoiceSubmit) => {
+    setChoiceError(null);
+    chooseSequenceCells.mutate({ cells, gameId, version });
+  };
+  const handleSaveAndExit = async ({ version }: { version: number }) => {
+    setLifecycleError(null);
+    try {
+      await saveAndExit.mutateAsync({ gameId, version });
+      router.replace('/' as Href);
+    } catch (error) {
+      setLifecycleError(lifecycleMutationMessage(error));
+    }
+  };
+  const handleConcede = async ({ version }: { version: number }) => {
+    setLifecycleError(null);
+    try {
+      await concede.mutateAsync({ gameId, version });
+    } catch (error) {
+      setLifecycleError(lifecycleMutationMessage(error));
+    }
+  };
+
+  const handleCellPress = async (position: Position) => {
+    if (
+      !myTurn ||
+      !moveSubmit.canSubmit ||
+      !selectedCard ||
+      !spotlight.targets.has(position)
+    ) {
+      return;
+    }
+
+    const move: Move = isOneEyedJack(selectedCard)
+      ? { card: selectedCard, position, type: 'removeChip' }
+      : { card: selectedCard, position, type: 'place' };
+    const submitted = await moveSubmit.submitMove(move);
+    if (submitted) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  };
+  const handleDragDrop = async (position: Position) => {
+    if (!dragEnabled || selectedCard === null) return;
+
+    const move: Move = isOneEyedJack(selectedCard)
+      ? { position, type: 'removeChip' }
+      : { position, type: 'place' };
+    const submitted = await moveSubmit.submitMove(move);
+    if (submitted) {
+      setSelectedCard(null);
+      setSelectedIndex(null);
+    }
+  };
+  const turnTitle = myTurn
+    ? 'Your turn'
+    : `${currentPlayer?.name ?? 'Opponent'}'s turn`;
+  const controlsCopy = moveSubmit.submitting
+    ? 'Submitting move...'
+    : interactionDisabled
+      ? 'Waiting for every player to return before play resumes.'
+      : deadCardControls.submitting
+        ? 'Turning in dead card...'
+        : choiceForMySeat
+          ? 'Choose which five chips will become the locked sequence.'
+          : pendingChoice
+            ? `Waiting for seat ${pendingChoice.seat} to choose a sequence.`
+            : (deadCardControls.feedback?.message ??
+              moveSubmit.feedback?.message ??
+              (myTurn
+                ? selectedCard
+                  ? dragMode
+                    ? `Drag ${cardCode(selectedCard)} onto a board cell.`
+                    : `Tap a highlighted board cell for ${cardCode(selectedCard)}.`
+                  : 'Select a card to show legal targets.'
+                : `Waiting for ${currentPlayer?.name ?? 'the current player'}.`));
+
+  return (
+    <View style={styles.activeStack} testID={testId('game', 'active')}>
+      <View
+        accessibilityLiveRegion="polite"
+        style={[
+          styles.turnBanner,
+          {
+            backgroundColor: myTurn ? colors.savedBg : colors.surfaceRaised,
+            borderColor: myTurn ? colors.savedFg : colors.border,
+          },
+        ]}
+        testID={testId('game', 'turn', 'banner')}
+      >
+        <Text
+          style={[
+            styles.turnTitle,
+            { color: myTurn ? colors.savedFg : colors.text },
+          ]}
+        >
+          {turnTitle}
+        </Text>
+        <Text
+          style={[
+            styles.turnBody,
+            { color: myTurn ? colors.savedFg : colors.textMuted },
+          ]}
+        >
+          Round {view.round} - Version {view.version}
+        </Text>
+      </View>
+
+      <PlayerRail
+        currentSeat={view.currentSeat}
+        players={view.players}
+        round={view.round}
+        sequences={view.sequences}
+        status={view.status}
+        timerSeconds={view.timerSeconds}
+        turnDeadlineAt={view.turnDeadlineAt}
+        turnRemainingMs={view.turnRemainingMs}
+      />
+
+      <ActiveGameControls
+        errorMessage={lifecycleError}
+        gameId={gameId}
+        isPending={lifecyclePending || interactionDisabled}
+        local={view.local}
+        onConcede={handleConcede}
+        onSaveAndExit={handleSaveAndExit}
+        players={view.players}
+        version={view.version}
+      />
+
+      <View
+        style={styles.playSurface}
+        testID={testId('game', 'play', 'surface')}
+      >
+        <View style={styles.boardSurface}>
+          <GameBoard
+            board={view.board}
+            currentTeam={selectionDisabled ? null : currentTeam}
+            highlightedCells={choiceHighlightedCells}
+            layoutMap={boardLayoutMap}
+            onCellPress={handleCellPress}
+            selectedCard={selectionDisabled || dragMode ? null : selectedCard}
+            sequences={view.sequences}
+          />
+          {dragMode ? (
+            <DragLayer
+              card={dragEnabled ? selectedCard : null}
+              enabled={dragEnabled}
+              layoutMap={boardLayoutMap}
+              onDrop={handleDragDrop}
+            />
+          ) : null}
+        </View>
+        <CardHand
+          board={view.board}
+          disabled={selectionDisabled}
+          hand={view.hand}
+          mode={view.mode}
+          onSelectionChange={(card, index) => {
+            moveSubmit.clearFeedback();
+            deadCardControls.clearFeedback();
+            setSelectedCard(card);
+            setSelectedIndex(index);
+          }}
+          onTurnInDeadCard={(card) => {
+            moveSubmit.clearFeedback();
+            void deadCardControls.turnInDeadCard(card);
+          }}
+          selectedIndex={selectionDisabled ? null : selectedIndex}
+        />
+      </View>
+
+      <View
+        accessibilityLiveRegion="polite"
+        style={[
+          styles.controls,
+          {
+            backgroundColor:
+              (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+              'error'
+                ? colors.frozenBg
+                : colors.surfaceRaised,
+            borderColor:
+              (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+              'error'
+                ? colors.danger
+                : colors.border,
+          },
+        ]}
+        testID={testId('game', 'controls')}
+      >
+        <Text
+          accessibilityRole={
+            deadCardControls.feedback || moveSubmit.feedback
+              ? 'alert'
+              : undefined
+          }
+          style={[
+            styles.controlsText,
+            {
+              color:
+                (deadCardControls.feedback ?? moveSubmit.feedback)?.tone ===
+                'error'
+                  ? colors.danger
+                  : colors.text,
+            },
+          ]}
+          testID={testId('game', 'controls', 'message')}
+        >
+          {controlsCopy}
+        </Text>
+      </View>
+
+      {pendingChoice ? (
+        <SequenceChoiceSheet
+          errorMessage={choiceError}
+          isSubmitting={chooseSequenceCells.isPending}
+          mySeat={view.mySeat}
+          onChoose={handleChooseSequence}
+          onHighlightedCellsChange={setChoiceHighlightedCells}
+          pendingChoice={pendingChoice}
+          version={view.version}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function SavedGameView({ view }: { view: GameViewState }) {
+  const { colors } = useTheme();
+  const expiry = formatExpiry(view.expiresAt);
+
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.saved,
+        { backgroundColor: colors.savedBg, borderColor: colors.savedFg },
+      ]}
+      testID={testId('game', 'saved')}
+    >
+      <Text style={[styles.savedEyebrow, { color: colors.savedFg }]}>
+        Ready to resume
+      </Text>
+      <Text style={[styles.savedTitle, { color: colors.savedFg }]}>
+        Game saved
+      </Text>
+      <Text style={[styles.savedBody, { color: colors.savedFg }]}>
+        Return with the same players and the game will resume from round{' '}
+        {view.round}.
+      </Text>
+      {expiry ? (
+        <Text style={[styles.savedMeta, { color: colors.savedFg }]}>
+          {expiry}
+        </Text>
+      ) : null}
+      <Text style={[styles.savedMeta, { color: colors.savedFg }]}>
+        Version {view.version}
+      </Text>
+    </View>
+  );
+}
+
+function GameStateView({
+  gameId,
+  isMutating,
+  mutationError,
+  onClearError,
+  onJoinTeam,
+  onKick,
+  onRandomize,
+  onStart,
+  view,
+}: {
+  gameId: string;
+  isMutating: boolean;
+  mutationError: string | null;
+  onClearError: () => void;
+  onJoinTeam: (team: 1 | 2 | 3) => void;
+  onKick: (seat: number) => void;
+  onRandomize: () => void;
+  onStart: () => void;
+  view: GameViewState;
+}) {
+  const { colors } = useTheme();
+  const trpc = useTRPC();
+  const router = useRouter();
+  const [rematchError, setRematchError] = useState<string | null>(null);
+  const [revealedSeat, setRevealedSeat] = useState(view.mySeat);
+  const [handoffTargetSeat, setHandoffTargetSeat] = useState<number | null>(
+    null,
+  );
+  const rematch = useMutation(trpc.game.rematch.mutationOptions());
+  const localActiveWithHands =
+    view.local && view.status === 'active' && view.localHands !== undefined;
+  const handoffVisible =
+    localActiveWithHands &&
+    (handoffTargetSeat !== null || view.currentSeat !== revealedSeat);
+  const activeSeat = localActiveWithHands
+    ? (handoffTargetSeat ?? view.currentSeat)
+    : view.mySeat;
+  const activeHand = visibleHandForSeat({
+    fallbackHand: view.hand,
+    local: localActiveWithHands,
+    localHands: view.localHands,
+    seat: activeSeat,
+    veiled: handoffVisible,
+  });
+  const activePlayerName =
+    view.players.find((player) => player.seat === activeSeat)?.name ??
+    `Seat ${activeSeat + 1}`;
+  const visibleActiveView: GameViewState = {
+    ...view,
+    hand: [...activeHand],
+    mySeat: activeSeat,
+  };
+  const handleRematch = async () => {
+    setRematchError(null);
+    try {
+      const result = await rematch.mutateAsync({ gameId });
+      router.replace(`/game/${result.gameId}` as Href);
+    } catch (error) {
+      setRematchError(rematchMutationMessage(error));
+    }
+  };
+
+  useEffect(() => {
+    if (!localActiveWithHands) {
+      setHandoffTargetSeat(null);
+      setRevealedSeat(view.currentSeat);
+      return;
+    }
+    if (view.currentSeat !== revealedSeat && handoffTargetSeat === null) {
+      setHandoffTargetSeat(view.currentSeat);
+    }
+  }, [handoffTargetSeat, localActiveWithHands, revealedSeat, view.currentSeat]);
+
+  function revealHandoff() {
+    setRevealedSeat(activeSeat);
+    setHandoffTargetSeat(null);
+  }
+
+  if (view.status === 'lobby') {
+    if (!isLobbyPlayerCount(view.playerCount)) {
+      return <Placeholder title="Unsupported lobby size" view={view} />;
+    }
+
+    return (
+      <View style={styles.stack}>
+        <LobbyTeams
+          inviteCode={view.inviteCode}
+          isMutating={isMutating}
+          mode={view.mode}
+          mySeat={view.mySeat}
+          onJoinTeam={(team) => {
+            onClearError();
+            onJoinTeam(team);
+          }}
+          onKick={(seat) => {
+            onClearError();
+            onKick(seat);
+          }}
+          onRandomize={() => {
+            onClearError();
+            onRandomize();
+          }}
+          onStart={() => {
+            onClearError();
+            onStart();
+          }}
+          playerCount={view.playerCount}
+          players={view.players}
+          timerSeconds={view.timerSeconds}
+        />
+        {mutationError ? (
+          <Text
+            accessibilityRole="alert"
+            style={[styles.error, { color: colors.danger }]}
+            testID={testId('lobby', 'error')}
+          >
+            {mutationError}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
+
+  if (view.status === 'active') {
+    if (handoffVisible) {
+      return (
+        <HandoffScreen
+          lastMoveLabel={view.lastMove?.label}
+          onReveal={revealHandoff}
+          playerName={activePlayerName}
+        />
+      );
+    }
+
+    return <ActiveGameView gameId={gameId} view={visibleActiveView} />;
+  }
+  if (view.status === 'finished') {
+    return (
+      <GameOver
+        concededTeam={view.concededTeam}
+        endReason={view.endReason}
+        errorMessage={rematchError}
+        isRematching={rematch.isPending}
+        mySeat={view.mySeat}
+        myTeam={teamForSeat(view)}
+        onDashboard={() => router.replace('/' as Href)}
+        onRematch={handleRematch}
+        players={view.players}
+        sequences={view.sequences}
+        winnerTeam={view.winnerTeam}
+      />
+    );
+  }
+  if (view.status === 'frozen') {
+    return <ActiveGameView gameId={gameId} interactionDisabled view={view} />;
+  }
+  return <SavedGameView view={view} />;
+}
+
+export default function GameRouteScreen() {
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const gameId = firstParam(params.id);
+  const trpc = useTRPC();
+  const { colors } = useTheme();
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [streamNotification, setStreamNotification] =
+    useState<StreamEventNotification | null>(null);
+  const lastNotifiedSeqRef = useRef<number | null>(null);
+  const stream = useGameStream(gameId);
+
+  const mutationOptions = {
+    onError(error: unknown) {
+      setMutationError(mutationMessage(error));
+    },
+  };
+  const setTeam = useMutation(
+    trpc.game.setTeam.mutationOptions(mutationOptions),
+  );
+  const kick = useMutation(trpc.game.kick.mutationOptions(mutationOptions));
+  const randomizeTeams = useMutation(
+    trpc.game.randomizeTeams.mutationOptions(mutationOptions),
+  );
+  const start = useMutation(trpc.game.start.mutationOptions(mutationOptions));
+  const isMutating =
+    setTeam.isPending ||
+    kick.isPending ||
+    randomizeTeams.isPending ||
+    start.isPending;
+
+  useEffect(() => {
+    if (!stream.view) {
+      setStreamNotification(null);
+      lastNotifiedSeqRef.current = null;
+      return;
+    }
+
+    if (lastNotifiedSeqRef.current === null) {
+      lastNotifiedSeqRef.current = stream.view.lastSeq;
+      return;
+    }
+
+    const notifications = collectTurnNotifications({
+      lastSeenSeq: lastNotifiedSeqRef.current,
+      view: stream.view,
+    });
+    lastNotifiedSeqRef.current = stream.view.lastSeq;
+
+    if (notifications.length === 0) return;
+
+    for (const notification of notifications) {
+      triggerNotificationFeedback(notification.feedback);
+    }
+    setStreamNotification(notifications[notifications.length - 1] ?? null);
+  }, [stream.view]);
+
+  return (
+    <Screen
+      header={
+        <Screen.Header
+          eyebrow="Live game"
+          title="Sequence"
+          testID={testId('game', 'header')}
+        />
+      }
+      scroll
+      testID={testId('game', 'screen')}
+    >
+      <View style={styles.stack}>
+        <ConnectionBanner
+          connectionState={stream.connectionState}
+          disconnectedPlayerName={
+            stream.view?.status === 'frozen'
+              ? disconnectedPlayerName(stream.view)
+              : null
+          }
+          expiresAt={
+            stream.view?.status === 'frozen' ? stream.view.expiresAt : null
+          }
+          paused={stream.view?.status === 'frozen'}
+        />
+        {streamNotification ? (
+          <View
+            accessibilityLiveRegion="polite"
+            style={[
+              styles.streamNotification,
+              {
+                backgroundColor: colors.surfaceRaised,
+                borderColor: colors.borderStrong,
+              },
+            ]}
+            testID={testId('game', 'notification')}
+          >
+            <Text
+              accessibilityRole="alert"
+              style={[styles.streamNotificationText, { color: colors.text }]}
+            >
+              {streamNotification.feedback.message}
+            </Text>
+          </View>
+        ) : null}
+        {gameId.length === 0 ? (
+          <Text
+            accessibilityRole="alert"
+            style={[styles.error, { color: colors.danger }]}
+            testID={testId('game', 'error', 'missingId')}
+          >
+            Missing game id.
+          </Text>
+        ) : stream.view ? (
+          <GameStateView
+            gameId={gameId}
+            isMutating={isMutating}
+            mutationError={mutationError}
+            onClearError={() => setMutationError(null)}
+            onJoinTeam={(team) =>
+              setTeam.mutate({ gameId, targetSeat: stream.view!.mySeat, team })
+            }
+            onKick={(targetSeat) => kick.mutate({ gameId, targetSeat })}
+            onRandomize={() => randomizeTeams.mutate({ gameId })}
+            onStart={() => start.mutate({ gameId })}
+            view={stream.view}
+          />
+        ) : stream.connectionState === 'error' ? (
+          <Text
+            accessibilityRole="alert"
+            style={[styles.error, { color: colors.danger }]}
+            testID={testId('game', 'error')}
+          >
+            Could not load this game.
+          </Text>
+        ) : (
+          <Text
+            style={[styles.loading, { color: colors.textMuted }]}
+            testID={testId('game', 'loading')}
+          >
+            Loading game...
+          </Text>
+        )}
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  activeStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    position: 'relative',
+  },
+  turnBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  turnTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 22,
+  },
+  turnBody: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  streamNotification: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  streamNotificationText: {
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  playSurface: {
+    alignItems: 'center',
+    display: 'flex',
+    minHeight: 600,
+    paddingBottom: 146,
+    position: 'relative',
+  },
+  boardSurface: {
+    position: 'relative',
+  },
+  controls: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  controlsText: {
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  error: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  loading: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  placeholder: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+  },
+  placeholderBody: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  placeholderMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  saved: {
+    borderRadius: 8,
+    borderWidth: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  savedBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  savedEyebrow: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    textTransform: 'uppercase',
+  },
+  savedMeta: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  savedTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 26,
+  },
+});

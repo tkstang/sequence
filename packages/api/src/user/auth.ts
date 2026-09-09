@@ -1,3 +1,4 @@
+import { expo } from '@better-auth/expo';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 
@@ -28,6 +29,14 @@ function socialProviders(env: Env): Record<string, unknown> {
   return providers;
 }
 
+function trustedOrigins(env: Env): string[] {
+  const origins = [env.WEB_ORIGIN, 'sequence://'];
+  if (env.NODE_ENV !== 'production') {
+    origins.push('exp://**');
+  }
+  return origins;
+}
+
 /**
  * Construct a Better Auth instance over the given Drizzle database.
  *
@@ -43,7 +52,8 @@ export function createAuth(db: Database, env: Env = getEnv()) {
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [env.WEB_ORIGIN],
+    trustedOrigins: trustedOrigins(env),
+    plugins: [expo()],
     database: drizzleAdapter(db, {
       provider: 'pg',
       schema,

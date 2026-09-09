@@ -8,6 +8,7 @@ import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
 const projectGlobRoots = ['packages', 'apps'];
+const mobilePackage = path.join(root, 'apps', 'mobile', 'package.json');
 
 const hasProjects = projectGlobRoots.some((dir) => {
   const abs = path.join(root, dir);
@@ -23,10 +24,27 @@ if (!hasProjects) {
   process.exit(0);
 }
 
-const result = spawnSync(
-  'pnpm',
-  ['exec', 'vitest', 'run', '--passWithNoTests'],
-  { stdio: 'inherit', cwd: root },
-);
+const run = (label, args) => {
+  console.log(`\n[tests] ${label}`);
+  const result = spawnSync('pnpm', args, { stdio: 'inherit', cwd: root });
+  return result.status ?? 1;
+};
 
-process.exit(result.status ?? 1);
+const vitestStatus = run('Vitest workspace', [
+  'exec',
+  'vitest',
+  'run',
+  '--passWithNoTests',
+]);
+if (vitestStatus !== 0) process.exit(vitestStatus);
+
+if (fs.existsSync(mobilePackage)) {
+  const mobileStatus = run('@sequence/mobile Jest', [
+    '--filter',
+    '@sequence/mobile',
+    'test',
+  ]);
+  if (mobileStatus !== 0) process.exit(mobileStatus);
+}
+
+process.exit(0);

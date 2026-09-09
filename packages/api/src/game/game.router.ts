@@ -1,6 +1,7 @@
 import { createRateLimiter } from '../shared/rate-limit-middleware.ts';
 import type { Context } from '../trpc.ts';
 import { router } from '../trpc.ts';
+import { accessRoute } from './routes/access.ts';
 import { chooseSequenceCellsRoute } from './routes/choose-sequence-cells.ts';
 import { concedeRoute } from './routes/concede.ts';
 import { createGameRoute } from './routes/create-game.ts';
@@ -38,6 +39,7 @@ export const joinPreviewLimiter = createRateLimiter({
 });
 
 export const gameRouter = router({
+  access: accessRoute,
   create: createGameRoute,
   preview: buildPreviewRoute(joinPreviewLimiter),
   join: buildJoinRoute(joinPreviewLimiter),

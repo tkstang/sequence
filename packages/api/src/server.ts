@@ -61,6 +61,14 @@ export async function buildServer(
   const auth = options.auth ?? createAuth(db, env);
 
   const trustProxy = resolveTrustProxy(env);
+  // Fastify 5.12's types model trustProxy as a boolean, address list, or
+  // predicate. Preserve the existing numeric hop-count configuration by
+  // expressing it as the equivalent predicate so the factory keeps its
+  // default HTTP server overload.
+  const fastifyTrustProxy =
+    typeof trustProxy === 'number'
+      ? (_address: string, hop: number) => hop < trustProxy
+      : trustProxy;
   const guestCookieAttributes = serializeGuestCookieAttributes(
     resolveAuthCookieAttributes(env),
   );
@@ -72,7 +80,7 @@ export async function buildServer(
     },
     // Better Auth and tRPC parse their own bodies on their routes.
     disableRequestLogging: env.NODE_ENV === 'test',
-    trustProxy,
+    trustProxy: fastifyTrustProxy,
   });
 
   await app.register(cors, {
@@ -202,7 +210,7 @@ export async function buildServer(
   const presence = new PresenceTracker({ db, rooms, timers });
   setPresenceHook({
     onConnect(gameId, seat) {
-      void presence.markConnected(gameId, seat);
+      return presence.markConnected(gameId, seat);
     },
     onDisconnect(gameId, seat) {
       void presence.markDisconnected(gameId, seat);

@@ -1,9 +1,9 @@
 # Sequence Online
 
-Sequence Online is a web MVP for playing the Sequence board game online or as a
-local pass-and-play game. It includes account sessions, guest invite joins,
-lobby/team management, tap and drag play modes, timers, reconnect/freeze
-behavior, save/resume, concede, rematch, and game history.
+Sequence Online is a web and iOS MVP for playing the Sequence board game online
+or as a local pass-and-play game. It includes account sessions, guest invite
+joins, lobby/team management, tap and drag play modes, timers,
+reconnect/freeze behavior, save/resume, concede, rematch, and game history.
 
 Current public MVP:
 
@@ -18,8 +18,11 @@ files, Railway, Vercel, or Neon.
 | Path | Purpose |
 | --- | --- |
 | `apps/web` | Next.js App Router client, game UI, auth pages, Playwright tests |
+| `apps/mobile` | Expo SDK 57 iOS client, simulator tooling, mobile Jest tests |
 | `packages/api` | Fastify server, Better Auth, tRPC HTTP/WS API, persistence, timers |
-| `packages/game-logic` | Pure TypeScript rules engine shared by API and web |
+| `packages/client-state` | Shared redacted game-view state, fixtures, and rule-violation copy |
+| `packages/design-tokens` | Shared light/dark palette and dimensions, plus web StyleX generation |
+| `packages/game-logic` | Pure TypeScript rules engine shared by API, web, and mobile |
 | `bruno` | Bruno API smoke collection for local auth/game requests |
 | `docs` | Architecture, development, and deployment/operator documentation |
 | `tools/git-hooks` | Local git hook installation and management scripts |
@@ -59,6 +62,10 @@ Fill in at least:
 The web app defaults to `http://localhost:3001` and `ws://localhost:3001`, so
 `apps/web/.env.local` is only needed when pointing at a non-default API.
 
+The mobile app reads `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_WS_URL` through Expo
+config and defaults to the same local API. Set those shell variables only for
+non-default simulator sessions or release builds.
+
 ## Local Development
 
 Run the API and web app in separate terminals:
@@ -69,6 +76,17 @@ pnpm --filter @sequence/web dev
 ```
 
 Open `http://localhost:3000`.
+
+For mobile simulator work, run the API when needed, start Metro, then build or
+launch the Expo dev client:
+
+```bash
+pnpm --filter @sequence/api dev
+EXPO_UNSTABLE_MCP_SERVER=1 pnpm --filter @sequence/mobile exec expo start --dev-client --host lan --port 8081
+pnpm --filter @sequence/mobile ios
+```
+
+See `apps/mobile/AGENTS.md` for simulator launch fallbacks and MCP tooling.
 
 Useful routes:
 
@@ -97,6 +115,9 @@ pnpm --filter @sequence/game-logic test
 pnpm --filter @sequence/api test
 pnpm --filter @sequence/web test
 pnpm --filter @sequence/web e2e
+pnpm --filter @sequence/mobile test
+pnpm --filter @sequence/client-state test
+pnpm --filter @sequence/design-tokens test
 ```
 
 `pnpm --filter @sequence/web e2e` loads the root `.env` and only starts its API
@@ -137,10 +158,13 @@ Start at [`docs/index.md`](docs/index.md) for the full documentation map. Key pa
 - `docs/development.md` - local workflows, testing, and UI iteration
 - `docs/configuration.md` - environment-variable reference
 - `docs/deployment.md` - Railway/Vercel deployment and operator checks
+- `docs/mobile-operator-runbook.md` - Apple/EAS/TestFlight/device operator steps
 - `docs/api-reference.md` - tRPC API reference
 - `docs/game-logic-reference.md` - rules engine API
 - `docs/data-model.md` - database schema reference
 - `docs/testing.md` - test layers and the test-database workflow
 - `CONTRIBUTING.md` - contributor guide, quality gates, and commit convention
-- `apps/web/README.md`, `packages/api/README.md`, `packages/game-logic/README.md` - package details
+- `apps/web/README.md`, `apps/mobile/README.md`, `packages/api/README.md`,
+  `packages/client-state/README.md`, `packages/design-tokens/README.md`,
+  `packages/game-logic/README.md` - package details
 - `bruno/README.md`, `tools/git-hooks/README.md` - API smoke collection and git hooks

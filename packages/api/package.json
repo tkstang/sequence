@@ -15,6 +15,7 @@
     "start": "node --experimental-transform-types src/server.ts"
   },
   "dependencies": {
+    "@better-auth/expo": "1.6.18",
     "@fastify/cors": "^11.2.0",
     "@fastify/rate-limit": "^11.0.0",
     "@fastify/websocket": "^11.2.0",

@@ -60,9 +60,9 @@ See [`../../docs/testing.md`](../../docs/testing.md) for the full testing strate
 
 Vitest covers component and route helper behavior under `apps/web/src`.
 
-Playwright lives in `apps/web/e2e`. It loads the root `.env`, requires
-`DATABASE_URL_TEST`, and starts API/web servers on `127.0.0.1` with a fixed test
-auth secret.
+Playwright lives in `apps/web/e2e`. It loads the root `.env`, then
+`packages/api/.env` as a fallback, requires `DATABASE_URL_TEST`, and starts
+API/web servers on `127.0.0.1` with a fixed test auth secret.
 
 ## Component Playground (`/dev`)
 
