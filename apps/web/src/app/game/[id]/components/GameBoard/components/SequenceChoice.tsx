@@ -1,5 +1,6 @@
 'use client';
 
+import type { PendingChoiceView } from '@sequence/client-state';
 import type { Position } from '@sequence/game-logic';
 import * as stylex from '@stylexjs/stylex';
 
@@ -11,8 +12,6 @@ import {
   radius,
   space,
 } from '@/styles/tokens.stylex.ts';
-
-import type { PendingChoiceView } from '../../game-state.ts';
 
 const REQUIRED_CELLS = 5;
 

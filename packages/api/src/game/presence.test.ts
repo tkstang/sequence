@@ -135,6 +135,123 @@ describeIntegration('PresenceTracker (integration)', () => {
     expect(row?.expiresAt).toBeNull();
   });
 
+  it('does not freeze when an older overlapping subscription disconnects', async () => {
+    const { presence } = makeTracker();
+    const gameId = await seedGame({
+      status: 'active',
+      timerSeconds: null,
+    });
+    await presence.markConnected(gameId, 0);
+    await presence.markConnected(gameId, 1);
+
+    // Foreground recovery can open a replacement subscription before the
+    // backgrounded subscription aborts. The late abort must decrement only that
+    // older connection, not mark the seat disconnected.
+    await presence.markConnected(gameId, 0);
+    await presence.markDisconnected(gameId, 0);
+
+    let [row] = await h.db.select().from(games).where(eq(games.id, gameId));
+    expect(row?.status).toBe('active');
+    expect(presence.connectedSeats(gameId)).toEqual([0, 1]);
+
+    await presence.markDisconnected(gameId, 0);
+    [row] = await h.db.select().from(games).where(eq(games.id, gameId));
+    expect(row?.status).toBe('frozen');
+    expect(presence.connectedSeats(gameId)).toEqual([1]);
+  });
+
+  it('does not freeze when a replacement subscription reconnects during disconnect handling', async () => {
+    const { presence } = makeTracker();
+    const gameId = await seedGame({
+      status: 'active',
+      timerSeconds: null,
+    });
+    await presence.markConnected(gameId, 0);
+    await presence.markConnected(gameId, 1);
+
+    const disconnecting = presence.markDisconnected(gameId, 0);
+    await presence.markConnected(gameId, 0);
+    await disconnecting;
+
+    const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
+    expect(row?.status).toBe('active');
+    expect(presence.connectedSeats(gameId)).toEqual([0, 1]);
+
+    const players = await h.db
+      .select({ seat: gamePlayers.seat, connected: gamePlayers.connected })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, gameId))
+      .orderBy(gamePlayers.seat);
+    expect(players.map((p) => [p.seat, p.connected])).toEqual([
+      [0, true],
+      [1, true],
+    ]);
+  });
+
+  it('resumes when a replacement reconnects before the freeze commit finishes', async () => {
+    let releaseFreeze!: () => void;
+    let freezeStarted!: () => void;
+    const freezeStartedPromise = new Promise<void>((resolve) => {
+      freezeStarted = resolve;
+    });
+    const releaseFreezePromise = new Promise<void>((resolve) => {
+      releaseFreeze = resolve;
+    });
+    let delayed = false;
+    const delayedDb = new Proxy(h.db, {
+      get(target, prop, receiver) {
+        if (prop !== 'transaction') return Reflect.get(target, prop, receiver);
+        return async (...args: unknown[]) => {
+          if (!delayed) {
+            delayed = true;
+            freezeStarted();
+            await releaseFreezePromise;
+          }
+          return h.db.transaction(
+            ...(args as Parameters<typeof h.db.transaction>),
+          );
+        };
+      },
+    }) as typeof h.db;
+    const roomReg = new RoomRegistry();
+    const timers = new TimerService(h.db, {
+      setTimer: () => 0 as unknown as ReturnType<typeof setTimeout>,
+      clearTimer: () => {},
+    });
+    const presence = new PresenceTracker({
+      db: delayedDb,
+      rooms: roomReg,
+      timers,
+    });
+    const gameId = await seedGame({
+      status: 'active',
+      timerSeconds: null,
+    });
+    await presence.markConnected(gameId, 0);
+    await presence.markConnected(gameId, 1);
+
+    const disconnecting = presence.markDisconnected(gameId, 0);
+    await freezeStartedPromise;
+    await presence.markConnected(gameId, 0);
+    releaseFreeze();
+    await disconnecting;
+
+    const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
+    expect(row?.status).toBe('active');
+    expect(row?.expiresAt).toBeNull();
+    expect(presence.connectedSeats(gameId)).toEqual([0, 1]);
+
+    const players = await h.db
+      .select({ seat: gamePlayers.seat, connected: gamePlayers.connected })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, gameId))
+      .orderBy(gamePlayers.seat);
+    expect(players.map((p) => [p.seat, p.connected])).toEqual([
+      [0, true],
+      [1, true],
+    ]);
+  });
+
   it('saved→active resumes only when all original players reconnect', async () => {
     const { presence } = makeTracker();
     const gameId = await seedGame({
@@ -163,6 +280,15 @@ describeIntegration('PresenceTracker (integration)', () => {
     await presence.markConnected(gameId, 0);
     const [row] = await h.db.select().from(games).where(eq(games.id, gameId));
     expect(row?.status).toBe('active');
+    const players = await h.db
+      .select({ seat: gamePlayers.seat, connected: gamePlayers.connected })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, gameId))
+      .orderBy(gamePlayers.seat);
+    expect(players.map((p) => [p.seat, p.connected])).toEqual([
+      [0, true],
+      [1, true],
+    ]);
   });
 
   it('broadcasts PlayerDisconnected on freeze and PlayerReconnected on resume', async () => {

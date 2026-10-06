@@ -8,11 +8,21 @@ import {
   type GameState,
   type Position,
 } from '@sequence/game-logic';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 
 import type { LoggedEvent } from '../../shared/realtime/redaction.ts';
 import { rooms } from '../../shared/realtime/rooms.ts';
 import { createHarness, type Harness } from '../../test/harness.ts';
+import { setPresenceHook } from '../presence.ts';
 import {
   appendEvents,
   loadGameState,
@@ -110,6 +120,10 @@ describeIntegration('game.onGameEvent (integration)', () => {
   });
   beforeEach(async () => {
     await h.reset();
+    setPresenceHook(null);
+  });
+  afterEach(() => {
+    setPresenceHook(null);
   });
 
   /** Seed a started 2p game with both seats and persisted dealt state. */
@@ -325,6 +339,29 @@ describeIntegration('game.onGameEvent (integration)', () => {
     expect(first ? dataOf(first).kind : undefined).toBe('snapshot');
   });
 
+  it('a lastEventId older than the replay window falls back to a snapshot', async () => {
+    const { host, gameId } = await seedStartedGame();
+    await h.db.transaction((tx) =>
+      appendEvents(
+        tx,
+        gameId,
+        Array.from({ length: 502 }, (_, index) => ({
+          type: 'TurnAdvanced' as const,
+          seat: index % 2,
+          round: index + 1,
+        })),
+      ),
+    );
+
+    const sub = await h
+      .caller(host.cookie)
+      .game.onGameEvent({ gameId, lastEventId: 1 });
+    const [first] = await take(sub, 1);
+
+    expect(first ? idOf(first) : undefined).toBe('502');
+    expect(first ? dataOf(first).kind : undefined).toBe('snapshot');
+  });
+
   it('redacts a private CardDrawn for a non-owning subscriber', async () => {
     const { host, gameId } = await seedStartedGame();
     const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
@@ -392,6 +429,37 @@ describeIntegration('game.onGameEvent (integration)', () => {
     if (firstData?.kind === 'snapshot') {
       expect(firstData.snapshot.localHands).toHaveLength(2);
       expect(firstData.snapshot.localHands?.[1]).toEqual(state.hands[1]);
+    }
+  });
+
+  it('awaits local presence before the initial snapshot', async () => {
+    const { host, gameId } = await seedStartedGame(true);
+    let connected = false;
+    setPresenceHook({
+      async onConnect(connectGameId) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        await h.db
+          .update(h.schema.gamePlayers)
+          .set({ connected: true })
+          .where(eq(h.schema.gamePlayers.gameId, connectGameId));
+        connected = true;
+      },
+      onDisconnect() {
+        /* no-op */
+      },
+    });
+
+    const sub = await h.caller(host.cookie).game.onGameEvent({ gameId });
+    const [first] = await take(sub, 1);
+    const firstData = first ? dataOf(first) : undefined;
+
+    expect(connected).toBe(true);
+    expect(firstData?.kind).toBe('snapshot');
+    if (firstData?.kind === 'snapshot') {
+      expect(firstData.snapshot.players.map((p) => p.connected)).toEqual([
+        true,
+        true,
+      ]);
     }
   });
 });

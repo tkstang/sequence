@@ -1,8 +1,12 @@
+import {
+  gameFixtures,
+  getGameFixture,
+  screenForState,
+  stateFromSnapshot,
+} from '@sequence/client-state';
 import { describe, expect, it } from 'vitest';
 
 import { deadCardIndexes } from './controllers/tap-controller.ts';
-import { gameFixtures, getGameFixture } from './game-fixtures.ts';
-import { screenForState, stateFromSnapshot } from './game-state.ts';
 
 describe('game fixtures', () => {
   it('covers the representative states from the backlog item', () => {

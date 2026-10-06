@@ -1,0 +1,217 @@
+import { render, userEvent, waitFor } from '@testing-library/react-native';
+
+import type { DashboardGame } from './GameCard.tsx';
+
+type MockQueryResult = {
+  data?: { recents: DashboardGame[]; resumables: DashboardGame[] };
+  error?: unknown;
+  isError: boolean;
+  isFetching: boolean;
+  isPending: boolean;
+  refetch: jest.Mock;
+};
+
+var mockRouterPush = jest.fn();
+var mockRouterReplace = jest.fn();
+var mockSignOut = jest.fn();
+var mockMyGamesQuery: MockQueryResult;
+
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: jest.fn(() => mockMyGamesQuery),
+}));
+
+jest.mock('../../api/client.ts', () => ({
+  useTRPC: jest.fn(() => ({
+    game: {
+      myGames: {
+        queryOptions: jest.fn(() => ({
+          queryKey: ['game', 'myGames'],
+          queryFn: jest.fn(),
+        })),
+      },
+    },
+  })),
+}));
+
+jest.mock('expo-router', () => ({
+  router: {
+    push: (...args: unknown[]) => mockRouterPush(...args),
+    replace: (...args: unknown[]) => mockRouterReplace(...args),
+  },
+}));
+
+jest.mock('../../auth/client.ts', () => ({
+  signOut: (...args: unknown[]) => mockSignOut(...args),
+  useSession: jest.fn(() => ({
+    data: { user: { email: 'ada@example.test', name: 'Ada Lovelace' } },
+    error: null,
+    isPending: false,
+  })),
+}));
+
+import HomeScreen from '../../app/index.tsx';
+
+function game(overrides: Partial<DashboardGame>): DashboardGame {
+  return {
+    gameId: 'saved-1',
+    inviteCode: 'abc123',
+    status: 'saved',
+    playerCount: 4,
+    mode: 'tap',
+    local: false,
+    round: 3,
+    expiresAt: null,
+    finishedAt: null,
+    winnerTeam: null,
+    endReason: null,
+    mySeat: 0,
+    myTeam: 1,
+    opponents: ['Maya'],
+    result: 'none',
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  mockRouterPush = jest.fn();
+  mockRouterReplace = jest.fn();
+  mockSignOut = jest.fn();
+  mockMyGamesQuery = {
+    data: {
+      resumables: [
+        game({
+          gameId: 'lobby-1',
+          opponents: ['Maya', 'Ben'],
+          status: 'lobby',
+        }),
+        game({
+          gameId: 'saved-1',
+          local: true,
+          opponents: ['Sam'],
+          status: 'saved',
+        }),
+      ],
+      recents: [
+        game({
+          endReason: 'win',
+          gameId: 'finished-1',
+          opponents: ['Nia'],
+          result: 'win',
+          status: 'finished',
+          winnerTeam: 1,
+        }),
+      ],
+    },
+    isError: false,
+    isFetching: false,
+    isPending: false,
+    refetch: jest.fn(),
+  };
+});
+
+describe('DashboardScreen', () => {
+  it('renders resumables and recents with status, roster, and result', async () => {
+    const { getByLabelText, getByTestId, getByText } = await render(
+      <HomeScreen />,
+    );
+
+    expect(getByText('Your games')).toBeTruthy();
+    expect(getByLabelText('Create a new game')).toBeTruthy();
+    expect(getByLabelText('Join a game by invite code')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.lobby-1')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.lobby-1.status')).toBeTruthy();
+    expect(getByText('LOBBY')).toBeTruthy();
+    expect(getByText('vs Maya, Ben')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.saved-1')).toBeTruthy();
+    expect(getByTestId('dashboard.resumable.saved-1.local')).toBeTruthy();
+    expect(getByText('LOCAL')).toBeTruthy();
+    expect(getByText('SAVED')).toBeTruthy();
+    expect(getByTestId('dashboard.recent.finished-1')).toBeTruthy();
+    expect(getByTestId('dashboard.recent.finished-1.result')).toBeTruthy();
+    expect(getByText('W')).toBeTruthy();
+    expect(getByText('vs Nia')).toBeTruthy();
+  });
+
+  it('navigates dashboard actions, lobby cards, and finished cards', async () => {
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<HomeScreen />);
+
+    await user.press(getByTestId('dashboard.history'));
+    expect(mockRouterPush).toHaveBeenCalledWith('./history');
+
+    await user.press(getByTestId('dashboard.settings'));
+    expect(mockRouterPush).toHaveBeenCalledWith('./settings');
+
+    await user.press(getByTestId('dashboard.resumable.lobby-1'));
+    expect(mockRouterPush).toHaveBeenCalledWith('/game/lobby-1');
+
+    await user.press(getByTestId('dashboard.resumable.saved-1'));
+    expect(mockRouterPush).toHaveBeenCalledWith('/game/saved-1');
+
+    await user.press(getByTestId('dashboard.recent.finished-1'));
+    expect(mockRouterPush).toHaveBeenCalledWith(
+      '/game/finished-1?view=game-over',
+    );
+  });
+
+  it('renders empty states for both sections', async () => {
+    mockMyGamesQuery.data = { recents: [], resumables: [] };
+    const { getByTestId, getByText } = await render(<HomeScreen />);
+
+    expect(getByTestId('dashboard.resumables.empty')).toBeTruthy();
+    expect(getByText('No games to resume right now.')).toBeTruthy();
+    expect(getByTestId('dashboard.recents.empty')).toBeTruthy();
+    expect(getByText('No finished games yet.')).toBeTruthy();
+  });
+
+  it('refreshes the myGames query from pull-to-refresh', async () => {
+    const { getByTestId } = await render(<HomeScreen />);
+
+    getByTestId('dashboard.scroll').props.refreshControl.props.onRefresh();
+
+    expect(mockMyGamesQuery.refetch).toHaveBeenCalledWith();
+  });
+
+  it('redirects to login on unauthorized dashboard errors', async () => {
+    mockMyGamesQuery = {
+      ...mockMyGamesQuery,
+      error: { data: { code: 'UNAUTHORIZED' } },
+      isError: true,
+    };
+
+    await render(<HomeScreen />);
+
+    await waitFor(() => {
+      expect(mockRouterReplace).toHaveBeenCalledWith('./login');
+    });
+  });
+
+  it('renders a non-auth dashboard load error instead of empty game sections', async () => {
+    mockMyGamesQuery = {
+      ...mockMyGamesQuery,
+      data: undefined,
+      error: { data: { code: 'INTERNAL_SERVER_ERROR' } },
+      isError: true,
+    };
+
+    const { getByTestId, getByText, queryByText } = await render(
+      <HomeScreen />,
+    );
+
+    expect(getByTestId('dashboard.error')).toBeTruthy();
+    expect(getByText('Could not load games')).toBeTruthy();
+    expect(queryByText('No games to resume right now.')).toBeNull();
+    expect(queryByText('No finished games yet.')).toBeNull();
+  });
+
+  it('keeps account actions on the settings screen entry point', async () => {
+    const user = userEvent.setup();
+    const { getByTestId } = await render(<HomeScreen />);
+
+    await user.press(getByTestId('dashboard.settings'));
+
+    expect(mockRouterPush).toHaveBeenCalledWith('./settings');
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+});

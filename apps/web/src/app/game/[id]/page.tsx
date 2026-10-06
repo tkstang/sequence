@@ -1,5 +1,12 @@
 'use client';
 
+import {
+  applyStreamItem,
+  ruleViolationMessage,
+  screenForState,
+  type GameStreamItem,
+  type GameViewState,
+} from '@sequence/client-state';
 import type { Position } from '@sequence/game-logic';
 import * as stylex from '@stylexjs/stylex';
 import { useMutation } from '@tanstack/react-query';
@@ -37,12 +44,6 @@ import {
   deadCardIndexes,
 } from './components/controllers/tap-controller.ts';
 import {
-  applyStreamItem,
-  screenForState,
-  type GameStreamItem,
-  type GameViewState,
-} from './components/game-state.ts';
-import {
   initialChoiceSelection,
   SequenceChoice,
   toggleChoiceCell,
@@ -57,7 +58,6 @@ import { LobbyTeams } from './components/LobbyTeams/LobbyTeams.tsx';
 import { PlayerRail } from './components/PlayerRail/PlayerRail.tsx';
 import {
   ConnectionBanner,
-  ruleViolationMessage,
   ToastViewport,
   useToastQueue,
 } from './components/toasts.tsx';

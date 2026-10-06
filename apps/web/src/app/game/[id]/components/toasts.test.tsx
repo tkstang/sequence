@@ -1,12 +1,9 @@
+import { ruleViolationMessage } from '@sequence/client-state';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  ConnectionBanner,
-  ruleViolationMessage,
-  ToastViewport,
-} from './toasts.tsx';
+import { ConnectionBanner, ToastViewport } from './toasts.tsx';
 
 describe('game toasts', () => {
   it('maps typed rule violations into player-facing messages', () => {

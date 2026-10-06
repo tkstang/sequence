@@ -65,7 +65,7 @@ export const onGameEventRoute = gamePlayerProcedure
     // disconnected (the heartbeat-lapse signal). A frozen game resumes once all
     // seats are back. No-op when no presence hook is wired (unit tests).
     const presence = getPresenceHook();
-    void presence?.onConnect(gameId, recipientSeat);
+    await presence?.onConnect(gameId, recipientSeat);
 
     const onAbort = (): void => {
       unsubscribe();

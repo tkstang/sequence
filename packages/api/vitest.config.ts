@@ -3,13 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { config as loadEnv } from 'dotenv';
 import { defineConfig } from 'vitest/config';
 
-// Load the gitignored env so integration tests see DATABASE_URL_TEST /
-// BETTER_AUTH_SECRET. The secrets live in the monorepo **root** `.env` (the
-// worktree-init script copies it there), so resolve that path explicitly rather
-// than relying on the worker cwd. A package-local `.env` still wins if present.
-// Absent in CI without Neon creds — integration describes skip cleanly then.
-loadEnv();
+// Load gitignored env so integration tests see DATABASE_URL_TEST /
+// BETTER_AUTH_SECRET. Root `.env` is the shared location when present; the
+// package-local `.env` is a fallback for local API/dev worktrees. Resolve both
+// explicitly because the workspace runner's cwd is the monorepo root.
 loadEnv({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
+loadEnv({ path: fileURLToPath(new URL('.env', import.meta.url)) });
 
 export default defineConfig({
   test: {

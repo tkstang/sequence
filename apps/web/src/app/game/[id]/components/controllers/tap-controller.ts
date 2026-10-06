@@ -1,3 +1,4 @@
+import type { SnapshotBoardCell } from '@sequence/client-state';
 import {
   isDeadCard,
   isOneEyedJack,
@@ -9,8 +10,6 @@ import {
   type Position,
   type Team,
 } from '@sequence/game-logic';
-
-import type { SnapshotBoardCell } from '../game-state.ts';
 
 export interface TapSelection {
   selectedIndex: number;

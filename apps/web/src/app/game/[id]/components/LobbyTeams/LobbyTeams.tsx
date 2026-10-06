@@ -1,5 +1,6 @@
 'use client';
 
+import type { SnapshotPlayer } from '@sequence/client-state';
 import * as stylex from '@stylexjs/stylex';
 import { useState } from 'react';
 
@@ -12,8 +13,6 @@ import {
   radius,
   space,
 } from '@/styles/tokens.stylex.ts';
-
-import type { SnapshotPlayer } from '../game-state.ts';
 
 type TeamId = 1 | 2 | 3;
 

@@ -18,6 +18,7 @@ export interface JoinResult {
   seat: number;
   team: number;
   isGuest: boolean;
+  guestToken?: string;
 }
 
 /**
@@ -39,6 +40,7 @@ export function buildJoinRoute(limiter: RateLimiter) {
       z.object({
         inviteCode: z.string().min(1),
         guestName: z.string().min(1).max(40).optional(),
+        returnGuestToken: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }): Promise<JoinResult> => {
@@ -157,6 +159,9 @@ export function buildJoinRoute(limiter: RateLimiter) {
         seat: result.seat,
         team: result.team,
         isGuest: result.isGuest,
+        ...(input.returnGuestToken && typeof guestToken === 'string'
+          ? { guestToken }
+          : {}),
       };
     });
 }

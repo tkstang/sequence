@@ -1,14 +1,19 @@
 # Architecture
 
-Sequence Online is a pnpm workspace with three runtime boundaries:
+Sequence Online is a pnpm workspace with four runtime boundaries and two shared
+client packages:
 
 - `apps/web` renders the browser experience with Next.js.
+- `apps/mobile` renders the iOS experience with Expo Router and React Native.
 - `packages/api` hosts auth, tRPC HTTP/WS, game persistence, timers, and
   realtime fanout.
-- `packages/game-logic` owns the pure rules engine used by both API and web.
+- `packages/game-logic` owns the pure rules engine used by API, web, and mobile.
+- `packages/client-state` owns the shared redacted game-view state helpers.
+- `packages/design-tokens` owns shared palette and dimension tokens.
 
-The production MVP deploys the web app to Vercel, the API to Railway, and the
-database to Neon Postgres.
+The production MVP deploys the web app to Vercel, the API to Railway, the
+database to Neon Postgres, and the iOS app through Expo Application Services
+(EAS) / TestFlight in the final operator phase.
 
 ## Workspace Boundaries
 
@@ -24,6 +29,35 @@ The tRPC client uses a split transport:
 
 The WebSocket client is lazy so auth pages do not open unauthenticated sockets
 before a session cookie exists.
+
+The web game route consumes `@sequence/client-state` for snapshot/event
+projection and `@sequence/design-tokens` through generated StyleX token files.
+
+### Mobile
+
+The mobile app is an Expo SDK 57 iOS client under `apps/mobile`. Expo Router
+owns route files under `apps/mobile/src/app`, and the installed development
+client uses the native bundle identifier `com.tkstang.sequenceonline` and scheme
+`sequence`.
+
+The mobile client talks to the same API contract as the web client:
+
+- tRPC HTTP for queries and mutations.
+- tRPC WebSocket subscriptions for `game.onGameEvent`.
+- Better Auth email/password REST calls under `/api/auth/*`.
+- Game-scoped guest tokens attached to HTTP and WebSocket requests when a guest
+  joins an invite.
+
+The mobile runtime imports shared workspace packages:
+
+- `@sequence/client-state` for redacted game state, stream projection, fixtures,
+  and rule-violation copy.
+- `@sequence/design-tokens` for the light/dark palette and native theme values.
+- `@sequence/game-logic` for framework-free rule types and board metadata.
+
+Mobile credentials are stored with Expo SecureStore through `@better-auth/expo`
+and the guest-token store. AsyncStorage is used only for non-secret preferences
+and guest-game registry metadata.
 
 ### API
 
@@ -42,9 +76,23 @@ The game router is organized as one route file per action under
 ### Game Logic
 
 `@sequence/game-logic` is framework-free TypeScript over immutable domain state.
-The API uses it as the authoritative rules engine. The web app uses its types
-and display helpers to preview legal targets and render state without owning
-server authority.
+The API uses it as the authoritative rules engine. The web and mobile clients
+use its types, board metadata, and display helpers without owning server
+authority.
+
+### Shared Client State and Tokens
+
+`@sequence/client-state` applies the already-redacted snapshot/event stream that
+clients receive. It defines `GameSnapshotView`, produces `GameViewState`,
+applies `GameStreamItem` events, maps route screens with `screenForState`, and
+exports fixtures used by tests and dev playgrounds. It must stay framework-free;
+the API remains the authority for redaction and validation.
+
+`@sequence/design-tokens` defines the shared light/dark palette and static
+dimensions. Mobile imports the token package directly. Web generates
+`apps/web/src/styles/tokens.stylex.ts` and
+`apps/web/src/styles/themes.stylex.ts` from the same source with
+`pnpm --filter @sequence/design-tokens generate:web-stylex`.
 
 ## Game Data Flow
 
@@ -94,9 +142,9 @@ a redeploy.
 
 ## UI State Shape
 
-The web game route consumes a single `GameSnapshotView` shape and updates it
-with streamed events through `applyStreamItem`. Leaf game UI components are
-prop-driven, including:
+The web and mobile game routes consume a single `GameSnapshotView` shape from
+`@sequence/client-state` and update it with streamed events through
+`applyStreamItem`. Leaf game UI components are prop-driven, including:
 
 - `GameBoard`
 - `CardHand`
@@ -108,8 +156,10 @@ prop-driven, including:
 This shape backs the dev-only UI playground at `/dev`, which renders the leaf
 components in isolation from reusable fixtures (viewport switcher, per-component
 Expand, and a chrome-less `/dev-frame` target). See
-[`development.md`](development.md#dev-ui-playground). The UI is styled with StyleX
-(design tokens plus light/dark themes); see [`styling.md`](styling.md).
+[`development.md`](development.md#dev-ui-playground). The web UI is styled with
+StyleX generated from shared design tokens; see [`styling.md`](styling.md). The
+mobile UI uses React Native primitives styled from the same shared palette and
+dimension tokens.
 
 ## Current Scaling Limits
 
@@ -132,4 +182,6 @@ rate limits forgeable when `TRUST_PROXY=1`. Anonymous invite preview/join
 traffic therefore shares one anonymous limiter bucket in production.
 
 Private hands are redacted by the API response mapping. The client never gets
-other remote players' hands.
+other remote players' hands. Local pass-and-play is the exception where one
+device owns multiple seats; the mobile handoff screen hides outgoing and
+incoming hands between turns.

@@ -1,5 +1,6 @@
 'use client';
 
+import type { SnapshotPlayer, SnapshotSequence } from '@sequence/client-state';
 import type { Card, Team } from '@sequence/game-logic';
 import * as stylex from '@stylexjs/stylex';
 import Image from 'next/image';
@@ -14,7 +15,6 @@ import {
   space,
 } from '@/styles/tokens.stylex.ts';
 
-import type { SnapshotPlayer, SnapshotSequence } from '../game-state.ts';
 import { cardAssetPath } from '../GameBoard/GameBoard.utils.ts';
 
 export interface PlayerRailProps {

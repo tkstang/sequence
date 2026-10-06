@@ -1,0 +1,272 @@
+import { palette } from '@sequence/design-tokens';
+import type { Position, Team } from '@sequence/game-logic';
+import { BOARD_MAP, BOARD_SIZE } from '@sequence/game-logic';
+import {
+  cleanup,
+  render,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
+import type { ViewStyle } from 'react-native';
+
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native') as typeof import('react-native');
+
+  return {
+    __esModule: true,
+    default: {
+      View,
+    },
+    useAnimatedStyle: (factory: () => unknown) => factory(),
+    useSharedValue: (value: unknown) => ({ value }),
+    withTiming: (value: unknown) => value,
+  };
+});
+
+import { GameBoard } from './GameBoard.tsx';
+import { createBoardLayoutMap } from './layout-map.ts';
+
+jest.mock('../cards/CardFace.tsx', () => {
+  const { Text } = require('react-native') as typeof import('react-native');
+
+  return {
+    CardFace: ({
+      card,
+      testID,
+    }: {
+      card: { rank: string; suit: string };
+      testID?: string;
+    }) => <Text testID={testID}>{`${card.rank}${card.suit}`}</Text>,
+  };
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+type BoardFixture = Record<Position, { chip?: Team; lockedBy?: number }>;
+
+function styleFor(testNode: { props: { style?: unknown } }): ViewStyle {
+  return StyleSheet.flatten(testNode.props.style) ?? {};
+}
+
+describe('GameBoard', () => {
+  it('renders the 10x10 game-logic board with stable cell testIDs', async () => {
+    const { getByTestId, getAllByTestId } = await render(
+      <GameBoard board={{}} />,
+    );
+
+    expect(getAllByTestId(/^board\.cell\.[^.]+$/)).toHaveLength(
+      BOARD_SIZE * BOARD_SIZE,
+    );
+
+    for (const row of BOARD_MAP) {
+      for (const position of row) {
+        expect(getByTestId(`board.cell.${position}`)).toBeTruthy();
+      }
+    }
+  });
+
+  it('renders wild treatment for all four corner cells', async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <GameBoard board={{}} />,
+    );
+
+    for (const position of ['1WW', '2WW', '3WW', '4WW'] as const) {
+      expect(getByTestId(`board.cell.${position}.wild`)).toBeTruthy();
+      expect(queryByTestId(`board.cell.${position}.card`)).toBeNull();
+    }
+  });
+
+  it('renders chip overlays with team colors', async () => {
+    const board: BoardFixture = {
+      '1AC': { chip: 1 },
+      '1KC': { chip: 2 },
+      '1QC': { chip: 3 },
+    };
+    const { getByTestId } = await render(<GameBoard board={board} />);
+
+    expect(styleFor(getByTestId('board.cell.1AC.chip')).backgroundColor).toBe(
+      palette.light.teamBlue,
+    );
+    expect(styleFor(getByTestId('board.cell.1KC.chip')).backgroundColor).toBe(
+      palette.light.teamGreen,
+    );
+    expect(styleFor(getByTestId('board.cell.1QC.chip')).backgroundColor).toBe(
+      palette.light.teamRed,
+    );
+  });
+
+  it('shows lock treatment for cells locked into a sequence', async () => {
+    const { getByTestId } = await render(
+      <GameBoard board={{ '1AC': { chip: 1, lockedBy: 7 } }} />,
+    );
+
+    expect(getByTestId('board.cell.1AC.lock')).toBeTruthy();
+    expect(styleFor(getByTestId('board.cell.1AC.chip')).borderWidth).toBe(2);
+  });
+
+  it('renders sequence ownership when supplied with completed sequences', async () => {
+    const { getByTestId } = await render(
+      <GameBoard board={{}} sequences={[{ cells: ['1AC'], id: 8, team: 2 }]} />,
+    );
+
+    expect(styleFor(getByTestId('board.cell.1AC.chip')).backgroundColor).toBe(
+      palette.light.teamGreen,
+    );
+    expect(getByTestId('board.cell.1AC.lock')).toBeTruthy();
+  });
+
+  it('only re-renders a cell whose chip state changes', async () => {
+    const renders = new Map<Position, number>();
+    const onCellRender = (position: Position) => {
+      renders.set(position, (renders.get(position) ?? 0) + 1);
+    };
+
+    const { rerender } = await render(
+      <GameBoard board={{ '1AC': { chip: 1 } }} onCellRender={onCellRender} />,
+    );
+
+    expect(renders.get('1AC')).toBe(1);
+    expect(renders.get('1KC')).toBe(1);
+
+    await rerender(
+      <GameBoard board={{ '1AC': { chip: 2 } }} onCellRender={onCellRender} />,
+    );
+
+    expect(renders.get('1AC')).toBe(2);
+    expect(renders.get('1KC')).toBe(1);
+    expect(renders.size).toBe(BOARD_SIZE * BOARD_SIZE);
+  });
+
+  it('does not re-render cells when the parent press callback identity changes', async () => {
+    const user = userEvent.setup();
+    const board: BoardFixture = { '1AC': { chip: 1 } };
+    const renders = new Map<Position, number>();
+    const onCellRender = (position: Position) => {
+      renders.set(position, (renders.get(position) ?? 0) + 1);
+    };
+    const firstPress = jest.fn();
+    const nextPress = jest.fn();
+
+    const { getByTestId, rerender } = await render(
+      <GameBoard
+        board={board}
+        onCellPress={firstPress}
+        onCellRender={onCellRender}
+      />,
+    );
+
+    expect(renders.get('1AC')).toBe(1);
+    expect(renders.get('1KC')).toBe(1);
+
+    await rerender(
+      <GameBoard
+        board={board}
+        onCellPress={nextPress}
+        onCellRender={onCellRender}
+      />,
+    );
+
+    expect(renders.get('1AC')).toBe(1);
+    expect(renders.get('1KC')).toBe(1);
+
+    await user.press(getByTestId('board.cell.1AC'));
+
+    expect(firstPress).not.toHaveBeenCalled();
+    expect(nextPress).toHaveBeenCalledWith('1AC');
+  });
+
+  it('registers board-local card-aspect cell frames in the board layout map', async () => {
+    const layoutMap = createBoardLayoutMap();
+    await render(<GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />);
+
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+      expect(layoutMap.getFrame('1AD')).toEqual({
+        height: 45,
+        width: 32,
+        x: 8,
+        y: 53,
+      });
+    });
+  });
+
+  it('cycles the board rotate control through all four orientations', async () => {
+    const user = userEvent.setup();
+    const layoutMap = createBoardLayoutMap();
+    const { getByTestId } = await render(
+      <GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />,
+    );
+
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 23,
+        width: 32,
+        x: 298,
+        y: 141,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 264,
+        y: 413,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 23,
+        width: 32,
+        x: 6,
+        y: 302,
+      });
+    });
+
+    await user.press(getByTestId('board.rotate'));
+    await waitFor(() => {
+      expect(layoutMap.getFrame('1AC')).toEqual({
+        height: 45,
+        width: 32,
+        x: 40,
+        y: 8,
+      });
+    });
+  });
+
+  it('hit-tests rotated board frames against the layout map', async () => {
+    const user = userEvent.setup();
+    const layoutMap = createBoardLayoutMap();
+    const { getByTestId } = await render(
+      <GameBoard board={{}} layoutMap={layoutMap} maxWidth={336} />,
+    );
+
+    await user.press(getByTestId('board.rotate'));
+
+    await waitFor(() => {
+      expect(layoutMap.hitTest({ x: 310, y: 150 })).toBe('1AC');
+      expect(layoutMap.hitTest({ x: 24, y: 24 })).not.toBe('1AC');
+    });
+  });
+});

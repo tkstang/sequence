@@ -1,5 +1,6 @@
 'use client';
 
+import { getGameFixture, winningSequenceCells } from '@sequence/client-state';
 import * as stylex from '@stylexjs/stylex';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -9,10 +10,6 @@ import {
   createTapSelection,
   deadCardIndexes,
 } from '@/app/game/[id]/components/controllers/tap-controller.ts';
-import {
-  getGameFixture,
-  winningSequenceCells,
-} from '@/app/game/[id]/components/game-fixtures.ts';
 import { GameBoard } from '@/app/game/[id]/components/GameBoard/GameBoard.tsx';
 import { GameOver } from '@/app/game/[id]/components/GameOver/GameOver.tsx';
 import { HandoffScreen } from '@/app/game/[id]/components/HandoffScreen/HandoffScreen.tsx';

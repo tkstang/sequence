@@ -179,6 +179,46 @@ describe('game route view state', () => {
     expect(state?.concededTeam).toBe(2);
   });
 
+  it('resumes a frozen no-timer game from PlayerReconnected alone', () => {
+    const state = applyStreamItem(
+      applyStreamItem(null, {
+        kind: 'snapshot',
+        snapshot: snapshot({
+          status: 'frozen',
+          version: 2,
+          expiresAt: '2026-07-04T05:28:43.177Z',
+          players: [
+            {
+              seat: 0,
+              team: 1,
+              name: 'Host',
+              isCreator: true,
+              isGuest: false,
+              connected: true,
+            },
+            {
+              seat: 1,
+              team: 2,
+              name: 'Local Opponent',
+              isCreator: false,
+              isGuest: true,
+              connected: false,
+            },
+          ],
+        }),
+      }),
+      {
+        kind: 'event',
+        event: event('PlayerReconnected', {}, 3),
+      },
+    );
+
+    expect(state?.status).toBe('active');
+    expect(state?.version).toBe(3);
+    expect(state?.expiresAt).toBeNull();
+    expect(state?.players.map((p) => p.connected)).toEqual([true, true]);
+  });
+
   it('preserves pending choice metadata for chained selections', () => {
     const state = applyStreamItem(
       applyStreamItem(null, {

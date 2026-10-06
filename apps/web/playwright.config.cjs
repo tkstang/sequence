@@ -1,11 +1,16 @@
-import { existsSync } from 'node:fs';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+const { existsSync } = require('node:fs');
+const path = require('node:path');
+const process = require('node:process');
 
-import { defineConfig, devices } from '@playwright/test';
+const { defineConfig, devices } = require('@playwright/test');
 
-const rootEnv = fileURLToPath(new URL('../../.env', import.meta.url));
-if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
+const envFiles = [
+  path.resolve(__dirname, '../..', '.env'),
+  path.resolve(__dirname, '../..', 'packages/api/.env'),
+];
+for (const envFile of envFiles) {
+  if (existsSync(envFile)) process.loadEnvFile(envFile);
+}
 
 const hasTestDb = Boolean(process.env.DATABASE_URL_TEST);
 const webUrl = 'http://127.0.0.1:3000';
@@ -13,7 +18,7 @@ const apiUrl = 'http://127.0.0.1:3001';
 const wsUrl = 'ws://127.0.0.1:3001';
 const authSecret = 'sequence-playwright-test-secret-000000';
 
-export default defineConfig({
+module.exports = defineConfig({
   testDir: './e2e',
   outputDir: './test-results',
   timeout: 60_000,
