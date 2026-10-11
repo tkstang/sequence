@@ -38,5 +38,10 @@
     "archiveOnComplete": true,
     "postImplementSequence": "pr",
     "autoReviewAtHillCheckpoints": true
+  },
+  "instructions": {
+    "claude": {
+      "shims": "none"
+    }
   }
 }
