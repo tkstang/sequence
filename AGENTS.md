@@ -41,6 +41,13 @@ TestFlight in the final operator phase. Canonical commands live in
 ## Sequence Project Guidance
 
 - Use Node `v24` from `.nvmrc` and pnpm `10.17.0+`.
+- Before adding material complexity for a speculative failure mode or unconfirmed
+  future need, explain the concrete problem, evidence that it matters, simpler
+  alternatives, and implementation and maintenance cost; get the user's buy-in.
+  This includes production code, tests and fixtures, and operational safeguards.
+  Do not silently expand scope for theoretical robustness, flexibility, or scale.
+  Routine regression tests, required checks, and established correctness,
+  security, and durability requirements still apply.
 - Keep secrets in ignored env files or provider settings. Never commit local
   `.env*` files other than `.env.example`.
 - The API dev script runs from `packages/api`; create `packages/api/.env` from
@@ -88,6 +95,36 @@ TestFlight in the final operator phase. Canonical commands live in
   `/dev-frame` render target). It is development-only — do not link to it from the
   shipped app. See `docs/development.md`.
 
+## Definition of Done
+
+- Covering instructions remain true: changes to commands, directories, conventions,
+  workflows, version pins, or known footguns include instruction updates in the
+  same PR (see **Keeping instructions current**).
+- Relevant human docs (`README.md`, `docs/`, and affected workspace READMEs)
+  describing changed behavior are updated in the same PR.
+
+## Keeping instructions current
+
+Instructions are part of the code; maintain them with the behavior they describe.
+
+- Read root and changed-directory ancestor `AGENTS.md` files and canonical
+  `.agents/rules/` whose `globs:` match changed files. Fix or delete false commands,
+  paths, versions, flags, workflows, or owners. Find leftovers with
+  `git grep -n -F -e '<old-name>' -- '*AGENTS.md' '.agents/rules/'`.
+- Add nested instructions only for distinct commands, runtimes, or footguns;
+  cross-directory rules belong in `.agents/rules/<topic>.md` with `globs:`.
+  Keep repo-wide facts here, short.
+
+  Keep **References** routing current as scopes change; list canonical rules
+  with exact globs and read them before editing matching files. No rules exist yet.
+- After rule changes, run `npx @open-agent-toolkit/cli sync --scope project` and
+  commit canonical rules, tracked generated views, and `.oat/sync/manifest.json`
+  together, respecting ignored-output policy. Finish with a clean project sync
+  dry-run; never hand-edit generated views or managed blocks. Codex has no
+  generated rule views, so rule scopes must be discoverable here.
+- Record durable facts, not task notes or guesses. The PR description lists
+  instruction files created or updated, or says "No instruction changes needed".
+
 ## Documentation
 
 - Project documentation lives in `docs/`. Start at `docs/index.md`, which maps
@@ -113,6 +150,6 @@ TestFlight in the final operator phase. Canonical commands live in
   TestFlight, device checks, and production smoke.
 - `apps/web/AGENTS.md`, `packages/api/AGENTS.md`,
   `packages/game-logic/AGENTS.md`, `apps/mobile/AGENTS.md` — scoped guidance per
-  workspace.
+  workspace; `bruno/AGENTS.md` covers API request collections.
 - `packages/client-state/README.md`, `packages/design-tokens/README.md` —
   shared package boundaries and commands.
