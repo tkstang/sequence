@@ -117,11 +117,15 @@ Instructions are part of the code; maintain them with the behavior they describe
 
   Keep **References** routing current as scopes change; list canonical rules
   with exact globs and read them before editing matching files. No rules exist yet.
-- After rule changes, run `npx @open-agent-toolkit/cli sync --scope project` and
-  commit canonical rules, tracked generated views, and `.oat/sync/manifest.json`
-  together, respecting ignored-output policy. Finish with a clean project sync
-  dry-run; never hand-edit generated views or managed blocks. Codex has no
-  generated rule views, so rule scopes must be discoverable here.
+- After rule changes, use the `oatVersion` recorded in
+  `.oat/sync/manifest.json` (currently `0.1.43`): run
+  `npx @open-agent-toolkit/cli@0.1.43 sync --scope project` and finish with
+  `npx @open-agent-toolkit/cli@0.1.43 sync --scope project --dry-run` showing no
+  planned changes. Both commands must use that same manifest version; update both
+  pins when it changes. Commit canonical rules, tracked generated views, and
+  `.oat/sync/manifest.json` together, respecting ignored-output policy. Never
+  hand-edit generated views or managed blocks. Codex has no generated rule views,
+  so rule scopes must be discoverable here.
 - Record durable facts, not task notes or guesses. The PR description lists
   instruction files created or updated, or says "No instruction changes needed".
 
