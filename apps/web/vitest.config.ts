@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 /**
  * Web component-test config (p05-t03): jsdom environment + Testing Library
- * matchers. Picked up by the root `vitest.workspace.ts` glob. The `@` alias
+ * matchers. Picked up by the root `vitest.config.ts` projects glob. The `@` alias
  * mirrors `tsconfig.json` so component imports resolve in tests.
  */
 export default defineConfig({

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Root test runner. Drives the Vitest workspace (vitest.workspace.ts).
+// Root test runner. Drives the Vitest projects in the root vitest.config.ts.
 // Tolerates the empty-monorepo state: if no workspace project directories
 // exist yet (early Phase 1), there is nothing to test and we exit 0.
 import { spawnSync } from 'node:child_process';
@@ -30,7 +30,7 @@ const run = (label, args) => {
   return result.status ?? 1;
 };
 
-const vitestStatus = run('Vitest workspace', [
+const vitestStatus = run('Vitest projects', [
   'exec',
   'vitest',
   'run',
