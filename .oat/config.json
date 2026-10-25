@@ -47,7 +47,18 @@
   "documentation": {
     "root": "docs",
     "tooling": "markdown",
-    "index": "docs/index.md"
+    "index": "docs/index.md",
+    "ia": {
+      "preset": "flat-small",
+      "decision": ".oat/repo/reference/decisions/DR-261025-documentation-information.md",
+      "tracks": [
+        {
+          "path": "docs",
+          "principle": "Flat pages; the root index groups Contents by page type: Concepts, Getting started, Reference, and Operations"
+        }
+      ],
+      "verification": "none"
+    }
   },
   "pjm": {
     "initialized": true,
