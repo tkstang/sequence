@@ -48,5 +48,9 @@
     "root": "docs",
     "tooling": "markdown",
     "index": "docs/index.md"
+  },
+  "pjm": {
+    "initialized": true,
+    "schemaVersion": 1
   }
 }
