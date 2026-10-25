@@ -1,3 +1,8 @@
+---
+title: Configuration
+description: Canonical environment-variable reference for the Sequence Online API, web, mobile, and deploy targets, including auth, database, and OAuth settings.
+---
+
 # Configuration
 
 This is the canonical environment-variable reference for Sequence Online. The

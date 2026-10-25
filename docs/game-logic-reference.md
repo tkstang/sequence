@@ -1,3 +1,8 @@
+---
+title: Game Logic Reference
+description: "Exports, domain types, and engine contracts of @sequence/game-logic: the turn reducer, board, deck, jacks, dead cards, sequences, and win conditions."
+---
+
 # Game Logic Reference
 
 `@sequence/game-logic` is the framework-free rules engine shared by the API, the

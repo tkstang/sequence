@@ -135,6 +135,14 @@ Instructions are part of the code; maintain them with the behavior they describe
   every page; update its `## Contents` section when adding, moving, or removing a
   page.
 - Use `.md`-suffixed relative links between docs pages.
+- Every docs page needs `title` and `description` frontmatter; keep each
+  description 40–160 characters and grounded in the page. Group `## Contents`
+  entries in `docs/index.md` under `###` headings (at most ten per group) and
+  keep Contents links inside `docs/`. The accepted information architecture is
+  in `docs/contributing.md`.
+- Run `oat docs check --target-dir docs` after docs changes; it must report zero
+  errors. The `Docs` workflow (`.github/workflows/docs.yml`) runs the pinned
+  `pnpm exec oat docs check --target-dir docs` on PRs touching `docs/`.
 - Keep cross-cutting setup detail canonical and link to it rather than restating
   it: the environment reference lives in `docs/configuration.md`, the testing
   strategy in `docs/testing.md`.
@@ -157,3 +165,37 @@ Instructions are part of the code; maintain them with the behavior they describe
   workspace; `bruno/AGENTS.md` covers API request collections.
 - `packages/client-state/README.md`, `packages/design-tokens/README.md` —
   shared package boundaries and commands.
+
+<!-- OAT docs -->
+## Documentation
+
+- **Docs root:** `docs`
+- **Tooling:** Markdown
+- **Authored index:** `docs/index.md`
+- **Contributing:** `docs/contributing.md`
+
+Keep authored context, title/description metadata, and Contents maps with relative Markdown links current. Preserve local instructions; asset-only directories are exempt from indexes.
+Use `oat-docs-analyze` to audit gaps and `oat-docs-apply` for approved repairs. Optional generated inventories belong outside the content tree and do not replace the authored index.
+<!-- END OAT docs -->
+
+<!-- OAT project-management -->
+### Project Management
+
+- Installed project-management tools provide capability; they do not prove that this repository adopted PJM.
+- Run `oat pjm doctor --json` and inspect `adoption.state` before any PJM write.
+- Repository planning and durable context live under `.oat/repo/`.
+- Consult it when prioritizing or planning work, checking the backlog, starting or closing tracked work, or looking for established repository context.
+- Start with `.oat/repo/AGENTS.md`; it routes to `pjm/` for active state and `reference/` for durable records.
+- If adoption is absent or partial, stop and initialize it with `oat pjm init`.
+<!-- END OAT project-management -->
+
+<!-- OAT decisions -->
+### Decision Records
+
+- Durable repository decisions live under `.oat/repo/reference/decisions/`; read `.oat/repo/reference/decisions/AGENTS.md` before working with them.
+- Before finalizing a durable repository decision, review `.oat/repo/reference/decisions/index.md` and any relevant records.
+- When the user asks to record a durable decision or confirms a proposed capture, use `oat-pjm-decision` when that skill is installed; otherwise use `oat decision new`.
+- Do not hand-edit the generated decision index; run `oat decision regenerate-index` after record changes or to resolve index conflicts.
+- Run `oat pjm doctor --json` and inspect `adoption.state` before any decision write.
+- If the decision surface is missing, repository adoption is absent or partial; stop and initialize it with `oat pjm init`.
+<!-- END OAT decisions -->

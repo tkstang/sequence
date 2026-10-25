@@ -1,3 +1,8 @@
+---
+title: Styling (StyleX)
+description: "How the web app styles UI with StyleX: shared design tokens, light and dark themes, the build pipeline, tests, and styling conventions."
+---
+
 # Styling (StyleX)
 
 The web app (`apps/web`) styles its UI with [StyleX](https://stylexjs.com) —

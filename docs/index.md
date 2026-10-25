@@ -1,9 +1,15 @@
+---
+title: Sequence Online Documentation
+description: Entry point for Sequence Online docs, routing to architecture, rules, development, reference, and operations guides for the web and iOS clients.
+---
+
 # Sequence Online Documentation
 
 Documentation for Sequence Online — web and iOS clients for the Sequence board
 game with online multiplayer and local pass-and-play. For a project overview and
 quickstart, see the root [`../README.md`](../README.md); the pages below go
-deeper.
+deeper. For code-contribution prerequisites, quality gates, the commit
+convention, and code rules, see [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Contents
 
@@ -18,7 +24,7 @@ deeper.
 - [`styling.md`](styling.md) — shared design tokens, the web StyleX build pipeline, light/dark themes, and conventions.
 - [`configuration.md`](configuration.md) — canonical environment-variable reference for API, web, mobile, and deploy.
 - [`testing.md`](testing.md) — test layers (unit, integration, mobile Jest, e2e) and the test-database workflow.
-- [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — prerequisites, quality gates, commit convention, and code rules.
+- [`contributing.md`](contributing.md) — documentation authoring conventions, information architecture, metadata, Contents maps, and the docs check.
 
 ### Reference
 

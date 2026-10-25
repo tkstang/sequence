@@ -24,6 +24,7 @@
     "prepare": "node tools/git-hooks/manage-hooks.js setup"
   },
   "devDependencies": {
+    "@open-agent-toolkit/cli": "0.3.33",
     "@typescript/native-preview": "7.0.0-dev.20260612.1",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",

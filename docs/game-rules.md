@@ -1,3 +1,8 @@
+---
+title: Sequence Game Rules
+description: "The Sequence ruleset as the digital rules engine enforces it: teams, the deal, turns, jacks, dead cards, completing sequences, and digital play."
+---
+
 # Sequence Game Rules
 
 This is the Sequence board game ruleset adapted for the digital MVP. It describes

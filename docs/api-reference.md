@@ -1,3 +1,8 @@
+---
+title: API Reference
+description: tRPC procedures (health, game, history), auth levels, the version concurrency and error contracts, rate limits, and the Better Auth surface.
+---
+
 # API Reference
 
 The Sequence Online API is a [tRPC](https://trpc.io) router served by Fastify. It
