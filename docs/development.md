@@ -124,7 +124,7 @@ pnpm --filter @sequence/mobile format
 ```
 
 `pnpm test` runs the workspace test harness in `scripts/run-tests.mjs`: first
-the Vitest workspace, then `@sequence/mobile` Jest.
+the Vitest projects from the root `vitest.config.ts`, then `@sequence/mobile` Jest.
 
 ## Playwright
 

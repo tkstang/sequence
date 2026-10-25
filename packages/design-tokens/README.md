@@ -68,4 +68,4 @@ pnpm --filter @sequence/design-tokens generate:web-stylex
 pnpm --filter @sequence/design-tokens test
 ```
 
-The root `pnpm test` gate runs this package through the Vitest workspace.
+The root `pnpm test` gate runs this package as a project of the root `vitest.config.ts`.

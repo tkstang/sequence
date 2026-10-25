@@ -21,10 +21,15 @@ Sequence Online tests in six layers, each living next to the code it covers:
 | `@sequence/mobile` component/hook/route tests | `apps/mobile/src/**/*.test.{ts,tsx}` | Jest (`jest-expo`) | No |
 | Playwright e2e | `apps/web/e2e/*.spec.ts` | Playwright | Yes (test branch) |
 
-The Vitest layers run under one workspace (`vitest.workspace.ts`), which globs
-`packages/*` and `apps/web`. `apps/mobile` is intentionally excluded from
-Vitest because it uses `jest-expo`. The root `pnpm test` harness runs the Vitest
-workspace first and then runs `pnpm --filter @sequence/mobile test`.
+The Vitest layers run as projects of the root `vitest.config.ts`, whose
+`test.projects` globs `packages/*` and `apps/web`. `apps/mobile` is
+intentionally excluded from Vitest because it uses `jest-expo`. The root
+`pnpm test` harness runs the Vitest projects first and then runs
+`pnpm --filter @sequence/mobile test`.
+
+Every Vitest package keeps its own `vitest.config.ts`, even an empty one.
+Vitest searches parent directories for a config, so a package without one
+would pick up the root `projects` config when its `test` script runs.
 Playwright is a separate runner invoked with
 `pnpm --filter @sequence/web e2e`.
 
@@ -37,15 +42,15 @@ import the functions directly. Determinism comes from a seeded RNG
 (`createSeededRng`), so shuffles and full-game simulations are reproducible
 rather than flaky.
 
-The package has no Vitest config of its own; the workspace glob picks it up and
-its `test` script is `vitest run --passWithNoTests`
+The package's `vitest.config.ts` is empty; the root `projects` glob picks it up
+and its `test` script is `vitest run --passWithNoTests`
 (`packages/game-logic/package.json`). These tests are fast and run on every
 `pnpm test`, with or without a database.
 
 ## Shared Client Package Tests
 
 `@sequence/client-state` and `@sequence/design-tokens` run under Vitest through
-the workspace glob.
+the root `projects` glob.
 
 `@sequence/client-state` tests cover snapshot-to-view projection, streamed event
 application, route-screen selection, fixture behavior, and rule-violation copy.
@@ -100,10 +105,11 @@ harness `reset()` truncate.
 Because every integration file truncates the same shared tables, they must not
 interleave. Two mechanisms enforce serialization:
 
-- The api Vitest project pins itself to a single fork
-  (`pool: 'forks'`, `singleFork: true`, `fileParallelism: false`) so the
-  workspace runner can't schedule its files across workers
-  (`packages/api/vitest.config.ts:25`).
+- The api Vitest project pins itself to one worker
+  (`pool: 'forks'`, `maxWorkers: 1`, `fileParallelism: false`) so the root
+  `projects` runner can't schedule its files across workers in parallel
+  (`packages/api/vitest.config.ts:26`). Isolation stays on, so each file
+  still runs in a fresh fork.
 - A Postgres session-level **advisory lock**, acquired for the lifetime of each
   harness and released on `close()`, makes files run one-at-a-time at the DB
   level regardless of scheduling (`packages/api/src/test/db-lock.ts:29`).
@@ -119,7 +125,7 @@ Web tests run under Vitest in a jsdom environment with Testing Library matchers
 board, card hand, player rail, lobby, dashboard, login/auth forms, the
 drag/tap input controllers, and game-state helpers — and need no database. The
 config sets `environment: 'jsdom'`, `globals: true`, a setup file, the automatic
-JSX runtime, and the `@` path alias mirroring `tsconfig.json`. The workspace glob
+JSX runtime, and the `@` path alias mirroring `tsconfig.json`. The root `projects` glob
 picks it up and `pnpm --filter @sequence/web test` runs it standalone.
 
 ## `@sequence/mobile` Jest Tests

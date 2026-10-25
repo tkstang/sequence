@@ -61,7 +61,7 @@ pnpm --filter @sequence/client-state test
 pnpm --filter @sequence/client-state typecheck
 ```
 
-The root `pnpm test` gate runs this package through the Vitest workspace.
+The root `pnpm test` gate runs this package as a project of the root `vitest.config.ts`.
 
 ## Tests
 
