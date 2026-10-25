@@ -58,6 +58,15 @@ Check relative links, Contents maps, metadata, and context after edits. Selected
 existing tools: lint `none`, format `none`. Use repository
 checks when available; this setup does not install tools or require a site build.
 
+Run the docs checker before opening a PR; it must report zero errors:
+
+```bash
+oat docs check --target-dir docs
+```
+
+CI runs the same check on pull requests that touch `docs/` with the pinned
+`@open-agent-toolkit/cli` devDependency (`pnpm exec oat docs check --target-dir docs`).
+
 The authored index is not a generated manifest. If an optional inventory is
 needed, run `oat docs generate-index` with an explicit output outside the
 configured content tree and keep the authored entrypoint unchanged.

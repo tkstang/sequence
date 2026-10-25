@@ -135,6 +135,14 @@ Instructions are part of the code; maintain them with the behavior they describe
   every page; update its `## Contents` section when adding, moving, or removing a
   page.
 - Use `.md`-suffixed relative links between docs pages.
+- Every docs page needs `title` and `description` frontmatter; keep each
+  description 40–160 characters and grounded in the page. Group `## Contents`
+  entries in `docs/index.md` under `###` headings (at most ten per group) and
+  keep Contents links inside `docs/`. The accepted information architecture is
+  in `docs/contributing.md`.
+- Run `oat docs check --target-dir docs` after docs changes; it must report zero
+  errors. The `Docs` workflow (`.github/workflows/docs.yml`) runs the pinned
+  `pnpm exec oat docs check --target-dir docs` on PRs touching `docs/`.
 - Keep cross-cutting setup detail canonical and link to it rather than restating
   it: the environment reference lives in `docs/configuration.md`, the testing
   strategy in `docs/testing.md`.
