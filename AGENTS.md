@@ -157,3 +157,15 @@ Instructions are part of the code; maintain them with the behavior they describe
   workspace; `bruno/AGENTS.md` covers API request collections.
 - `packages/client-state/README.md`, `packages/design-tokens/README.md` —
   shared package boundaries and commands.
+
+<!-- OAT docs -->
+## Documentation
+
+- **Docs root:** `docs`
+- **Tooling:** Markdown
+- **Authored index:** `docs/index.md`
+- **Contributing:** `docs/contributing.md`
+
+Keep authored context, title/description metadata, and Contents maps with relative Markdown links current. Preserve local instructions; asset-only directories are exempt from indexes.
+Use `oat-docs-analyze` to audit gaps and `oat-docs-apply` for approved repairs. Optional generated inventories belong outside the content tree and do not replace the authored index.
+<!-- END OAT docs -->

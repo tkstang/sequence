@@ -43,5 +43,10 @@
     "claude": {
       "shims": "none"
     }
+  },
+  "documentation": {
+    "root": "docs",
+    "tooling": "markdown",
+    "index": "docs/index.md"
   }
 }
