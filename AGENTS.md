@@ -71,6 +71,10 @@ TestFlight in the final operator phase. Canonical commands live in
   runs the API's `.ts` directly (`node --experimental-transform-types`). Moving to
   absolute path-alias imports (`@db/schema/games`) is backlog work (`bl-3fcf`);
   until then, do not drop extensions or use unconfigured `@` aliases.
+- Vitest runs as projects of the root `vitest.config.ts`. Give every new Vitest
+  package its own `vitest.config.ts` (empty is fine): Vitest searches parent
+  directories, so without one a per-package `vitest run` loads the root
+  `projects` config and fails.
 - Keep `@sequence/game-logic` framework-free. Do not add React, Next, Fastify,
   database, network, or DOM imports there.
 - Keep `@sequence/client-state` framework-free. It applies already-redacted
