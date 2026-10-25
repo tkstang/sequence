@@ -1,3 +1,8 @@
+---
+title: Architecture
+description: Workspace boundaries, game data flow, auth and guests, realtime presence and timers, UI state shape, scaling limits, and production security notes.
+---
+
 # Architecture
 
 Sequence Online is a pnpm workspace with four runtime boundaries and two shared

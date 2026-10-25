@@ -1,3 +1,8 @@
+---
+title: Sequence Online Documentation
+description: Entry point for Sequence Online docs, routing to architecture, rules, development, reference, and operations guides for the web and iOS clients.
+---
+
 # Sequence Online Documentation
 
 Documentation for Sequence Online — web and iOS clients for the Sequence board

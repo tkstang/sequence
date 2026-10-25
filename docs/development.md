@@ -1,3 +1,8 @@
+---
+title: Development
+description: "Local setup for Sequence Online: install, env files, running web and mobile apps, test gates, Playwright, database workflow, and UI iteration."
+---
+
 # Development
 
 This document covers local workflows for Sequence Online. For system

@@ -1,3 +1,8 @@
+---
+title: Data Model
+description: Postgres and Drizzle schema for games, game_players, and game_events, their jsonb shapes, cross-cutting concepts, and the Better Auth tables.
+---
+
 # Data Model
 
 Sequence Online persists to Postgres (Neon) through the Drizzle ORM. The schema

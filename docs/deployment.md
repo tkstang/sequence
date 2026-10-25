@@ -1,3 +1,8 @@
+---
+title: Deployment and Operator Notes
+description: Vercel, Railway, and Neon deployment runbook with production URLs, required settings, smoke checks, constraints, and known limitations.
+---
+
 # Deployment and Operator Notes
 
 The MVP deploys the web app to Vercel, the API to Railway, and Postgres to

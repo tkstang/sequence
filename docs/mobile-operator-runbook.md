@@ -1,3 +1,8 @@
+---
+title: Mobile Operator Runbook
+description: Operator checklist for mobile machine setup, Expo and Apple accounts, EAS signing, TestFlight groups, physical-device checks, and production smoke.
+---
+
 # Mobile Operator Runbook
 
 This runbook is the durable home for operator-dependent mobile steps. Phases

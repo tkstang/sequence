@@ -1,3 +1,8 @@
+---
+title: Testing
+description: Test layers for Sequence Online (game-logic unit, shared client, API integration, web, mobile Jest, Playwright e2e) and DATABASE_URL_TEST gating.
+---
+
 # Testing
 
 This document explains the test layers and the infrastructure behind them. For
