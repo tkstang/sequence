@@ -10,7 +10,9 @@ boundaries, see `docs/architecture.md`.
 
 The Docs workflow keeps its existing path filters and PR base coverage. Draft PRs
 skip the docs job before allocating a runner; marking a draft ready triggers the
-same documentation check without requiring a new commit.
+same documentation check without requiring a new commit. Replacement verification
+cancels superseded docs runs for the same ready PR. Draft runs use separate
+groups without cancellation.
 
 ## Install
 
