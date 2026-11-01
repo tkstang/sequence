@@ -8,6 +8,10 @@ description: "Local setup for Sequence Online: install, env files, running web a
 This document covers local workflows for Sequence Online. For system
 boundaries, see `docs/architecture.md`.
 
+The Docs workflow keeps its existing path filters and PR base coverage. Draft PRs
+skip the docs job before allocating a runner; marking a draft ready triggers the
+same documentation check without requiring a new commit.
+
 ## Install
 
 ```bash

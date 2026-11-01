@@ -147,6 +147,8 @@ Instructions are part of the code; maintain them with the behavior they describe
 - Run `oat docs check --target-dir docs` after docs changes; it must report zero
   errors. The `Docs` workflow (`.github/workflows/docs.yml`) runs the pinned
   `pnpm exec oat docs check --target-dir docs` on PRs touching `docs/`.
+  Draft PRs skip its job before runner allocation; `ready_for_review` runs it
+  without a new commit. Preserve existing path filters and all PR base coverage.
 - Keep cross-cutting setup detail canonical and link to it rather than restating
   it: the environment reference lives in `docs/configuration.md`, the testing
   strategy in `docs/testing.md`.

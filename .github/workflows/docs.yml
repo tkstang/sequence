@@ -2,6 +2,7 @@ name: Docs
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'docs/**'
       - '.oat/config.json'
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   docs-check:
+    if: ${{ !github.event.pull_request.draft }}
     name: oat docs check
     runs-on: ubuntu-latest
     steps:
