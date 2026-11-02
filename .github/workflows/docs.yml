@@ -6,6 +6,10 @@ on:
     paths:
       - 'docs/**'
       - '.oat/config.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.nvmrc'
       - '.github/workflows/docs.yml'
 
 permissions:
@@ -20,8 +24,11 @@ jobs:
     if: ${{ !github.event.pull_request.draft }}
     name: oat docs check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # Reads the pnpm version from package.json "packageManager".
       - uses: pnpm/action-setup@v4

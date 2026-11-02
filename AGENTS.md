@@ -99,6 +99,19 @@ TestFlight in the final operator phase. Canonical commands live in
   `/dev-frame` render target). It is development-only — do not link to it from the
   shipped app. See `docs/development.md`.
 
+## Continuous integration
+
+- Application CI runs types, lint, formatting, the root Vitest/mobile Jest tests,
+  and production builds on ready PRs and main pushes. Docs and `.oat`-only
+  changes do not start application verification; unknown inputs do.
+- CI has read-only repository permissions and receives no database, auth or
+  deployment credentials. Database integration tests retain their existing
+  no-test-database skips. Playwright, simulator and live service proof remain
+  separate gates for relevant changes, never inferred from hermetic CI.
+- Draft PRs allocate no application runner. A ready transition starts checks;
+  newer ready revisions cancel obsolete work for the same PR. Main runs use
+  isolated groups. Preserve all PR base branches.
+
 ## Definition of Done
 
 - Covering instructions remain true: changes to commands, directories, conventions,
@@ -146,7 +159,7 @@ Instructions are part of the code; maintain them with the behavior they describe
   in `docs/contributing.md`.
 - Run `oat docs check --target-dir docs` after docs changes; it must report zero
   errors. The `Docs` workflow (`.github/workflows/docs.yml`) runs the pinned
-  `pnpm exec oat docs check --target-dir docs` on PRs touching `docs/`.
+  `pnpm exec oat docs check --target-dir docs` on PRs touching `docs/`, its workflow/config, or root package, lockfile, workspace and Node-version inputs.
   Draft PRs skip its job before runner allocation; `ready_for_review` runs it
   without a new commit. Replacement verification cancels superseded docs runs for
   the same ready PR; draft runs use separate groups without cancellation. Preserve
