@@ -101,7 +101,7 @@ TestFlight in the final operator phase. Canonical commands live in
 
 ## Continuous integration
 
-- Application CI runs types, lint, formatting, the root Vitest/mobile Jest tests,
+- Application CI generates Next route validators before types, lint, formatting, the root Vitest/mobile Jest tests,
   and production builds on ready PRs and main pushes. Docs and `.oat`-only
   changes do not start application verification; unknown inputs do.
 - CI has read-only repository permissions and receives no database, auth or
@@ -109,7 +109,8 @@ TestFlight in the final operator phase. Canonical commands live in
   no-test-database skips. Playwright, simulator and live service proof remain
   separate gates for relevant changes, never inferred from hermetic CI.
 - Draft PRs allocate no application runner. A ready transition starts checks;
-  newer ready revisions cancel obsolete work for the same PR. Main runs use
+  base retargets revalidate, while title/body edits skip without cancelling useful
+  work. Newer ready revisions cancel obsolete work for the same PR. Main runs use
   isolated groups. Preserve all PR base branches.
 
 ## Definition of Done

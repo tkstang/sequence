@@ -66,7 +66,8 @@ oat docs check --target-dir docs
 
 CI runs the same pinned checker on non-draft pull requests touching `docs/`,
 `.oat/config.json`, the Docs workflow, or root package, lockfile, workspace or
-`.nvmrc` inputs. Marking a draft ready runs the applicable check without a commit.
+`.nvmrc` inputs. Marking a draft ready or changing its base runs applicable checks
+without a commit; title/body-only edits skip.
 It uses the `@open-agent-toolkit/cli` devDependency via
 `pnpm exec oat docs check --target-dir docs`.
 

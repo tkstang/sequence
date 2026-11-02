@@ -2,7 +2,7 @@ name: Docs
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
       - 'docs/**'
       - '.oat/config.json'
@@ -16,12 +16,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) }}
 
 jobs:
   docs-check:
-    if: ${{ !github.event.pull_request.draft }}
+    if: ${{ !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) }}
     name: oat docs check
     runs-on: ubuntu-latest
     timeout-minutes: 10
