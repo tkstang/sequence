@@ -126,6 +126,17 @@ pnpm --filter @sequence/mobile format
 `pnpm test` runs the workspace test harness in `scripts/run-tests.mjs`: first
 the Vitest projects from the root `vitest.config.ts`, then `@sequence/mobile` Jest.
 
+Application CI generates Next route validators before the five full repo gates
+on ready PRs and main pushes, except
+when every change is under `docs/` or `.oat/`. It receives no service credentials:
+database integration tests keep their existing skips, and Playwright/simulator
+proof remains a local or operator gate. The separate Docs workflow runs on ready
+PRs touching docs or its root dependency, Node-version, workflow or config inputs.
+Ready transitions and base retargets start applicable checks without a new commit.
+Title/body edits skip without cancelling useful validation. New ready
+revisions cancel obsolete verification for the same PR; draft and main runs use
+isolated groups.
+
 ## Playwright
 
 The web Playwright config loads the root `.env` and checks for

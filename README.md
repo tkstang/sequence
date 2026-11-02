@@ -168,3 +168,17 @@ Start at [`docs/index.md`](docs/index.md) for the full documentation map. Key pa
   `packages/client-state/README.md`, `packages/design-tokens/README.md`,
   `packages/game-logic/README.md` - package details
 - `bruno/README.md`, `tools/git-hooks/README.md` - API smoke collection and git hooks
+
+## Continuous integration
+
+Application CI generates Next route types, then checks types, lint, formatting, hermetic Vitest/mobile Jest tests
+and production builds for ready PRs and main pushes. Docs and `.oat`-only changes
+skip that workflow. The separate Docs workflow also reacts to the dependency and
+Node-version inputs used to install its pinned checker. Both workflows have
+read-only repository permissions; CI receives no live service credentials.
+
+Database integration, Playwright and simulator checks remain explicit local or
+operator gates. Their absence is not a passing integration result.
+
+Changing a ready PR's base reruns applicable checks. Title/body edits skip their
+jobs and use isolated concurrency groups, preserving useful in-flight validation.
