@@ -110,7 +110,9 @@ TestFlight in the final operator phase. Canonical commands live in
   separate gates for relevant changes, never inferred from hermetic CI.
 - Draft PRs allocate no application runner. A ready transition starts checks;
   base retargets revalidate, while title/body edits skip without cancelling useful
-  work. Newer ready revisions cancel obsolete work for the same PR. Main runs use
+  work. Eligible checks retain `verify` and `oat docs check`; ignored draft/title/body
+  events use distinct `(event ignored)` names, so a skipped event cannot report under
+  the real gate identity. Newer ready revisions cancel obsolete work for the same PR. Main runs use
   isolated groups. Preserve all PR base branches.
 
 ## Definition of Done

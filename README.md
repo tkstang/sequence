@@ -182,3 +182,6 @@ operator gates. Their absence is not a passing integration result.
 
 Changing a ready PR's base reruns applicable checks. Title/body edits skip their
 jobs and use isolated concurrency groups, preserving useful in-flight validation.
+Eligible runs keep the `verify` and `oat docs check` check names. Ignored draft or
+title/body events use distinct `(event ignored)` names, so their skipped results
+cannot replace the eligible checks.

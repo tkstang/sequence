@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   verify:
+    name: ${{ (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref))) && 'verify' || 'verify (event ignored)' }}
     if: ${{ github.event_name != 'pull_request' || (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
