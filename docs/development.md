@@ -134,8 +134,9 @@ proof remains a local or operator gate. The separate Docs workflow runs on ready
 PRs touching docs or its root dependency, Node-version, workflow or config inputs.
 Ready transitions and base retargets start applicable checks without a new commit.
 Title/body edits skip without cancelling useful validation. Eligible check names
-remain `verify` and `oat docs check`; ignored draft/title/body events use distinct
-`(event ignored)` names instead of reporting skipped under those gate identities. New ready
+remain `verify` and `oat docs check`; ignored draft/title/body events use separate
+name expressions with `(event ignored)` fallbacks. GitHub can display the raw
+expression for a pre-allocation skip; it still differs from the real gate identity. New ready
 revisions cancel obsolete verification for the same PR; draft and main runs use
 isolated groups.
 
