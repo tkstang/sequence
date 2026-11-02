@@ -8,12 +8,6 @@ description: "Local setup for Sequence Online: install, env files, running web a
 This document covers local workflows for Sequence Online. For system
 boundaries, see `docs/architecture.md`.
 
-The Docs workflow keeps its existing path filters and PR base coverage. Draft PRs
-skip the docs job before allocating a runner; marking a draft ready triggers the
-same documentation check without requiring a new commit. Replacement verification
-cancels superseded docs runs for the same ready PR. Draft runs use separate
-groups without cancellation.
-
 ## Install
 
 ```bash
@@ -131,6 +125,15 @@ pnpm --filter @sequence/mobile format
 
 `pnpm test` runs the workspace test harness in `scripts/run-tests.mjs`: first
 the Vitest projects from the root `vitest.config.ts`, then `@sequence/mobile` Jest.
+
+Application CI runs the five full repo gates on ready PRs and main pushes, except
+when every change is under `docs/` or `.oat/`. It receives no service credentials:
+database integration tests keep their existing skips, and Playwright/simulator
+proof remains a local or operator gate. The separate Docs workflow runs on ready
+PRs touching docs or its root dependency, Node-version, workflow or config inputs.
+Ready transitions start both applicable checks without a new commit. New ready
+revisions cancel obsolete verification for the same PR; draft and main runs use
+isolated groups.
 
 ## Playwright
 

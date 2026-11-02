@@ -64,8 +64,11 @@ Run the docs checker before opening a PR; it must report zero errors:
 oat docs check --target-dir docs
 ```
 
-CI runs the same check on pull requests that touch `docs/` with the pinned
-`@open-agent-toolkit/cli` devDependency (`pnpm exec oat docs check --target-dir docs`).
+CI runs the same pinned checker on non-draft pull requests touching `docs/`,
+`.oat/config.json`, the Docs workflow, or root package, lockfile, workspace or
+`.nvmrc` inputs. Marking a draft ready runs the applicable check without a commit.
+It uses the `@open-agent-toolkit/cli` devDependency via
+`pnpm exec oat docs check --target-dir docs`.
 
 The authored index is not a generated manifest. If an optional inventory is
 needed, run `oat docs generate-index` with an explicit output outside the
