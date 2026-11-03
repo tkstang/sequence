@@ -21,8 +21,7 @@ concurrency:
     ${{ github.workflow }}-${{
     github.event_name == 'pull_request' &&
     !github.event.pull_request.draft &&
-    (github.event.action != 'edited' ||
-    github.event.changes.base.ref) &&
+    (github.event.action != 'edited' || github.event.changes.base.ref) &&
     format('pr-{0}', github.event.pull_request.number) ||
     github.run_id
     }}
@@ -30,8 +29,7 @@ concurrency:
     ${{
     github.event_name == 'pull_request' &&
     !github.event.pull_request.draft &&
-    (github.event.action != 'edited' ||
-    github.event.changes.base.ref)
+    (github.event.action != 'edited' || github.event.changes.base.ref)
     }}
 
 jobs:
@@ -40,8 +38,7 @@ jobs:
       ${{
       (github.event_name != 'pull_request' ||
       (!github.event.pull_request.draft &&
-      (github.event.action != 'edited' ||
-      github.event.changes.base.ref))) &&
+      (github.event.action != 'edited' || github.event.changes.base.ref))) &&
       'verify' ||
       'verify (event ignored)'
       }}
@@ -49,8 +46,7 @@ jobs:
       ${{
       github.event_name != 'pull_request' ||
       (!github.event.pull_request.draft &&
-      (github.event.action != 'edited' ||
-      github.event.changes.base.ref))
+      (github.event.action != 'edited' || github.event.changes.base.ref))
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 20

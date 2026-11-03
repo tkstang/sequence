@@ -21,8 +21,7 @@ concurrency:
     ${{ github.workflow }}-${{
     github.event_name == 'pull_request' &&
     !github.event.pull_request.draft &&
-    (github.event.action != 'edited' ||
-    github.event.changes.base.ref) &&
+    (github.event.action != 'edited' || github.event.changes.base.ref) &&
     format('pr-{0}', github.event.pull_request.number) ||
     github.run_id
     }}
@@ -30,8 +29,7 @@ concurrency:
     ${{
     github.event_name == 'pull_request' &&
     !github.event.pull_request.draft &&
-    (github.event.action != 'edited' ||
-    github.event.changes.base.ref)
+    (github.event.action != 'edited' || github.event.changes.base.ref)
     }}
 
 jobs:
@@ -39,14 +37,12 @@ jobs:
     if: >-
       ${{
       !github.event.pull_request.draft &&
-      (github.event.action != 'edited' ||
-      github.event.changes.base.ref)
+      (github.event.action != 'edited' || github.event.changes.base.ref)
       }}
     name: >-
       ${{
       (!github.event.pull_request.draft &&
-      (github.event.action != 'edited' ||
-      github.event.changes.base.ref)) &&
+      (github.event.action != 'edited' || github.event.changes.base.ref)) &&
       'oat docs check' ||
       'oat docs check (event ignored)'
       }}
