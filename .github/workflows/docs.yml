@@ -15,14 +15,37 @@ on:
 permissions:
   contents: read
 
+# Base retargets revalidate; ignored draft/title/body events must not replace ready checks.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) }}
+  group: >-
+    ${{ github.workflow }}-${{
+    github.event_name == 'pull_request' &&
+    !github.event.pull_request.draft &&
+    (github.event.action != 'edited' || github.event.changes.base.ref) &&
+    format('pr-{0}', github.event.pull_request.number) ||
+    github.run_id
+    }}
+  cancel-in-progress: >-
+    ${{
+    github.event_name == 'pull_request' &&
+    !github.event.pull_request.draft &&
+    (github.event.action != 'edited' || github.event.changes.base.ref)
+    }}
 
 jobs:
   docs-check:
-    if: ${{ !github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref) }}
-    name: ${{ (!github.event.pull_request.draft && (github.event.action != 'edited' || github.event.changes.base.ref)) && 'oat docs check' || 'oat docs check (event ignored)' }}
+    if: >-
+      ${{
+      !github.event.pull_request.draft &&
+      (github.event.action != 'edited' || github.event.changes.base.ref)
+      }}
+    name: >-
+      ${{
+      (!github.event.pull_request.draft &&
+      (github.event.action != 'edited' || github.event.changes.base.ref)) &&
+      'oat docs check' ||
+      'oat docs check (event ignored)'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
