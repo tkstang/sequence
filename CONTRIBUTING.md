@@ -6,7 +6,7 @@ rules for contributing to Sequence Online. For full local setup see
 
 ## Prerequisites
 
-- Node `v24` from `.nvmrc`
+- Node `v26` from `.nvmrc`
 - pnpm `10.17.0` or newer
 
 Install dependencies:

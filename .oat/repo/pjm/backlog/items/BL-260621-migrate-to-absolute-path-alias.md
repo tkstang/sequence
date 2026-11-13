@@ -14,7 +14,7 @@ labels:
   - tech-debt
 assignee: null
 created: 2026-06-21T17:51:08.000Z
-updated: 2026-06-21T17:51:08.000Z
+updated: 2026-11-13T22:57:29.322Z
 associated_issues: []
 legacy_id: bl-3fcf
 ---
@@ -29,7 +29,7 @@ file extensions, e.g. `import { games } from '@db/schema/games'` instead of
 explicit `.ts`/`.tsx` extensions — 332/332 relative imports in `packages/api` +
 `packages/game-logic` (0 without), plus 83 relative + 44 `@/`-alias imports in
 `apps/web`. The extensions are **load-bearing**: the API runs `.ts` files
-directly via `node --experimental-transform-types` (the `dev` and `start`
+directly via Node 26 native type stripping (the `dev` and `start`
 scripts, and the production `Dockerfile` `CMD`), and native Node ESM resolves
 literal file paths — it does no extension guessing and does **not** understand
 tsconfig `paths` aliases. So both the extensions and the absence of `@` aliases
@@ -64,7 +64,7 @@ drift.
 
 Evidence: `tsconfig.base.json:10-11` (`allowImportingTsExtensions`,
 `verbatimModuleSyntax`); `packages/api/package.json:14-15`
-(`node --experimental-transform-types` run scripts); `packages/api/Dockerfile`
+(native `node` run scripts); `packages/api/Dockerfile`
 (`CMD` runs `@sequence/api start`).
 
 ## Acceptance Criteria
