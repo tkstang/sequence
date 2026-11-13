@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24.5.0-slim AS base
+FROM node:26.11.1-slim AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
+RUN npm install --global pnpm@10.17.0
 
 WORKDIR /app
 

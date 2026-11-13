@@ -47,11 +47,13 @@ export type Tx =
 
 /** Thrown by {@link persistGameState} when `prevVersion` no longer matches. */
 export class VersionConflictError extends Error {
-  constructor(
-    readonly expected: number,
-    readonly gameId: string,
-  ) {
+  readonly expected: number;
+  readonly gameId: string;
+
+  constructor(expected: number, gameId: string) {
     super(`version conflict for game ${gameId} (expected ${expected})`);
+    this.expected = expected;
+    this.gameId = gameId;
     this.name = 'VersionConflictError';
   }
 }

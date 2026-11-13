@@ -162,13 +162,21 @@ the predicate matches zero rows and the helper throws `VersionConflictError`:
 ```ts
 // packages/api/src/game/state-mapping.ts
 export class VersionConflictError extends Error {
-  constructor(readonly expected: number, readonly gameId: string) { /* … */ }
+  readonly expected: number;
+  readonly gameId: string;
+
+  constructor(expected: number, gameId: string) {
+    super(`version conflict for game ${gameId} (expected ${expected})`);
+    this.expected = expected;
+    this.gameId = gameId;
+    this.name = 'VersionConflictError';
+  }
 }
 ```
 
-The version column is declared at `packages/api/src/db/schema/games.ts:100`. The
-guard predicate and conflict throw are at
-`packages/api/src/game/state-mapping.ts:230-235`. The same guard backs
+The version column is declared in `packages/api/src/db/schema/games.ts`.
+`persistGameState` in `packages/api/src/game/state-mapping.ts` owns the guarded
+update and conflict throw. The same guard backs
 lifecycle transitions (`persistLifecycleTransition`) so a concede / save /
 freeze / resume can never silently clobber — or be clobbered by — a racing move.
 Mutations that surface this conflict are documented in

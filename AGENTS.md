@@ -27,7 +27,7 @@
 
 ## Project Snapshot
 
-Sequence Online is a pnpm + Node 24 monorepo with four runtime boundaries:
+Sequence Online is a pnpm + Node 26 monorepo with four runtime boundaries:
 `apps/web` (Next.js App Router client), `apps/mobile` (Expo SDK 57 iOS client),
 `packages/api` (Fastify + tRPC + Drizzle/Postgres server), and
 `packages/game-logic` (framework-free rules engine shared by API, web, and
@@ -40,7 +40,7 @@ TestFlight in the final operator phase. Canonical commands live in
 
 ## Sequence Project Guidance
 
-- Use Node `v24` from `.nvmrc` and pnpm `10.17.0+`.
+- Use Node `v26` from `.nvmrc` and pnpm `10.17.0+`.
 - Before adding material complexity for a speculative failure mode or unconfirmed
   future need, explain the concrete problem, evidence that it matters, simpler
   alternatives, and implementation and maintenance cost; get the user's buy-in.
@@ -68,7 +68,10 @@ TestFlight in the final operator phase. Canonical commands live in
 - Relative imports must include explicit `.ts`/`.tsx` extensions (e.g.
   `'../../db/schema/games.ts'`), and type-only imports must use `import type`.
   Both are required by `verbatimModuleSyntax` and by the native-Node runtime that
-  runs the API's `.ts` directly (`node --experimental-transform-types`). Moving to
+  runs the API's `.ts` directly with Node 26 type stripping. Use erasable
+  TypeScript syntax in the API and its runtime imports, and run the separate
+  typecheck gate. The API and game-logic configs enforce `erasableSyntaxOnly`.
+  Node does not read tsconfig path aliases. Moving to
   absolute path-alias imports (`@db/schema/games`) is backlog work (`bl-3fcf`);
   until then, do not drop extensions or use unconfigured `@` aliases.
 - Vitest runs as projects of the root `vitest.config.ts`. Give every new Vitest
@@ -92,8 +95,8 @@ TestFlight in the final operator phase. Canonical commands live in
 - The web UI is styled with StyleX (not Tailwind); generated StyleX token/theme
   files live in `apps/web/src/styles/` and are sourced from
   `@sequence/design-tokens`. See `docs/styling.md`.
-- The mobile UI uses React Native primitives, React Strict DOM token variables,
-  Reanimated/Gesture Handler for drag interactions, and shared design tokens.
+- The mobile UI uses React Native primitives and `StyleSheet.create`, shared
+  design tokens, and Reanimated/Gesture Handler for drag interactions.
   See `apps/mobile/AGENTS.md` before driving simulator flows.
 - A dev-only component playground exists at `/dev` (with a chrome-less
   `/dev-frame` render target). It is development-only — do not link to it from the

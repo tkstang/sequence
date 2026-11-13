@@ -56,8 +56,11 @@ type Reduction = (
 
 /** Raised when a rule is violated — surfaces as BAD_REQUEST + typed code. */
 export class RuleViolationError extends Error {
-  constructor(readonly violation: RuleViolation) {
+  readonly violation: RuleViolation;
+
+  constructor(violation: RuleViolation) {
     super(`rule violation: ${violation.code}`);
+    this.violation = violation;
     this.name = 'RuleViolationError';
   }
 }

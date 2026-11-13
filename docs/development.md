@@ -10,6 +10,12 @@ boundaries, see `docs/architecture.md`.
 
 ## Install
 
+Use Node 26 from `.nvmrc` for development and CI. The API and design-token
+generator use native type stripping with erasable TypeScript syntax. Explicit
+imports must resolve at runtime; Node does not read tsconfig path aliases.
+Run the typecheck gate separately. Expo/Metro and Next.js retain their own
+transpilation paths.
+
 ```bash
 pnpm install
 ```
