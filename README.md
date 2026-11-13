@@ -29,7 +29,7 @@ files, Railway, Vercel, or Neon.
 
 ## Requirements
 
-- Node from `.nvmrc` (`v24`)
+- Node from `.nvmrc` (`v26`)
 - pnpm `10.17.0` or newer
 - A Postgres/Neon connection string for API work
 - Optional: a Neon test branch connection string for integration and Playwright

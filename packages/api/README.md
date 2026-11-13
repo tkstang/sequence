@@ -79,6 +79,11 @@ workflow.
 
 ## Runtime Notes
 
+The API runs `.ts` source directly with Node 26 type stripping. Keep runtime
+imports explicit, including `.ts` extensions and `import type`, and use erasable
+TypeScript syntax. Run `pnpm --filter @sequence/api typecheck` separately because
+Node strips types without checking them.
+
 The API uses `@sequence/game-logic` as the authoritative rules engine. Clients
 submit an expected game `version`; lifecycle mutations reject stale versions.
 

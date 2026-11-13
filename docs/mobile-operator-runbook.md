@@ -32,7 +32,7 @@ TestFlight, device, and production-smoke work against this runbook.
 ### Why
 
 The mobile app uses an Expo dev build on the iOS Simulator. A machine must have
-Xcode, an iOS Simulator runtime, CocoaPods, Watchman, Node 24, and pnpm before
+Xcode, an iOS Simulator runtime, CocoaPods, Watchman, Node 26, and pnpm before
 an agent can build, launch, screenshot, and inspect the app locally.
 
 ### When
@@ -47,7 +47,7 @@ that will build the iOS dev client.
 - macOS with enough disk space for Xcode and at least one iOS Simulator runtime.
 - Apple ID access to install Xcode from the App Store or Apple Developer site.
 - Homebrew or another approved package manager for Watchman and CocoaPods.
-- Repository checkout using Node `v24` from `.nvmrc` and pnpm `10.17.0+`.
+- Repository checkout using Node `v26` from `.nvmrc` and pnpm `10.17.0+`.
 
 ### Steps
 
@@ -107,7 +107,7 @@ watchman --version
 pnpm --filter @sequence/mobile typecheck
 ```
 
-Expected result: Node reports v24, pnpm is at least 10.17.0, Xcode reports an
+Expected result: Node reports v26, pnpm is at least 10.17.0, Xcode reports an
 installed version, at least one iOS Simulator device is available, CocoaPods and
 Watchman respond, and the mobile typecheck passes.
 

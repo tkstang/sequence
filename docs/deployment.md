@@ -29,7 +29,8 @@ Railway project/service:
 
 Relevant files:
 
-- `packages/api/Dockerfile`
+- `packages/api/Dockerfile` pins Node 26.11.1 and installs pnpm 10.17.0 with
+  npm because Node 26 does not bundle Corepack.
 - `railway.json`
 - `packages/api/drizzle`
 

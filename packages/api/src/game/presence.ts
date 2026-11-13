@@ -41,11 +41,13 @@ export interface PresenceDeps {
 }
 
 export class PresenceTracker {
+  private readonly deps: PresenceDeps;
   private readonly now: () => number;
   /** gameId → seat → active subscription count (in-memory truth). */
   private readonly connected = new Map<string, Map<number, number>>();
 
-  constructor(private readonly deps: PresenceDeps) {
+  constructor(deps: PresenceDeps) {
+    this.deps = deps;
     this.now = deps.now ?? (() => Date.now());
   }
 

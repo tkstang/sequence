@@ -43,13 +43,12 @@ const defaultDeps = (db: Database): TimerDeps => ({
 });
 
 export class TimerService {
+  private readonly db: Database;
   private readonly deps: TimerDeps;
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(
-    private readonly db: Database,
-    deps?: Partial<TimerDeps>,
-  ) {
+  constructor(db: Database, deps?: Partial<TimerDeps>) {
+    this.db = db;
     this.deps = { ...defaultDeps(db), ...deps };
   }
 
