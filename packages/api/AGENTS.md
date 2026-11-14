@@ -25,9 +25,9 @@ persistence, move validation, redaction, realtime, and timers. Inherits the root
 
 ## Conventions
 
-- The API and game-logic TypeScript configs enable `erasableSyntaxOnly` because
-  Node runs their source directly. Keep constructor fields explicit and run
-  `pnpm typecheck` separately from native execution.
+- Keep API and game-logic runtime syntax erasable, including explicit constructor
+  fields. Their configs enforce `erasableSyntaxOnly`; run `pnpm typecheck` because
+  native Node execution does not check types.
 
 - **Route per action:** each game action is its own file under `src/game/routes/`
   exporting `<action>Route`, built from `authedProcedure` / `gamePlayerProcedure`
