@@ -67,13 +67,9 @@ TestFlight in the final operator phase. Canonical commands live in
   behavior changes.
 - Relative imports must include explicit `.ts`/`.tsx` extensions (e.g.
   `'../../db/schema/games.ts'`), and type-only imports must use `import type`.
-  Both are required by `verbatimModuleSyntax` and by the native-Node runtime that
-  runs the API's `.ts` directly with Node 26 type stripping. Use erasable
-  TypeScript syntax in the API and its runtime imports, and run the separate
-  typecheck gate. The API and game-logic configs enforce `erasableSyntaxOnly`.
-  Node does not read tsconfig path aliases. Moving to
-  absolute path-alias imports (`@db/schema/games`) is backlog work (`bl-3fcf`);
-  until then, do not drop extensions or use unconfigured `@` aliases.
+  The API runs TypeScript directly on Node 26, which does not resolve tsconfig
+  path aliases. Alias migration is backlog work (`bl-3fcf`); keep extensions and
+  avoid unconfigured `@` aliases. See `packages/api/AGENTS.md` for syntax constraints.
 - Vitest runs as projects of the root `vitest.config.ts`. Give every new Vitest
   package its own `vitest.config.ts` (empty is fine): Vitest searches parent
   directories, so without one a per-package `vitest run` loads the root
